@@ -1,0 +1,283 @@
+@vite(['resources/css/app.css', 'resources/js/app.js'])
+@include('common.header')
+<div class="profile-header" style="margin-top: 65px;">
+
+<div class="profile-cover">
+
+    <form action="{{ route('profile.cover') }}" 
+          method="POST" 
+          enctype="multipart/form-data">
+        @csrf
+
+        <input type="file" 
+               name="cover" 
+               id="coverInput" 
+               hidden>
+
+        <img src="{{ $user->cover_url }}?v={{ $user->updated_at?->timestamp ?? time() }}"
+             class="cover-img">
+
+        <button type="button" 
+                class="change-cover-btn"
+                onclick="document.getElementById('coverInput').click()">
+            Change Cover
+        </button>
+    </form>
+
+</div>
+
+<form action="{{ route('profile.avatar') }}" 
+      method="POST" 
+      enctype="multipart/form-data"
+      class="profile-avatar">
+    @csrf
+
+    <div class="avatar-upload">
+        <input type="file" name="avatar" id="avatarInput" hidden>
+        
+        <img src="{{ $user->avatar_url }}?v={{ $user->updated_at?->timestamp ?? time() }}"
+            id="avatarPreview"
+            class="avatar-img">
+
+       <button type="button" onclick="document.getElementById('avatarInput').click()">
+            Change Avatar
+        </button> 
+
+        <h2 class="profile-name profile-name--avatar">{{ $user->name }}</h2>
+
+    </div>
+    
+</form>
+
+<div class="profile-meta">
+    <div class="profile-identity">
+        <p class="profile-email">{{ $user->email }}</p>
+
+        <div class="badges-container">
+            <span class="role-badges">
+                {{ ucfirst($user->role) }}
+            </span>
+
+            @if($user->hasActiveSubscription())
+                <span class="plan-badges">
+                    {{ ucfirst($user->plan) }} Plan
+                </span>
+            @else
+                <span class="free-badges">
+                    Free Plan
+                </span>
+            @endif
+        </div>
+    </div>
+
+    <div class="profile-right">
+        <div class="profile-progress">
+            <h4>Profile Completion</h4>
+
+            <div class="progress-bars">
+                <div class="progress-fills" 
+                    style="width: {{ $completion }}%;">
+                </div>
+            </div> 
+
+            <span>{{ $completion }}% Completed</span>
+        </div>
+
+        <div class="profile-actions">
+            <button class="edit-btns" onclick="openModal()">
+                Edit Profile
+            </button>
+        </div>
+    </div>
+</div>
+
+</div>
+
+
+
+
+
+<div class="profile-stats">
+
+    <div class="stat-card">
+        <h3>{{ $totalOrders }}</h3>
+        <p>Books Purchased</p>
+    </div>
+
+    <div class="stat-card">
+        <h3>{{ $wishlistCount }}</h3>
+        <p>Wishlist Items</p>
+    </div>
+
+    <div class="stat-card">
+        <h3>{{ $reviewCount }}</h3>
+        <p>Reviews Written</p>
+    </div>
+
+    <div class="stat-card">
+        <h3>
+            {{ $user->hasActiveSubscription() ? ucfirst($user->plan) : 'Free' }}
+        </h3>
+        <p>Current Plan</p>
+    </div>
+
+</div>
+
+
+<div class="recent-purchases">
+    <h3>Recent Purchases</h3>
+
+    @if($recentBooks->count())
+
+        <div class="books-grid">
+            @foreach($recentBooks as $item)
+                <div class="book-card">
+                    <img src="{{ $item->book->image }}" alt="Book Cover">
+
+                    <div class="book-info">
+                        <h4>{{ $item->book->name }}</h4>
+                        <p>{{ $item->book->author->name }}</p>
+
+                        <a href="{{ route('books.show', $item->book->id) }}" 
+                           class="view-btn">
+                            View Book
+                        </a>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+    @else
+        <p class="no-books">
+            You haven't purchased any books yet.
+        </p>
+    @endif
+</div>
+
+
+
+<div class="subscription-section">
+
+    <h3>Subscription Management</h3>
+
+    @if($user->subscribed('default'))
+        <p>You are subscribed to {{ ucfirst($user->plan) }} plan.</p>
+
+        @if($user->subscription('default')->onGracePeriod())
+            <form method="POST" action="{{ route('subscription.resume') }}">
+                @csrf
+                <button class="resume-btn">Resume Subscription</button>
+            </form>
+
+            <p>
+                Your subscription will end on
+                {{ $user->subscription('default')->ends_at->format('M d, Y') }}
+            </p>
+        @else
+            <form method="POST" action="{{ route('subscription.cancel') }}">
+                @csrf
+                <button class="cancel-btn">Cancel Subscription</button>
+            </form>
+        @endif
+        @if(\App\Models\Setting::get('subscriptions_enabled', 1))
+            <a href="{{ route('plans.index') }}" class="upgrade-btn">Change Plan (Upgrade / Downgrade)</a>
+        @else
+            <p style="margin-top: 8px; color: #b45309;">
+                Plan changes are temporarily disabled.
+            </p>
+        @endif
+    @else
+        @if(\App\Models\Setting::get('subscriptions_enabled', 1))
+            <a href="{{ route('plans.index') }}" class="upgrade-btn">Upgrade to Premium</a>
+        @else
+            <p style="margin-top: 8px; color: #b45309;">
+                Subscriptions are currently disabled.
+            </p>
+        @endif
+    @endif
+
+</div>
+
+<div id="editProfileModal" class="modal">
+
+    <div class="modal-content">
+
+        <div class="modal-header">
+            <h3>Edit Profile</h3>
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+        </div>
+
+        <form method="POST" action="{{ route('profile.update') }}">
+            @csrf
+            @method('PUT')
+
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" 
+                       value="{{ $user->name }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email" 
+                       value="{{ $user->email }}" required>
+            </div>
+
+            <hr>
+
+            <h4>Change Password (Optional)</h4>
+
+            <div class="form-group">
+                <label>New Password</label>
+                <input type="password" name="password">
+            </div>
+
+            <div class="form-group">
+                <label>Confirm Password</label>
+                <input type="password" name="password_confirmation">
+            </div>
+
+            <button type="submit" class="save-btn">
+                Save Changes
+            </button>
+
+        </form>
+    </div>
+</div>
+
+@include('common.footer')
+
+<script>
+document.getElementById('coverInput').addEventListener('change', function() {
+    this.form.submit();
+});
+</script>
+
+
+<script>
+function openModal() {
+    document.getElementById('editProfileModal').style.display = 'block';
+}
+
+function closeModal() {
+    document.getElementById('editProfileModal').style.display = 'none';
+}
+
+// Close when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('editProfileModal');
+    if (event.target === modal) {
+        modal.style.display = "none";
+    }
+}
+</script>
+
+
+<script>
+document.getElementById('avatarInput').addEventListener('change', function() {
+    this.form.submit();
+});
+</script>
+
+
+
