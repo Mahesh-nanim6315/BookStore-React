@@ -1,7 +1,7 @@
-﻿import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { fetchBook } from '../../../api/books'
 import Loader from '../../../components/common/Loader'
+import { getAdminBook } from '../../../api/adminBooks'
 
 const BookShow = () => {
   const { id } = useParams()
@@ -10,12 +10,15 @@ const BookShow = () => {
   useEffect(() => {
     const loadBook = async () => {
       try {
-        const data = await fetchBook(id)
-        setBook(data)
+        const response = await getAdminBook(id)
+        if (response.success) {
+          setBook(response.data.book)
+        }
       } catch (error) {
-        console.error('Failed to fetch book', error)
+        console.error('Failed to fetch book:', error)
       }
     }
+
     loadBook()
   }, [id])
 
@@ -24,23 +27,41 @@ const BookShow = () => {
   }
 
   return (
-    <div className="admin-page">
-      <div className="admin-page-header">
-        <h1>{book.name}</h1>
-        <Link to="/admin/books" className="btn-secondary">
+    <div className="page">
+      <div className="page-header admin-list-header">
+        <div>
+          <h2>{book.name}</h2>
+          <p className="admin-page-subtitle">Review format availability, pricing, and catalog metadata.</p>
+        </div>
+
+        <Link to="/dashboard/books" className="admin-button">
           Back to list
         </Link>
       </div>
-      <div className="book-details">
-        <img src={book.image} alt={book.name} width="220" />
-        <div>
+
+      <div className="book-show-layout">
+        <div className="book-show-cover">
+          {book.image ? <img src={book.image} alt={book.name} /> : <div className="book-cover-placeholder">No image</div>}
+        </div>
+
+        <div className="book-show-card">
           <p><strong>Description:</strong> {book.description}</p>
           <p><strong>Language:</strong> {book.language}</p>
-          <p><strong>Author:</strong> {book.author?.name || '—'}</p>
-          <p><strong>Category:</strong> {book.category?.name || '—'}</p>
-          <p><strong>Genre:</strong> {book.genre?.name || '—'}</p>
-          <p><strong>Price:</strong> {book.price}</p>
+          <p><strong>Author:</strong> {book.author?.name || '-'}</p>
+          <p><strong>Category:</strong> {book.category?.name || '-'}</p>
+          <p><strong>Genre:</strong> {book.genre?.name || '-'}</p>
+          <p><strong>Main Price:</strong> {book.price}</p>
+          <p><strong>Stock:</strong> {book.stock ?? 0}</p>
           <p><strong>Premium:</strong> {book.is_premium ? 'Yes' : 'No'}</p>
+          <p><strong>eBook:</strong> {book.has_ebook ? 'Available' : 'No'}</p>
+          <p><strong>Audio:</strong> {book.has_audio ? 'Available' : 'No'}</p>
+          <p><strong>Paperback:</strong> {book.has_paperback ? 'Available' : 'No'}</p>
+
+          <div className="book-action-row">
+            <Link to={`/dashboard/books/${book.id}/edit`} className="view-link">
+              Edit
+            </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -48,10 +69,3 @@ const BookShow = () => {
 }
 
 export default BookShow
-
-
-
-
-
-
-

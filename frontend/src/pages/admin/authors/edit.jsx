@@ -1,51 +1,70 @@
-﻿import React from 'react'
+import React, { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import Loader from '../../../components/common/Loader'
+import AuthorForm from '../../../components/AuthorForm'
+import { getAdminAuthorEditMeta, updateAdminAuthor } from '../../../api/adminAuthors'
 
 const AdminAuthorsEdit = () => {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const [values, setValues] = useState(null)
+  const [isSaving, setIsSaving] = useState(false)
+
+  useEffect(() => {
+    const loadAuthor = async () => {
+      try {
+        const response = await getAdminAuthorEditMeta(id)
+        if (response.success) {
+          const author = response.data.author || {}
+          setValues({
+            name: author.name || '',
+            image: author.image || '',
+            bio: author.bio || '',
+          })
+        }
+      } catch (error) {
+        console.error('Failed to load author:', error)
+      }
+    }
+
+    loadAuthor()
+  }, [id])
+
+  const handleChange = (event) => {
+    const { name, value } = event.target
+    setValues((current) => ({ ...current, [name]: value }))
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setIsSaving(true)
+
+    try {
+      await updateAdminAuthor(id, values)
+      navigate('/dashboard/authors')
+    } catch (error) {
+      console.error('Failed to update author:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  if (!values) {
+    return <Loader />
+  }
+
   return (
     <div className="page">
-{/*  */}
-{/* 
- */}
-
-<h2>Edit Author</h2>
-
-<form action=""
-      method="POST" className="form-box">
-{/*  */}
-{/*  */}
-
-<label>Name</label>
-<input type="text" name="name"
-       value="" required />
-
-<label>Image URL</label>
-<input type="text" name="image"
-       value="" />
-{/* 
- */}
-    <img src=""
-         style={{ width: '100px', margin: '10px 0' }} />
-{/*  */}
-
-<label>Bio</label>
-<textarea name="bio" rows="5">
-
-</textarea>
-
-<button type="submit" className="btn-primary">Update Author</button>
-
-</form>
-{/* 
- */}
+      <AuthorForm
+        values={values}
+        onChange={handleChange}
+        onSubmit={handleSubmit}
+        submitLabel="Update Author"
+        isSaving={isSaving}
+        mode="edit"
+      />
     </div>
   )
 }
 
 export default AdminAuthorsEdit
-
-
-
-
-
-
-

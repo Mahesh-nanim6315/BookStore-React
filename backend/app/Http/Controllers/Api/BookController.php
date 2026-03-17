@@ -9,6 +9,7 @@ use App\Models\Book;
 use App\Models\Review;
 use App\Models\Setting;
 use App\Models\OrderItem;
+use Illuminate\Http\Request;
 
 class BookController extends Controller
 {
@@ -70,11 +71,18 @@ class BookController extends Controller
         ]);
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
-        $book = Book::with('reviews.user')->findOrFail($id);
+        $book = Book::with([
+            'author',
+            'category',
+            'genre',
+            'reviews.user',
+        ])->findOrFail($id);
 
-        if ($book->is_premium && (!Auth::check() || !Auth::user()->canAccessBook($book))) {
+        $user = $request->user('sanctum');
+
+        if ($book->is_premium && (! $user || ! $user->canAccessBook($book))) {
             return response()->json([
                 'success' => false,
                 'message' => 'This book requires a premium subscription.',
@@ -82,20 +90,19 @@ class BookController extends Controller
             ], 403);
         }
 
-        $reviews = Review::where('book_id', $book->id)
-            ->when(Auth::check() && Auth::user()->role !== 'admin', function ($query) {
-                $query->where(function ($q) {
+        $reviews = Review::with('user')
+            ->where('book_id', $book->id)
+            ->when($user && $user->role !== 'admin', function ($query) use ($user) {
+                $query->where(function ($q) use ($user) {
                     $q->where('is_approved', true)
-                      ->orWhere('user_id', Auth::id());
+                      ->orWhere('user_id', $user->id);
                 });
             })
-            ->when(!Auth::check(), function ($query) {
+            ->when(! $user, function ($query) {
                 $query->where('is_approved', true);
             })
             ->latest()
             ->get();
-
-        $user = Auth::user();
 
         $recommendedBooks = collect();
 
@@ -112,6 +119,16 @@ class BookController extends Controller
             // Recommend books from same categories
             $recommendedBooks = Book::whereIn('category_id', $purchasedCategoryIds)
                 ->where('id', '!=', $book->id)
+                ->with(['author', 'category', 'genre'])
+                ->take(5)
+                ->get();
+        } else {
+            $recommendedBooks = Book::with(['author', 'category', 'genre'])
+                ->where('id', '!=', $book->id)
+                ->where(function ($query) use ($book) {
+                    $query->where('category_id', $book->category_id)
+                        ->orWhere('genre_id', $book->genre_id);
+                })
                 ->take(5)
                 ->get();
         }

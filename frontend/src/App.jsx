@@ -45,11 +45,15 @@ import AuthReset from './pages/auth/reset-password.jsx'
 import Dashboard from './pages/dashboard.jsx'
 import AdminDashboard from './pages/admin/dashboard.jsx'
 import AdminAuthorsIndex from './pages/admin/authors/index.jsx'
+import AdminAuthorsCreate from './pages/admin/authors/create.jsx'
+import AdminAuthorsEdit from './pages/admin/authors/edit.jsx'
+import AdminAuthorsShow from './pages/admin/authors/show.jsx'
 import AdminOrdersIndex from './pages/admin/orders/index.jsx'
 import AdminOrdersShow from './pages/admin/orders/show.jsx'
 import AdminUsersIndex from './pages/admin/users/index.jsx'
 import AdminUsersCreate from './pages/admin/users/create.jsx'
 import AdminUsersEdit from './pages/admin/users/edit.jsx'
+import AdminUsersShow from './pages/admin/users/show.jsx'
 import AdminPaymentsIndex from './pages/admin/payments/index.jsx'
 import AdminReviewsIndex from './pages/admin/reviews/index.jsx'
 import AdminNotificationsIndex from './pages/admin/notifications/index.jsx'
@@ -153,15 +157,20 @@ const App = () => {
           }>
             <Route index element={<Dashboard />} />
             <Route path="orders" element={<AdminOrdersIndex />} />
+            <Route path="orders/:id" element={<AdminOrdersShow />} />
             <Route path="payments" element={<AdminPaymentsIndex />} />
             <Route path="books" element={<BooksIndex />} />
             <Route path="books/create" element={<BookCreate />} />
             <Route path="books/:id" element={<BookShow />} />
             <Route path="books/:id/edit" element={<BookEdit />} />
             <Route path="authors" element={<AdminAuthorsIndex />} />
+            <Route path="authors/create" element={<AdminAuthorsCreate />} />
+            <Route path="authors/:id" element={<AdminAuthorsShow />} />
+            <Route path="authors/:id/edit" element={<AdminAuthorsEdit />} />
             <Route path="reviews" element={<AdminReviewsIndex />} />
             <Route path="users" element={<AdminUsersIndex />} />
             <Route path="users/create" element={<AdminUsersCreate />} />
+            <Route path="users/:id" element={<AdminUsersShow />} />
             <Route path="users/:id/edit" element={<AdminUsersEdit />} />
             <Route path="notifications" element={<AdminNotificationsIndex />} />
             <Route path="roles-permissions" element={<AdminRolesIndex />} />
@@ -180,10 +189,14 @@ const App = () => {
             <Route path="books/:id" element={<BookShow />} />
             <Route path="books/:id/edit" element={<BookEdit />} />
             <Route path="authors" element={<AdminAuthorsIndex />} />
+            <Route path="authors/create" element={<AdminAuthorsCreate />} />
+            <Route path="authors/:id" element={<AdminAuthorsShow />} />
+            <Route path="authors/:id/edit" element={<AdminAuthorsEdit />} />
             <Route path="orders" element={<AdminOrdersIndex />} />
             <Route path="orders/:id" element={<AdminOrdersShow />} />
             <Route path="users" element={<AdminUsersIndex />} />
             <Route path="users/create" element={<AdminUsersCreate />} />
+            <Route path="users/:id" element={<AdminUsersShow />} />
             <Route path="users/:id/edit" element={<AdminUsersEdit />} />
             <Route path="payments" element={<AdminPaymentsIndex />} />
             <Route path="reviews" element={<AdminReviewsIndex />} />

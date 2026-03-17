@@ -5,6 +5,11 @@ use App\Http\Controllers\Api\BookController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\AuthorController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Api\Admin\AuthorControllers as AdminAuthorController;
+use App\Http\Controllers\Api\Admin\ReviewControllers as AdminReviewController;
+use App\Http\Controllers\Api\Admin\RolePermissionController;
+use App\Http\Controllers\Api\Admin\SettingsController as AdminSettingsController;
+use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CategoryController;
@@ -23,11 +28,8 @@ use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\NotificationController;
-use App\Http\Controllers\Api\Admin\BookController as AdminBookController;
-// use App\Http\Controllers\Api\Admin\AuthorController as AdminAuthorController;
-// use App\Http\Controllers\Api\Admin\ReviewController as AdminReviewController;
-// use App\Http\Controllers\Api\Admin\RolePermissionController;
-// use App\Http\Controllers\Api\Admin\SettingsController as AdminSettingsController;
+use App\Http\Controllers\Api\Admin\BookControllers as AdminBookController;
+use App\Http\Controllers\Api\Admin\OrderControllers as AdminOrderController;
 
 /* ================= PUBLIC ROUTES ================= */
 Route::prefix('v1')->group(function () {
@@ -213,29 +215,47 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'admin'])->group(function
     // Books Management
     Route::prefix('books')->group(function () {
         Route::get('/', [AdminBookController::class, 'index']);
+        Route::get('/create', [AdminBookController::class, 'create']);
         Route::post('/', [AdminBookController::class, 'store']);
+        Route::get('/{book}/edit', [AdminBookController::class, 'edit']);
         Route::get('/{book}', [AdminBookController::class, 'show']);
         Route::put('/{book}', [AdminBookController::class, 'update']);
         Route::delete('/{book}', [AdminBookController::class, 'destroy']);
     });
+
+    // Orders Management
+    Route::prefix('orders')->group(function () {
+        Route::get('/', [AdminOrderController::class, 'index']);
+        Route::get('/export/csv', [AdminOrderController::class, 'exportCsv']);
+        Route::get('/{id}', [AdminOrderController::class, 'show']);
+        Route::put('/{order}', [AdminOrderController::class, 'update']);
+        Route::put('/{id}/status', [AdminOrderController::class, 'updateStatus']);
+        Route::put('/{id}/payment-status', [AdminOrderController::class, 'updatePaymentStatus']);
+    });
+
+    Route::get('/payments', [AdminOrderController::class, 'payments']);
     
     // Authors Management
-    /* Route::prefix('authors')->group(function () {
-        Route::get('/', [AdminAuthorController::class, 'index'])->middleware('permission:authors.view');
-        Route::post('/', [AdminAuthorController::class, 'store'])->middleware('permission:authors.create');
-        Route::get('/{author}', [AdminAuthorController::class, 'show'])->middleware('permission:authors.view');
-        Route::put('/{author}', [AdminAuthorController::class, 'update'])->middleware('permission:authors.edit');
-        Route::delete('/{author}', [AdminAuthorController::class, 'destroy'])->middleware('permission:authors.delete');
-    }); */
+    Route::prefix('authors')->group(function () {
+        Route::get('/', [AdminAuthorController::class, 'index']);
+        Route::get('/create', [AdminAuthorController::class, 'create']);
+        Route::post('/', [AdminAuthorController::class, 'store']);
+        Route::get('/{author}/edit', [AdminAuthorController::class, 'edit']);
+        Route::get('/{author}', [AdminAuthorController::class, 'show']);
+        Route::put('/{author}', [AdminAuthorController::class, 'update']);
+        Route::delete('/{author}', [AdminAuthorController::class, 'destroy']);
+    });
     
     // Users Management
-    /* Route::prefix('users')->group(function () {
-        Route::get('/', [UserController::class, 'index'])->middleware('permission:users.view');
-        Route::post('/', [UserController::class, 'store'])->middleware('permission:users.create');
-        Route::get('/{user}/edit', [UserController::class, 'edit'])->middleware('permission:users.edit');
-        Route::put('/{user}', [UserController::class, 'update'])->middleware('permission:users.edit');
-        Route::delete('/{user}', [UserController::class, 'destroy'])->middleware('permission:users.delete');
-    }); */
+    Route::prefix('users')->group(function () {
+        Route::get('/', [AdminUserController::class, 'index']);
+        Route::get('/create', [AdminUserController::class, 'create']);
+        Route::post('/', [AdminUserController::class, 'store']);
+        Route::get('/{user}/edit', [AdminUserController::class, 'edit']);
+        Route::get('/{user}', [AdminUserController::class, 'show']);
+        Route::put('/{user}', [AdminUserController::class, 'update']);
+        Route::delete('/{user}', [AdminUserController::class, 'destroy']);
+    });
     
     // Orders Management
     /* Route::prefix('orders')->group(function () {
@@ -251,12 +271,12 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'admin'])->group(function
     Route::get('/payments', [AdminOrderController::class, 'payments'])->middleware('permission:manage_payments'); */
     
     // Reviews Management
-    /* Route::prefix('reviews')->group(function () {
-        Route::get('/', [AdminReviewController::class, 'index'])->middleware('permission:manage_reviews');
-        Route::delete('/{review}', [AdminReviewController::class, 'destroy'])->middleware('permission:manage_reviews');
-        Route::patch('/{review}/approve', [AdminReviewController::class, 'approve'])->middleware('permission:manage_reviews');
+    Route::prefix('reviews')->group(function () {
+        Route::get('/', [AdminReviewController::class, 'index']);
+        Route::delete('/{review}', [AdminReviewController::class, 'destroy']);
+        Route::patch('/{review}/approve', [AdminReviewController::class, 'approve']);
     });
-    
+
     // Roles & Permissions
     Route::prefix('roles-permissions')->group(function () {
         Route::get('/', [RolePermissionController::class, 'index'])->middleware('permission:manage_roles_permissions');
@@ -267,5 +287,5 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'admin'])->group(function
     Route::prefix('settings')->group(function () {
         Route::get('/', [AdminSettingsController::class, 'index']);
         Route::post('/', [AdminSettingsController::class, 'update']);
-    }); */
+    });
 });

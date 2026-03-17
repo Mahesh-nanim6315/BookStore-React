@@ -90,12 +90,13 @@ class ReviewController extends Controller
             'comment' => $request->comment
         ]);
 
+        $review->load('user');
+
         return response()->json([
             'success' => true,
             'message' => 'Review updated successfully',
             'data' => [
-                'review' => $review->fresh(),
-                'redirect' => route('books.show', $review->book_id)
+                'review' => $review->fresh()->load('user')
             ]
         ]);
     }
@@ -116,7 +117,7 @@ class ReviewController extends Controller
             'success' => true,
             'message' => 'Review deleted',
             'data' => [
-                'redirect' => route('books.show', $bookId)
+                'book_id' => $bookId
             ]
         ]);
     }

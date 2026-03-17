@@ -1,9 +1,8 @@
-﻿import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import BookForm from '../../../components/BookForm'
-import { fetchBook, updateBook } from '../../../api/books'
-import { fetchAuthors, fetchCategories, fetchGenres } from '../../../api/lookups'
 import Loader from '../../../components/common/Loader'
+import BookForm from '../../../components/BookForm'
+import { getAdminBookEditMeta, updateAdminBook } from '../../../api/adminBooks'
 
 const BookEdit = () => {
   const { id } = useParams()
@@ -15,37 +14,49 @@ const BookEdit = () => {
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
-    const loadData = async () => {
+    const loadBook = async () => {
       try {
-        const [bookData, authorsData, categoriesData, genresData] = await Promise.all([
-          fetchBook(id),
-          fetchAuthors(),
-          fetchCategories(),
-          fetchGenres(),
-        ])
+        const response = await getAdminBookEditMeta(id)
+
+        if (!response.success) {
+          return
+        }
+
+        const book = response.data.book || {}
+
         setValues({
-          name: bookData.name || '',
-          description: bookData.description || '',
-          language: bookData.language || '',
-          author_id: bookData.author_id || '',
-          category_id: bookData.category_id || '',
-          genre_id: bookData.genre_id || '',
-          image: bookData.image || '',
-          price: bookData.price || '',
-          is_premium: !!bookData.is_premium,
-          has_ebook: !!bookData.has_ebook,
-          has_audio: !!bookData.has_audio,
-          has_paperback: !!bookData.has_paperback,
+          name: book.name || '',
+          description: book.description || '',
+          language: book.language || '',
+          author_id: book.author_id || '',
+          category_id: book.category_id || '',
+          genre_id: book.genre_id || '',
+          image: book.image || '',
+          price: book.price || '',
+          stock: book.stock ?? 0,
+          is_premium: !!book.is_premium,
+          has_ebook: !!book.has_ebook,
+          ebook_price: book.ebook_price || '',
+          ebook_pdf: book.ebook_pdf || '',
+          ebook_pages: book.ebook_pages || '',
+          has_audio: !!book.has_audio,
+          audio_price: book.audio_price || '',
+          audio_file: book.audio_file || '',
+          audio_minutes: book.audio_minutes || '',
+          has_paperback: !!book.has_paperback,
+          paperback_price: book.paperback_price || '',
+          paperback_pages: book.paperback_pages || '',
         })
-        setAuthors(authorsData)
-        setCategories(categoriesData)
-        setGenres(genresData)
+
+        setAuthors(response.data.authors || [])
+        setCategories(response.data.categories || [])
+        setGenres(response.data.genres || [])
       } catch (error) {
-        console.error('Failed to load book', error)
+        console.error('Failed to load book:', error)
       }
     }
 
-    loadData()
+    loadBook()
   }, [id])
 
   const handleChange = (event) => {
@@ -59,11 +70,12 @@ const BookEdit = () => {
   const handleSubmit = async (event) => {
     event.preventDefault()
     setIsSaving(true)
+
     try {
-      await updateBook(id, values)
-      navigate('/admin/books')
+      await updateAdminBook(id, values)
+      navigate('/dashboard/books')
     } catch (error) {
-      console.error('Failed to update book', error)
+      console.error('Failed to update book:', error)
     } finally {
       setIsSaving(false)
     }
@@ -74,8 +86,7 @@ const BookEdit = () => {
   }
 
   return (
-    <div className="admin-page">
-      <h1>Edit Book</h1>
+    <div className="page">
       <BookForm
         values={values}
         onChange={handleChange}
@@ -85,16 +96,10 @@ const BookEdit = () => {
         genres={genres}
         submitLabel="Update Book"
         isSaving={isSaving}
+        mode="edit"
       />
     </div>
   )
 }
 
 export default BookEdit
-
-
-
-
-
-
-

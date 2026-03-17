@@ -73,6 +73,16 @@ class UserController extends Controller
         ]);
     }
 
+    public function show(User $user)
+    {
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'user' => $user
+            ]
+        ]);
+    }
+
     public function update(Request $request, User $user)
     {
         $request->validate([

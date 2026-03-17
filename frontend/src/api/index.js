@@ -11,6 +11,15 @@ import * as reviews from './reviews'
 import * as wishlist from './wishlist'
 import * as checkout from './checkout'
 import * as lookups from './lookups'
+import * as adminOrders from './adminOrders'
+import * as adminPayments from './adminPayments'
+import * as adminBooks from './adminBooks'
+import * as adminAuthors from './adminAuthors'
+import * as adminReviews from './adminReviews'
+import * as adminUsers from './adminUsers'
+import * as adminNotifications from './adminNotifications'
+import * as adminRoles from './adminRoles'
+import * as adminSettings from './adminSettings'
 
 // Default export for api
 export default {
@@ -46,6 +55,33 @@ export default {
   
   // Checkout API
   ...checkout,
+
+  // Admin orders API
+  ...adminOrders,
+
+  // Admin payments API
+  ...adminPayments,
+
+  // Admin books API
+  ...adminBooks,
+
+  // Admin authors API
+  ...adminAuthors,
+
+  // Admin reviews API
+  ...adminReviews,
+
+  // Admin users API
+  ...adminUsers,
+
+  // Admin notifications API
+  ...adminNotifications,
+
+  // Admin roles API
+  ...adminRoles,
+
+  // Admin settings API
+  ...adminSettings,
   
   // Lookups API
   ...lookups,

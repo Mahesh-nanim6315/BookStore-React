@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { getAdminNotifications, markAdminNotificationRead } from '../../api/adminNotifications'
 
 const AdminNavbar = ({ user }) => {
   const { logout } = useAuth()
@@ -17,6 +18,23 @@ const AdminNavbar = ({ user }) => {
     document.body.classList.toggle('dark-mode', savedTheme === 'dark')
   }, [])
 
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        const response = await getAdminNotifications()
+        if (response.success) {
+          const items = response.data.data || []
+          setNotifications(items)
+          setUnreadCount(items.filter((item) => !item.read_at).length)
+        }
+      } catch (error) {
+        console.error('Failed to load notifications:', error)
+      }
+    }
+
+    loadNotifications()
+  }, [])
+
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light'
     setTheme(newTheme)
@@ -30,6 +48,24 @@ const AdminNavbar = ({ user }) => {
 
   const closeNotifications = () => {
     setNotificationsOpen(false)
+  }
+
+  const handleNotificationClick = async (notification) => {
+    try {
+      if (!notification.read_at) {
+        await markAdminNotificationRead(notification.id)
+        setNotifications((current) =>
+          current.map((item) =>
+            item.id === notification.id ? { ...item, read_at: new Date().toISOString() } : item,
+          ),
+        )
+        setUnreadCount((current) => Math.max(0, current - 1))
+      }
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error)
+    } finally {
+      closeNotifications()
+    }
   }
 
   const handleLogout = async () => {
@@ -111,10 +147,11 @@ const AdminNavbar = ({ user }) => {
               notifications.map((notification) => (
                 <li key={notification.id}>
                   <a 
-                    href={notification.url || '#'} 
+                    href={notification.data?.url || '#'} 
                     className={notification.read_at ? '' : 'unread'}
+                    onClick={() => handleNotificationClick(notification)}
                   >
-                    {notification.message}
+                    {notification.data?.message || notification.data?.title || 'Notification'}
                   </a>
                 </li>
               ))
@@ -124,7 +161,7 @@ const AdminNavbar = ({ user }) => {
 
             <li className="divider"></li>
             <li>
-              <Link to="/admin/notifications" className="view-all">View all notifications</Link>
+              <Link to="/dashboard/notifications" className="view-all">View all notifications</Link>
             </li>
           </ul>
         </div>

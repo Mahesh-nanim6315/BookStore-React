@@ -10,7 +10,7 @@ class OrderControllers extends Controller
 {
     public function index(Request $request)
     {
-        $status = $request->status;
+        $status = $request->query('status');
 
         $query = Order::with('user')->latest();
 
@@ -22,24 +22,22 @@ class OrderControllers extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $orders
+            'data' => $orders,
         ]);
     }
 
     public function show($id)
     {
-        $order = Order::with(['user', 'items.book', 'address'])
-                      ->findOrFail($id);
+        $order = Order::with(['user', 'items.book', 'address'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
             'data' => [
-                'order' => $order
-            ]
+                'order' => $order,
+            ],
         ]);
     }
 
-    // Update order status
     public function update(Request $request, Order $order)
     {
         $request->validate([
@@ -56,8 +54,8 @@ class OrderControllers extends Controller
             'success' => true,
             'message' => 'Order updated successfully',
             'data' => [
-                'order' => $order->fresh(['user', 'items.book', 'address'])
-            ]
+                'order' => $order->fresh(['user', 'items.book', 'address']),
+            ],
         ]);
     }
 
@@ -70,20 +68,16 @@ class OrderControllers extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $payments
+            'data' => $payments,
         ]);
     }
 
     public function exportCsv()
     {
         $orders = Order::with('user')->get();
+        $filename = 'orders_export_' . now()->format('Y_m_d_H_i_s') . '.csv';
 
-        $filename = "orders_export_" . now()->format('Y_m_d_H_i_s') . ".csv";
-
-        // Create CSV content
         $csvContent = '';
-        
-        // CSV Header row
         $csvContent .= implode(',', [
             'Order ID',
             'Customer',
@@ -91,13 +85,13 @@ class OrderControllers extends Controller
             'Payment Method',
             'Payment Status',
             'Order Status',
-            'Date'
+            'Date',
         ]) . "\n";
 
         foreach ($orders as $order) {
             $csvContent .= implode(',', [
                 $order->id,
-                '"' . $order->user->name . '"',
+                '"' . optional($order->user)->name . '"',
                 $order->total_amount,
                 $order->payment_method,
                 $order->payment_status,
@@ -106,23 +100,20 @@ class OrderControllers extends Controller
             ]) . "\n";
         }
 
-        // Encode CSV content to base64 for JSON response
-        $csvBase64 = base64_encode($csvContent);
-
         return response()->json([
             'success' => true,
             'data' => [
                 'filename' => $filename,
-                'csv_content' => $csvBase64,
-                'download_url' => '' // Frontend can create blob URL from base64 content
-            ]
+                'csv_content' => base64_encode($csvContent),
+                'download_url' => '',
+            ],
         ]);
     }
 
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:pending,processing,shipped,delivered'
+            'status' => 'required|in:pending,processing,shipped,delivered',
         ]);
 
         $order = Order::findOrFail($id);
@@ -133,15 +124,15 @@ class OrderControllers extends Controller
             'success' => true,
             'message' => 'Order status updated successfully',
             'data' => [
-                'order' => $order->fresh('user')
-            ]
+                'order' => $order->fresh('user'),
+            ],
         ]);
     }
 
     public function updatePaymentStatus(Request $request, $id)
     {
         $request->validate([
-            'payment_status' => 'required|in:pending,paid,failed'
+            'payment_status' => 'required|in:pending,paid,failed',
         ]);
 
         $order = Order::findOrFail($id);
@@ -152,8 +143,8 @@ class OrderControllers extends Controller
             'success' => true,
             'message' => 'Payment status updated successfully',
             'data' => [
-                'order' => $order->fresh('user')
-            ]
+                'order' => $order->fresh('user'),
+            ],
         ]);
     }
 }

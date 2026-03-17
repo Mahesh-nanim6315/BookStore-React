@@ -1,40 +1,50 @@
-﻿import React from 'react'
+import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import AuthorForm from '../../../components/AuthorForm'
+import { createAdminAuthor } from '../../../api/adminAuthors'
+
+const initialValues = {
+  name: '',
+  image: '',
+  bio: '',
+}
 
 const AdminAuthorsCreate = () => {
+  const navigate = useNavigate()
+  const [values, setValues] = useState(initialValues)
+  const [isSaving, setIsSaving] = useState(false)
+
+  const handleChange = (event) => {
+    const { name, value } = event.target
+    setValues((current) => ({ ...current, [name]: value }))
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setIsSaving(true)
+
+    try {
+      await createAdminAuthor(values)
+      navigate('/dashboard/authors')
+    } catch (error) {
+      console.error('Failed to create author:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   return (
     <div className="page">
-{/*  */}
-{/* 
- */}
-
-<h2>Add Author</h2>
-
-<form action="" method="POST" className="form-box">
-{/*  */}
-
-<label>Name</label>
-<input type="text" name="name" required />
-
-<label>Image URL</label>
-<input type="text" name="image" />
-
-<label>Bio</label>
-<textarea name="bio" rows="5"></textarea>
-
-<button type="submit" className="btn-primary">Create Author</button>
-
-</form>
-{/* 
- */}
+      <AuthorForm
+        values={values}
+        onChange={handleChange}
+        onSubmit={handleSubmit}
+        submitLabel="Create Author"
+        isSaving={isSaving}
+        mode="create"
+      />
     </div>
   )
 }
 
 export default AdminAuthorsCreate
-
-
-
-
-
-
-

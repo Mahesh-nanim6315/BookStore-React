@@ -1,8 +1,7 @@
-﻿import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BookForm from '../../../components/BookForm'
-import { createBook } from '../../../api/books'
-import { fetchAuthors, fetchCategories, fetchGenres } from '../../../api/lookups'
+import { createAdminBook, getAdminBookCreateMeta } from '../../../api/adminBooks'
 
 const initialValues = {
   name: '',
@@ -13,10 +12,19 @@ const initialValues = {
   genre_id: '',
   image: '',
   price: '',
+  stock: 0,
   is_premium: false,
   has_ebook: false,
+  ebook_price: '',
+  ebook_pdf: '',
+  ebook_pages: '',
   has_audio: false,
+  audio_price: '',
+  audio_file: '',
+  audio_minutes: '',
   has_paperback: false,
+  paperback_price: '',
+  paperback_pages: '',
 }
 
 const BookCreate = () => {
@@ -30,18 +38,17 @@ const BookCreate = () => {
   useEffect(() => {
     const loadLookups = async () => {
       try {
-        const [authorsData, categoriesData, genresData] = await Promise.all([
-          fetchAuthors(),
-          fetchCategories(),
-          fetchGenres(),
-        ])
-        setAuthors(authorsData)
-        setCategories(categoriesData)
-        setGenres(genresData)
+        const response = await getAdminBookCreateMeta()
+        if (response.success) {
+          setAuthors(response.data.authors || [])
+          setCategories(response.data.categories || [])
+          setGenres(response.data.genres || [])
+        }
       } catch (error) {
-        console.error('Failed to load lookups', error)
+        console.error('Failed to load book metadata:', error)
       }
     }
+
     loadLookups()
   }, [])
 
@@ -56,19 +63,19 @@ const BookCreate = () => {
   const handleSubmit = async (event) => {
     event.preventDefault()
     setIsSaving(true)
+
     try {
-      await createBook(values)
-      navigate('/admin/books')
+      await createAdminBook(values)
+      navigate('/dashboard/books')
     } catch (error) {
-      console.error('Failed to create book', error)
+      console.error('Failed to create book:', error)
     } finally {
       setIsSaving(false)
     }
   }
 
   return (
-    <div className="admin-page">
-      <h1>Create Book</h1>
+    <div className="page">
       <BookForm
         values={values}
         onChange={handleChange}
@@ -78,16 +85,10 @@ const BookCreate = () => {
         genres={genres}
         submitLabel="Create Book"
         isSaving={isSaving}
+        mode="create"
       />
     </div>
   )
 }
 
 export default BookCreate
-
-
-
-
-
-
-

@@ -1,135 +1,253 @@
-﻿import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { deleteBook, fetchBooks } from '../../../api/books'
 import Loader from '../../../components/common/Loader'
+import { deleteAdminBook, getAdminBooks } from '../../../api/adminBooks'
+
+const initialFilters = {
+  search: '',
+  author: '',
+  category: '',
+  genre: '',
+  format: '',
+  premium: '',
+}
 
 const BooksIndex = () => {
-  const [books, setBooks] = useState([])
   const [loading, setLoading] = useState(true)
-  const [page, setPage] = useState(1)
-  const [lastPage, setLastPage] = useState(1)
-  const [search, setSearch] = useState('')
+  const [books, setBooks] = useState([])
+  const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0 })
+  const [filters, setFilters] = useState(initialFilters)
+  const [filterOptions, setFilterOptions] = useState({
+    authors: [],
+    categories: [],
+    genres: [],
+  })
 
-  const loadBooks = async (pageToLoad = 1, searchTerm = '') => {
-    setLoading(true)
+  const loadBooks = async (nextFilters = filters, page = 1) => {
     try {
-      const data = await fetchBooks({ page: pageToLoad, search: searchTerm })
-      const items = Array.isArray(data.data) ? data.data : data.data?.data || []
-      setBooks(items)
-      setPage(data.current_page || pageToLoad)
-      setLastPage(data.last_page || 1)
+      setLoading(true)
+      const response = await getAdminBooks({
+        ...nextFilters,
+        page,
+      })
+
+      if (response.success) {
+        setBooks(response.data.books?.data || [])
+        setMeta({
+          current_page: response.data.books?.current_page || 1,
+          last_page: response.data.books?.last_page || 1,
+          total: response.data.books?.total || 0,
+        })
+        setFilterOptions({
+          authors: response.data.filters?.authors || [],
+          categories: response.data.filters?.categories || [],
+          genres: response.data.filters?.genres || [],
+        })
+      }
     } catch (error) {
-      console.error('Failed to fetch books', error)
+      console.error('Failed to fetch admin books:', error)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    loadBooks()
+    loadBooks(initialFilters, 1)
   }, [])
 
-  const handleSearchSubmit = (event) => {
+  const handleFilterChange = (event) => {
+    const { name, value } = event.target
+    setFilters((current) => ({ ...current, [name]: value }))
+  }
+
+  const handleSearch = (event) => {
     event.preventDefault()
-    loadBooks(1, search)
+    loadBooks(filters, 1)
+  }
+
+  const handleReset = () => {
+    setFilters(initialFilters)
+    loadBooks(initialFilters, 1)
   }
 
   const handleDelete = async (bookId) => {
-    if (!window.confirm('Delete this book?')) return
+    if (!window.confirm('Delete this book?')) {
+      return
+    }
+
     try {
-      await deleteBook(bookId)
-      loadBooks(page, search)
+      await deleteAdminBook(bookId)
+      loadBooks(filters, meta.current_page)
     } catch (error) {
-      console.error('Failed to delete book', error)
+      console.error('Failed to delete book:', error)
     }
   }
 
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+    }).format(Number(amount || 0))
+
+  if (loading) {
+    return <Loader />
+  }
+
   return (
-    <div className="admin-page">
-      <div className="admin-page-header">
-        <h1>Books</h1>
-        <Link to="/admin/books/create" className="btn-primary">
+    <div className="page">
+      <div className="page-header admin-list-header">
+        <div>
+          <h2>Books</h2>
+          <p className="admin-page-subtitle">
+            Manage catalog titles, refine search filters, and jump into create, view, edit, or delete actions.
+          </p>
+        </div>
+
+        <Link to="/dashboard/books/create" className="admin-button admin-button-success">
           Add Book
         </Link>
       </div>
 
-      <form className="admin-search" onSubmit={handleSearchSubmit}>
-        <input
-          type="text"
-          placeholder="Search by name"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
-        <button type="submit">Search</button>
+      <form className="book-filter-panel" onSubmit={handleSearch}>
+        <div className="book-filter-grid">
+          <input
+            type="text"
+            name="search"
+            placeholder="Search by title"
+            value={filters.search}
+            onChange={handleFilterChange}
+          />
+
+          <select name="author" value={filters.author} onChange={handleFilterChange}>
+            <option value="">All Authors</option>
+            {filterOptions.authors.map((author) => (
+              <option key={author.id} value={author.id}>
+                {author.name}
+              </option>
+            ))}
+          </select>
+
+          <select name="category" value={filters.category} onChange={handleFilterChange}>
+            <option value="">All Categories</option>
+            {filterOptions.categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+
+          <select name="genre" value={filters.genre} onChange={handleFilterChange}>
+            <option value="">All Genres</option>
+            {filterOptions.genres.map((genre) => (
+              <option key={genre.id} value={genre.id}>
+                {genre.name}
+              </option>
+            ))}
+          </select>
+
+          <select name="format" value={filters.format} onChange={handleFilterChange}>
+            <option value="">All Formats</option>
+            <option value="ebook">eBook</option>
+            <option value="audio">Audio</option>
+            <option value="paperback">Paperback</option>
+          </select>
+
+          <select name="premium" value={filters.premium} onChange={handleFilterChange}>
+            <option value="">All Access Types</option>
+            <option value="1">Premium</option>
+            <option value="0">Standard</option>
+          </select>
+        </div>
+
+        <div className="book-filter-actions">
+          <button type="submit" className="admin-button admin-button-success">
+            Apply Filters
+          </button>
+          <button type="button" className="admin-button" onClick={handleReset}>
+            Reset
+          </button>
+        </div>
       </form>
 
-      {loading ? (
-        <Loader />
-      ) : (
-        <table className="admin-table">
+      <div className="admin-table-wrap">
+        <table className="table-custom">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Name</th>
+              <th>Book</th>
               <th>Author</th>
               <th>Category</th>
-              <th>Genre</th>
+              <th>Formats</th>
+              <th>Stock</th>
               <th>Price</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {books.map((book) => (
-              <tr key={book.id}>
-                <td>{book.id}</td>
-                <td>{book.name}</td>
-                <td>{book.author?.name || '—'}</td>
-                <td>{book.category?.name || '—'}</td>
-                <td>{book.genre?.name || '—'}</td>
-                <td>{book.price}</td>
-                <td className="row-actions">
-                  <Link to={`/admin/books/${book.id}`}>View</Link>
-                  <Link to={`/admin/books/${book.id}/edit`}>Edit</Link>
-                  <button type="button" onClick={() => handleDelete(book.id)}>
-                    Delete
-                  </button>
+            {books.length > 0 ? (
+              books.map((book) => (
+                <tr key={book.id}>
+                  <td>
+                    <div className="book-title-cell">
+                      <div className="book-mini-cover">
+                        {book.image ? <img src={book.image} alt={book.name} /> : <span>No image</span>}
+                      </div>
+                      <div>
+                        <strong>{book.name}</strong>
+                        <div className="book-subline">#{book.id}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{book.author?.name || '-'}</td>
+                  <td>
+                    <div>{book.category?.name || '-'}</div>
+                    <div className="book-subline">{book.genre?.name || '-'}</div>
+                  </td>
+                  <td>
+                    <div className="book-tag-row">
+                      {book.has_ebook && <span className="book-tag">eBook</span>}
+                      {book.has_audio && <span className="book-tag">Audio</span>}
+                      {book.has_paperback && <span className="book-tag">Paperback</span>}
+                      {book.is_premium && <span className="book-tag book-tag-premium">Premium</span>}
+                    </div>
+                  </td>
+                  <td>{book.has_paperback ? book.stock ?? 0 : '-'}</td>
+                  <td>{formatCurrency(book.price)}</td>
+                  <td>
+                    <div className="book-action-row">
+                      <Link to={`/dashboard/books/${book.id}`} className="view-link">
+                        View
+                      </Link>
+                      <Link to={`/dashboard/books/${book.id}/edit`} className="view-link">
+                        Edit
+                      </Link>
+                      <button
+                        type="button"
+                        className="admin-button book-delete-button"
+                        onClick={() => handleDelete(book.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="7" className="empty-data">
+                  No books matched the current filters.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
-      )}
+      </div>
 
-      <div className="pagination">
-        <button
-          type="button"
-          onClick={() => loadBooks(Math.max(page - 1, 1), search)}
-          disabled={page <= 1}
-        >
-          Prev
-        </button>
-        <span>
-          Page {page} of {lastPage}
-        </span>
-        <button
-          type="button"
-          onClick={() => loadBooks(Math.min(page + 1, lastPage), search)}
-          disabled={page >= lastPage}
-        >
-          Next
-        </button>
+      <div className="admin-pagination-note">
+        Showing page {meta.current_page} of {meta.last_page} with {meta.total} books.
       </div>
     </div>
   )
 }
 
 export default BooksIndex
-
-
-
-
-
-
-
-
-

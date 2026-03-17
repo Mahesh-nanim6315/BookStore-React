@@ -1,45 +1,68 @@
-﻿import React from 'react'
+import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import UserForm from '../../../components/UserForm'
+import { createAdminUser, getAdminUserCreateMeta } from '../../../api/adminUsers'
+
+const initialValues = {
+  name: '',
+  email: '',
+  password: '',
+  role: 'user',
+}
 
 const AdminUsersCreate = () => {
+  const navigate = useNavigate()
+  const [values, setValues] = useState(initialValues)
+  const [roles, setRoles] = useState(['user', 'admin', 'manager', 'staff'])
+  const [isSaving, setIsSaving] = useState(false)
+
+  useEffect(() => {
+    const loadMeta = async () => {
+      try {
+        const response = await getAdminUserCreateMeta()
+        if (response.success) {
+          setRoles(response.data.available_roles || ['user', 'admin', 'manager', 'staff'])
+        }
+      } catch (error) {
+        console.error('Failed to load user meta:', error)
+      }
+    }
+
+    loadMeta()
+  }, [])
+
+  const handleChange = (event) => {
+    const { name, value } = event.target
+    setValues((current) => ({ ...current, [name]: value }))
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setIsSaving(true)
+
+    try {
+      await createAdminUser(values)
+      navigate('/dashboard/users')
+    } catch (error) {
+      console.error('Failed to create user:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   return (
     <div className="page">
-{/*  */}
-{/* 
- */}
-<h2>Create User</h2>
-
-<form action="" method="POST" className="form-box">
-{/*      */}
-
-    <label>Name</label>
-    <input type="text" name="name" value="" required />
-
-    <label>Email</label>
-    <input type="email" name="email" value="" required />
-
-    <label>Password</label>
-    <input type="password" name="password" required />
-
-    <label>Role</label>
-    <select name="role" required>
-        <option value="user">User</option>
-        <option value="admin">Admin</option>
-        <option value="manager">Manager</option>
-        <option value="staff">Staff</option>
-    </select>
-
-    <button type="submit" className="btn-primary">Create User</button>
-</form>
-{/*  */}
+      <UserForm
+        values={values}
+        onChange={handleChange}
+        onSubmit={handleSubmit}
+        submitLabel="Create User"
+        isSaving={isSaving}
+        roles={roles}
+        mode="create"
+      />
     </div>
   )
 }
 
 export default AdminUsersCreate
-
-
-
-
-
-
-

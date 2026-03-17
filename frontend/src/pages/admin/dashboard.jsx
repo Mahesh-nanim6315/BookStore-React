@@ -79,19 +79,19 @@ const AdminDashboard = () => {
       <h3>⚡ Quick Actions</h3>
 
       <div className="quick-actions">
-        <Link to="/admin/books/create" className="quick-card">
+        <Link to="/dashboard/books/create" className="quick-card">
           ➕ Add Book
         </Link>
 
-        <Link to="/admin/authors/create" className="quick-card">
+        <Link to="/dashboard/authors/create" className="quick-card">
           ➕ Add Author
         </Link>
 
-        <Link to="/admin/users" className="quick-card">
+        <Link to="/dashboard/users" className="quick-card">
           👥 Manage Users
         </Link>
 
-        <Link to="/admin/orders" className="quick-card">
+        <Link to="/dashboard/orders" className="quick-card">
           📦 View Orders
         </Link>
       </div>
@@ -204,7 +204,6 @@ const AdminDashboard = () => {
 }
 
 export default AdminDashboard
-
 
 
 

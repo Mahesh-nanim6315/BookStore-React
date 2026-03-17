@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Admin\AuthorControllers;
+use App\Http\Controllers\Api\Admin\AuthorControllers;
 use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -20,12 +20,12 @@ use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\DashboardController as ApiDashboardController;
-use App\Http\Controllers\Admin\OrderControllers;
-use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\BookControllers;
-use App\Http\Controllers\Admin\RolePermissionController;
+use App\Http\Controllers\Api\Admin\OrderControllers;
+use App\Http\Controllers\Api\Admin\UserController;
+use App\Http\Controllers\Api\Admin\BookControllers;
+use App\Http\Controllers\Api\Admin\RolePermissionController;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\Admin\ReviewControllers;
+use App\Http\Controllers\Api\Admin\ReviewControllers;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\SubscriptionController;
 
@@ -506,4 +506,3 @@ Route::get('/profile', [ProfileController::class, 'index'])
 
 
 require __DIR__.'/auth.php';
-

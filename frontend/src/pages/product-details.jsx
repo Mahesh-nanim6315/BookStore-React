@@ -1,11 +1,14 @@
 ﻿import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fetchBook } from '../api/books'
+import { createReview, deleteReview, updateReview } from '../api/reviews'
 import { getImageUrl } from '../utils/imageUtils'
 import Loader from '../components/common/Loader'
+import { useAuth } from '../contexts/AuthContext'
 
 const ProductDetails = () => {
     const { id } = useParams()
+    const { user } = useAuth()
     const [book, setBook] = useState(null)
     const [loading, setLoading] = useState(true)
     const [reviews, setReviews] = useState([])
@@ -14,14 +17,23 @@ const ProductDetails = () => {
         rating: '',
         comment: ''
     })
+    const [editingReviewId, setEditingReviewId] = useState(null)
+    const [editReviewForm, setEditReviewForm] = useState({
+        rating: '',
+        comment: ''
+    })
+
+    const refreshBookData = async () => {
+        const data = await fetchBook(id)
+        setBook(data.data.book)
+        setReviews(data.data.reviews || [])
+        setRecommendedBooks(data.data.recommended_books || [])
+    }
 
     useEffect(() => {
         const load = async () => {
             try {
-                const data = await fetchBook(id)
-                setBook(data.data.book)
-                setReviews(data.data.reviews || [])
-                setRecommendedBooks(data.data.recommended_books || [])
+                await refreshBookData()
             } catch (error) {
                 console.error('Failed to load book', error)
             } finally {
@@ -48,7 +60,7 @@ const ProductDetails = () => {
                     price
                 })
             })
-            
+
             if (response.success) {
                 alert('Added to cart!')
             }
@@ -70,7 +82,7 @@ const ProductDetails = () => {
                     book_id: book.id
                 })
             })
-            
+
             if (response.success) {
                 alert('Added to wishlist!')
             }
@@ -82,50 +94,75 @@ const ProductDetails = () => {
 
     const handleReviewSubmit = async (e) => {
         e.preventDefault()
-        
+
         try {
-            const response = await fetch(`/api/v1/reviews`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({
-                    book_id: book.id,
-                    rating: reviewForm.rating,
-                    comment: reviewForm.comment
-                })
+            const response = await createReview(book.id, {
+                rating: reviewForm.rating,
+                comment: reviewForm.comment
             })
-            
+
             if (response.success) {
                 setReviewForm({ rating: '', comment: '' })
-                // Reload reviews to show the new one
-                const data = await fetchBook(id)
-                setReviews(data.data.reviews || [])
+                await refreshBookData()
             }
         } catch (error) {
             console.error('Failed to submit review', error)
-            alert('Failed to submit review')
+            const message =
+                error?.response?.data?.message ||
+                error?.response?.data?.errors?.comment?.[0] ||
+                error?.response?.data?.errors?.rating?.[0] ||
+                'Failed to submit review'
+            alert(message)
+        }
+    }
+
+    const handleEditReviewStart = (review) => {
+        setEditingReviewId(review.id)
+        setEditReviewForm({
+            rating: String(review.rating || ''),
+            comment: review.comment || ''
+        })
+    }
+
+    const handleEditReviewCancel = () => {
+        setEditingReviewId(null)
+        setEditReviewForm({
+            rating: '',
+            comment: ''
+        })
+    }
+
+    const handleUpdateReview = async (reviewId) => {
+        try {
+            const response = await updateReview(reviewId, editReviewForm)
+
+            if (response.success) {
+                await refreshBookData()
+                handleEditReviewCancel()
+            }
+        } catch (error) {
+            console.error('Failed to update review', error)
+            const message =
+                error?.response?.data?.message ||
+                error?.response?.data?.errors?.comment?.[0] ||
+                error?.response?.data?.errors?.rating?.[0] ||
+                'Failed to update review'
+            alert(message)
         }
     }
 
     const handleDeleteReview = async (reviewId) => {
-        if (confirm('Are you sure you want to delete this review?')) {
+        if (window.confirm('Are you sure you want to delete this review?')) {
             try {
-                const response = await fetch(`/api/v1/reviews/${reviewId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                
+                const response = await deleteReview(reviewId)
+
                 if (response.success) {
-                    setReviews(reviews.filter(review => review.id !== reviewId))
+                    await refreshBookData()
+                    handleEditReviewCancel()
                 }
             } catch (error) {
                 console.error('Failed to delete review', error)
-                alert('Failed to delete review')
+                alert(error?.response?.data?.message || 'Failed to delete review')
             }
         }
     }
@@ -142,10 +179,10 @@ const ProductDetails = () => {
         const fullStars = 5
         const filledStars = Math.round(rating)
         const emptyStars = fullStars - filledStars
-        
+
         return (
             <>
-                {Array.from({ length: fullStars }, (_, i) => (
+                {Array.from({ length: filledStars }, (_, i) => (
                     <span key={i}>⭐</span>
                 ))}
                 {Array.from({ length: emptyStars }, (_, i) => (
@@ -155,16 +192,18 @@ const ProductDetails = () => {
         )
     }
 
+    const currentUserReview = user ? reviews.find((review) => review.user_id === user.id) : null
+
     return (
         <div className="page">
             <div className="product-page">
                 {/* Left Column */}
                 <div className="product-left">
                     <img src={getImageUrl(book.image)} alt={book.name} className="product-image" />
-                    
+
                     <div className="action-box">
                         {book.has_ebook && (
-                            <button 
+                            <button
                                 onClick={() => handleAddToCart('ebook', book.ebook_price)}
                                 className="btnss btn-primary"
                             >
@@ -172,9 +211,9 @@ const ProductDetails = () => {
                                 <span>Rent Ebook - ${book.ebook_price ? `$${book.ebook_price}` : 'Free'}</span>
                             </button>
                         )}
-                        
+
                         {book.has_audio && (
-                            <button 
+                            <button
                                 onClick={() => handleAddToCart('audio', book.audio_price)}
                                 className="btnss btn-primary"
                             >
@@ -182,9 +221,9 @@ const ProductDetails = () => {
                                 <span>Rent Audio - ${book.audio_price ? `$${book.audio_price}` : 'Free'}</span>
                             </button>
                         )}
-                        
+
                         {book.has_paperback && (
-                            <button 
+                            <button
                                 onClick={() => handleAddToCart('paperback', book.paperback_price)}
                                 className="btnss btn-primary"
                             >
@@ -192,15 +231,15 @@ const ProductDetails = () => {
                                 <span>Buy Paperback - ${book.paperback_price ? `$${book.paperback_price}` : 'Free'}</span>
                             </button>
                         )}
-                        
-                        <button 
+
+                        <button
                             onClick={handleAddToWishlist}
                             className="btnss btn-primary"
                         >
                             <span>❤️</span>
                             <span>Add to Wishlist</span>
                         </button>
-                        
+
                         <Link to="/products" className="btn-back">
                             <span>←</span>
                             <span>Back to Products</span>
@@ -227,7 +266,7 @@ const ProductDetails = () => {
                             </p>
                         )}
                     </div>
-                    
+
                     <div className="product-meta">
                         <div className="meta-item">
                             <span className="meta-label">Author</span>
@@ -241,17 +280,17 @@ const ProductDetails = () => {
                                 )}
                             </span>
                         </div>
-                        
+
                         <div className="meta-item">
                             <span className="meta-label">Language</span>
-                            <span className="meta-value">{book.language}</span>
+                            <span className="meta-value">{book.language || 'N/A'}</span>
                         </div>
-                        
+
                         <div className="meta-item">
                             <span className="meta-label">Category</span>
                             <span className="meta-value">{book.category?.name || 'N/A'}</span>
                         </div>
-                        
+
                         <div className="meta-item">
                             <span className="meta-label">Genre</span>
                             <span className="meta-value">{book.genre?.name || 'N/A'}</span>
@@ -274,7 +313,7 @@ const ProductDetails = () => {
                                     )}
                                 </div>
                             )}
-                            
+
                             {book.has_audio && (
                                 <div className="format-card">
                                     <span className="format-icon">🎧</span>
@@ -287,7 +326,7 @@ const ProductDetails = () => {
                                     )}
                                 </div>
                             )}
-                            
+
                             {book.has_paperback && (
                                 <div className="format-card">
                                     <span className="format-icon">📕</span>
@@ -318,14 +357,14 @@ const ProductDetails = () => {
                                 </div>
                             )}
                         </div>
-                        
+
                         {reviews.length > 0 ? (
                             reviews.map((review) => (
                                 <div className="review-card" key={review.id}>
                                     <div className="review-header">
                                         <span className="review-author">
                                             {review.user?.name}
-                                            
+
                                             {!review.is_approved && (
                                                 <span className="badge bg-warning">
                                                     Pending Approval
@@ -333,27 +372,35 @@ const ProductDetails = () => {
                                             )}
                                         </span>
                                     </div>
-                                    
+
                                     <div className="review-rating">
                                         {renderStars(review.rating)}
                                     </div>
-                                    
+
                                     <p className="review-comment">{review.comment}</p>
                                     <small>{new Date(review.created_at).toLocaleDateString()}</small>
-                                    
-                                    <div className="review-actions">
-                                        <a href={`/reviews/${review.id}/edit`} className="btnss btn-tertiary">
-                                            Edit Review
-                                        </a>
-                                        
-                                        <button 
-                                            onClick={() => handleDeleteReview(review.id)}
-                                            className="btnss btn-tertiary" 
-                                            style={{ width: 'auto', padding: '8px 16px', background: '#fee2e2', color: '#dc2626' }}
-                                        >
-                                            Delete
-                                        </button>
-                                    </div>
+
+                                    {user?.id === review.user_id && (
+                                        <div className="review-actions">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleEditReviewStart(review)}
+                                                className="btnss btn-tertiary"
+                                            >
+                                                Edit Review
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDeleteReview(review.id)}
+                                                className="btnss btn-tertiary"
+                                                style={{ width: 'auto', padding: '8px 16px', background: '#fee2e2', color: '#dc2626' }}
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    )}
+
                                 </div>
                             ))
                         ) : (
@@ -368,36 +415,44 @@ const ProductDetails = () => {
                     {/* Add Review Form */}
                     <div className="review-form-section">
                         <h3>Add Your Review</h3>
-                        <form onSubmit={handleReviewSubmit} className="review-form">
-                            <div>
-                                <label htmlFor="rating">Your Rating</label>
-                                <select name="rating" id="rating" className="rating-select" value={reviewForm.rating} onChange={(e) => setReviewForm({...reviewForm, rating: e.target.value})} required>
-                                    <option value="">Select Rating</option>
-                                    <option value="5">⭐⭐⭐ Excellent</option>
-                                    <option value="4">⭐⭐⭐ Very Good</option>
-                                    <option value="3">⭐⭐⭐ Good</option>
-                                    <option value="2">⭐⭐ Fair</option>
-                                    <option value="1">⭐ Poor</option>
-                                </select>
+                        {currentUserReview ? (
+                            <div className="review-card">
+                                <p style={{ color: '#6b7280' }}>
+                                    You have already reviewed this book. Use the <strong>Edit Review</strong> button on your review to update it.
+                                </p>
                             </div>
-                            
-                            <div>
-                                <label htmlFor="comment">Your Review</label>
-                                <textarea 
-                                    name="comment" 
-                                    id="comment" 
-                                    placeholder="Share your thoughts about this book..."
-                                    className="comment-textarea" 
-                                    value={reviewForm.comment}
-                                    onChange={(e) => setReviewForm({...reviewForm, comment: e.target.value})}
-                                    required
-                                ></textarea>
-                            </div>
-                            
-                            <button type="submit" className="btnss btn-primary" style={{ width: 'auto', alignSelf: 'flex-start' }}>
-                                Submit Review
-                            </button>
-                        </form>
+                        ) : (
+                            <form onSubmit={handleReviewSubmit} className="review-form">
+                                <div>
+                                    <label htmlFor="rating">Your Rating</label>
+                                    <select name="rating" id="rating" className="rating-select" value={reviewForm.rating} onChange={(e) => setReviewForm({ ...reviewForm, rating: e.target.value })} required>
+                                        <option value="">Select Rating</option>
+                                        <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+                                        <option value="4">⭐⭐⭐⭐ Very Good</option>
+                                        <option value="3">⭐⭐⭐ Good</option>
+                                        <option value="2">⭐⭐ Fair</option>
+                                        <option value="1">⭐ Poor</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="comment">Your Review</label>
+                                    <textarea
+                                        name="comment"
+                                        id="comment"
+                                        placeholder="Share your thoughts about this book..."
+                                        className="comment-textarea"
+                                        value={reviewForm.comment}
+                                        onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
+                                        required
+                                    ></textarea>
+                                </div>
+
+                                <button type="submit" className="btnss btn-primary" style={{ width: 'auto', alignSelf: 'flex-start' }}>
+                                    Submit Review
+                                </button>
+                            </form>
+                        )}
                     </div>
                 </div>
             </div>
@@ -406,16 +461,90 @@ const ProductDetails = () => {
             {recommendedBooks.length > 0 && (
                 <section className="recommended-section">
                     <h2 style={{ textAlign: 'center' }}>Recommended For You</h2>
-                    
+
                     <div className="book-grid">
                         {recommendedBooks.map((recBook) => (
                             <Link key={recBook.id} to={`/products/${recBook.id}`} className="book-card">
                                 <img src={getImageUrl(recBook.image)} alt={recBook.name} />
-                                <p>{recBook.title}</p>
+                                <p>{recBook.name}</p>
                             </Link>
                         ))}
                     </div>
                 </section>
+            )}
+
+            {editingReviewId && (
+                <div className="review-modal-backdrop" onClick={handleEditReviewCancel}>
+                    <div
+                        className="review-modal"
+                        onClick={(e) => e.stopPropagation()}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="edit-review-title"
+                    >
+                        <div className="review-modal-header">
+                            <div>
+                                <p className="review-modal-eyebrow">Update your feedback</p>
+                                <h3 id="edit-review-title">Edit Review</h3>
+                            </div>
+                            <button
+                                type="button"
+                                className="review-modal-close"
+                                onClick={handleEditReviewCancel}
+                                aria-label="Close edit review modal"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="review-form">
+                            <div>
+                                <label htmlFor="edit-rating">Rating</label>
+                                <select
+                                    id="edit-rating"
+                                    className="rating-select"
+                                    value={editReviewForm.rating}
+                                    onChange={(e) => setEditReviewForm({ ...editReviewForm, rating: e.target.value })}
+                                >
+                                    <option value="">Select Rating</option>
+                                    <option value="5">5 - Excellent</option>
+                                    <option value="4">4 - Very Good</option>
+                                    <option value="3">3 - Good</option>
+                                    <option value="2">2 - Fair</option>
+                                    <option value="1">1 - Poor</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label htmlFor="edit-comment">Comment</label>
+                                <textarea
+                                    id="edit-comment"
+                                    className="comment-textarea"
+                                    value={editReviewForm.comment}
+                                    onChange={(e) => setEditReviewForm({ ...editReviewForm, comment: e.target.value })}
+                                ></textarea>
+                            </div>
+
+                            <div className="review-modal-actions">
+                                <button
+                                    type="button"
+                                    className="btnss btn-primary"
+                                    style={{ width: 'auto', alignSelf: 'flex-start' }}
+                                    onClick={() => handleUpdateReview(editingReviewId)}
+                                >
+                                    Save Review
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btnss btn-tertiary"
+                                    onClick={handleEditReviewCancel}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     )
