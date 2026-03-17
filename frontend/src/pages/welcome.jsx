@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { fetchHomeData } from '../api/books'
-import Hero from './hero'
+import Hero from '../components/Hero'
 import CategoriesFilter from './categories/filter'
-import PartialsCarousel from './partials/carousel'
+import Carousel from '../components/Carousel'
 import Browse from './browse'
 
 const Welcome = () => {
@@ -34,15 +34,15 @@ const Welcome = () => {
             )}
 
             {homeData?.recently_viewed_books?.length > 0 && (
-                <PartialsCarousel title="Recently Viewed" books={homeData.recently_viewed_books} />
+                <Carousel title="Recently Viewed" books={homeData.recently_viewed_books} />
             )}
 
             {homeData?.recent_books?.length > 0 && (
-                <PartialsCarousel title="Recently Added" books={homeData.recent_books} />
+                <Carousel title="Recently Added" books={homeData.recent_books} />
             )}
 
             {homeData?.trending_books?.length > 0 && (
-                <PartialsCarousel title="Top Trending" books={homeData.trending_books} />
+                <Carousel title="Top Trending" books={homeData.trending_books} />
             )}
 
             <Browse categories={homeData?.categories || []} />

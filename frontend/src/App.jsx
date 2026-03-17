@@ -1,5 +1,7 @@
 ﻿import React from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { AuthProvider } from './contexts/AuthContext'
+import ProtectedRoute from './components/ProtectedRoute'
 import MainLayout from './layouts/MainLayout'
 import AdminLayout from './layouts/AdminLayout'
 
@@ -60,60 +62,118 @@ import BookShow from './pages/admin/books/BookShow.jsx'
 
 const App = () => {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<MainLayout />}>
-          <Route index element={<Welcome />} />
-          {/* <Route path="home" element={<Home />} /> */}
-          <Route path="ebooks" element={<Ebooks />} />
-          <Route path="audiobooks" element={<Audiobooks />} />
-          <Route path="paperbacks" element={<Paperbacks />} />
-          <Route path="about" element={<About />} />
-          <Route path="products" element={<Products />} />
-          <Route path="products/:id" element={<ProductDetails />} />
-          <Route path="category/:slug" element={<CategoryBooks />} />
-          <Route path="categories" element={<CategoriesIndex />} />
-          <Route path="categories/filter" element={<CategoriesFilter />} />
-          <Route path="authors" element={<AuthorsIndex />} />
-          <Route path="authors/:id" element={<AuthorsShow />} />
-          <Route path="cart" element={<CartIndex />} />
-          <Route path="checkout" element={<CheckoutAddress />} />
-          <Route path="checkout/payment" element={<CheckoutPayment />} />
-          <Route path="checkout/paypal" element={<CheckoutPaypal />} />
-          <Route path="checkout/success" element={<CheckoutSuccess />} />
-          <Route path="orders" element={<OrdersIndex />} />
-          <Route path="orders/:id" element={<OrdersShow />} />
-          <Route path="wishlist" element={<WishlistIndex />} />
-          <Route path="my-library" element={<LibraryIndex />} />
-          <Route path="faq" element={<FaqIndex />} />
-          <Route path="profile" element={<ProfileIndex />} />
-          <Route path="profile/edit" element={<ProfileEdit />} />
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<MainLayout />}>
+            <Route index element={<Welcome />} />
+            <Route path="ebooks" element={<Ebooks />} />
+            <Route path="audiobooks" element={<Audiobooks />} />
+            <Route path="paperbacks" element={<Paperbacks />} />
+            <Route path="about" element={<About />} />
+            <Route path="products" element={<Products />} />
+            <Route path="products/:id" element={<ProductDetails />} />
+            <Route path="category/:slug" element={<CategoryBooks />} />
+            <Route path="categories" element={<CategoriesIndex />} />
+            <Route path="categories/filter" element={<CategoriesFilter />} />
+            <Route path="authors" element={<AuthorsIndex />} />
+            <Route path="authors/:id" element={<AuthorsShow />} />
+            
+            {/* Protected Routes */}
+            <Route path="cart" element={
+              <ProtectedRoute>
+                <CartIndex />
+              </ProtectedRoute>
+            } />
+            <Route path="checkout" element={
+              <ProtectedRoute>
+                <CheckoutAddress />
+              </ProtectedRoute>
+            } />
+            <Route path="checkout/payment" element={
+              <ProtectedRoute>
+                <CheckoutPayment />
+              </ProtectedRoute>
+            } />
+            <Route path="checkout/paypal" element={
+              <ProtectedRoute>
+                <CheckoutPaypal />
+              </ProtectedRoute>
+            } />
+            <Route path="checkout/success" element={
+              <ProtectedRoute>
+                <CheckoutSuccess />
+              </ProtectedRoute>
+            } />
+            <Route path="orders" element={
+              <ProtectedRoute>
+                <OrdersIndex />
+              </ProtectedRoute>
+            } />
+            <Route path="orders/:id" element={
+              <ProtectedRoute>
+                <OrdersShow />
+              </ProtectedRoute>
+            } />
+            <Route path="wishlist" element={
+              <ProtectedRoute>
+                <WishlistIndex />
+              </ProtectedRoute>
+            } />
+            <Route path="my-library" element={
+              <ProtectedRoute>
+                <LibraryIndex />
+              </ProtectedRoute>
+            } />
+            <Route path="profile" element={
+              <ProtectedRoute>
+                <ProfileIndex />
+              </ProtectedRoute>
+            } />
+            <Route path="profile/edit" element={
+              <ProtectedRoute>
+                <ProfileEdit />
+              </ProtectedRoute>
+            } />
+            <Route path="dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+          </Route>
+          
+          {/* Public Auth Routes - Standalone (no header/footer) */}
           <Route path="login" element={<AuthLogin />} />
           <Route path="register" element={<AuthRegister />} />
           <Route path="forgot-password" element={<AuthForgot />} />
           <Route path="reset-password" element={<AuthReset />} />
-          <Route path="dashboard" element={<Dashboard />} />
-        </Route>
+          <Route path="faq" element={<FaqIndex />} />
 
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="books" element={<BooksIndex />} />
-          <Route path="books/create" element={<BookCreate />} />
-          <Route path="books/:id" element={<BookShow />} />
-          <Route path="books/:id/edit" element={<BookEdit />} />
-          <Route path="authors" element={<AdminAuthorsIndex />} />
-          <Route path="orders" element={<AdminOrdersIndex />} />
-          <Route path="orders/:id" element={<AdminOrdersShow />} />
-          <Route path="users" element={<AdminUsersIndex />} />
-          <Route path="users/create" element={<AdminUsersCreate />} />
-          <Route path="users/:id/edit" element={<AdminUsersEdit />} />
-          <Route path="payments" element={<AdminPaymentsIndex />} />
-          <Route path="reviews" element={<AdminReviewsIndex />} />
-          <Route path="roles-permissions" element={<AdminRolesIndex />} />
-          <Route path="settings" element={<AdminSettingsIndex />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+          {/* Admin Routes */}
+          <Route path="/admin" element={
+            <ProtectedRoute adminOnly={true}>
+              <AdminLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<AdminDashboard />} />
+            <Route path="books" element={<BooksIndex />} />
+            <Route path="books/create" element={<BookCreate />} />
+            <Route path="books/:id" element={<BookShow />} />
+            <Route path="books/:id/edit" element={<BookEdit />} />
+            <Route path="authors" element={<AdminAuthorsIndex />} />
+            <Route path="orders" element={<AdminOrdersIndex />} />
+            <Route path="orders/:id" element={<AdminOrdersShow />} />
+            <Route path="users" element={<AdminUsersIndex />} />
+            <Route path="users/create" element={<AdminUsersCreate />} />
+            <Route path="users/:id/edit" element={<AdminUsersEdit />} />
+            <Route path="payments" element={<AdminPaymentsIndex />} />
+            <Route path="reviews" element={<AdminReviewsIndex />} />
+            <Route path="roles-permissions" element={<AdminRolesIndex />} />
+            <Route path="settings" element={<AdminSettingsIndex />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
 
