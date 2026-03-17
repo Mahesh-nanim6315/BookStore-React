@@ -4,7 +4,9 @@ import MainLayout from './layouts/MainLayout'
 import AdminLayout from './layouts/AdminLayout'
 
 import Welcome from './pages/welcome.jsx'
-import Home from './pages/home.jsx'
+import Ebooks from './pages/Ebooks.jsx'
+import Audiobooks from './pages/Audiobooks.jsx'
+import Paperbacks from './pages/Paperbacks.jsx'
 import About from './pages/about.jsx'
 import Products from './pages/products.jsx'
 import ProductDetails from './pages/product-details.jsx'
@@ -38,6 +40,7 @@ import AuthRegister from './pages/auth/register.jsx'
 import AuthForgot from './pages/auth/forgot-password.jsx'
 import AuthReset from './pages/auth/reset-password.jsx'
 
+import Dashboard from './pages/dashboard.jsx'
 import AdminDashboard from './pages/admin/dashboard.jsx'
 import AdminAuthorsIndex from './pages/admin/authors/index.jsx'
 import AdminOrdersIndex from './pages/admin/orders/index.jsx'
@@ -61,7 +64,10 @@ const App = () => {
       <Routes>
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Welcome />} />
-          <Route path="home" element={<Home />} />
+          {/* <Route path="home" element={<Home />} /> */}
+          <Route path="ebooks" element={<Ebooks />} />
+          <Route path="audiobooks" element={<Audiobooks />} />
+          <Route path="paperbacks" element={<Paperbacks />} />
           <Route path="about" element={<About />} />
           <Route path="products" element={<Products />} />
           <Route path="products/:id" element={<ProductDetails />} />
@@ -86,6 +92,7 @@ const App = () => {
           <Route path="register" element={<AuthRegister />} />
           <Route path="forgot-password" element={<AuthForgot />} />
           <Route path="reset-password" element={<AuthReset />} />
+          <Route path="dashboard" element={<Dashboard />} />
         </Route>
 
         <Route path="/admin" element={<AdminLayout />}>

@@ -1,27 +1,26 @@
-﻿import React from 'react'
+import React from 'react'
+import { Link } from 'react-router-dom'
 
-const CategoriesFilter = () => {
+const CategoriesFilter = ({ categories = [] }) => {
+  if (!categories || categories.length === 0) return null;
+
   return (
     <div className="page">
-{/*  */}
-<section className="category-buttons">
+      <section className="category-buttons">
+        <h2 style={{ marginLeft: '1rem', marginBottom: '1rem', marginTop: '1rem' }}>Browse Categories</h2>
 
-    <h2 style={{ marginLeft: '1rem', marginBottom: '1rem', marginTop: '1rem' }}>Browse Categories</h2>
-
-    <div className="category-list" style={{ marginLeft: '15px' }}>
-{/*          */}
-            <a href="" 
-               className="category-btn">
-                
-            </a>
-{/*          */}
-
-        <a href="" className="view-all-btn">
+        <div className="category-list" style={{ marginLeft: '15px' }}>
+          {categories.slice(0, 10).map((cat) => (
+            <Link key={cat.id} to={`/category/${cat.slug}`} className="category-btn">
+              {cat.name}
+            </Link>
+          ))}
+          
+          <Link to="/categories" className="view-all-btn">
             View All
-        </a>
-    </div>
-
-</section>
+          </Link>
+        </div>
+      </section>
     </div>
   )
 }

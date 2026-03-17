@@ -1,72 +1,63 @@
-﻿import React, { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+﻿import React, { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { login } from '../../api/auth'
 
 const AuthLogin = () => {
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    remember: false
+  })
+  const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState({})
+  const navigate = useNavigate()
+
   useEffect(() => {
-    const inputs = document.querySelectorAll('input[type="email"], input[type="password"]')
-    inputs.forEach((input) => {
-      const onFocus = () => input.parentElement?.classList.add('focused')
-      const onBlur = () => input.parentElement?.classList.remove('focused')
-      const onInput = () => {
-        input.classList.remove('invalid', 'valid')
-        if (input.value.trim() === '') return
-        if (input.checkValidity()) input.classList.add('valid')
-        else input.classList.add('invalid')
-      }
-      input.addEventListener('focus', onFocus)
-      input.addEventListener('blur', onBlur)
-      input.addEventListener('input', onInput)
-      input._handlers = { onFocus, onBlur, onInput }
-    })
-
-    const form = document.querySelector('.auth-card form')
-    const submitBtn = form?.querySelector('button[type="submit"]')
-    const onSubmit = () => {
-      if (submitBtn) {
-        submitBtn.classList.add('loading')
-        submitBtn.disabled = true
-      }
+    // Check if user is already logged in
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+      navigate('/dashboard')
     }
-    form?.addEventListener('submit', onSubmit)
+  }, [navigate])
 
-    const slides = document.querySelectorAll('.auth-slide')
-    let slideIndex = 0
-    const slideTimer = setInterval(() => {
-      if (!slides.length) return
-      slides[slideIndex].classList.remove('is-active')
-      slideIndex = (slideIndex + 1) % slides.length
-      slides[slideIndex].classList.add('is-active')
-    }, 4500)
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }))
+  }
 
-    const quotes = [
-      { text: 'A reader lives a thousand lives before he dies.', author: 'George R.R. Martin' },
-      { text: 'Books are a uniquely portable magic.', author: 'Stephen King' },
-      { text: 'Today a reader, tomorrow a leader.', author: 'Margaret Fuller' },
-    ]
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setErrors({})
 
-    const quoteText = document.getElementById('authQuoteText')
-    const quoteAuthor = document.getElementById('authQuoteAuthor')
-    let quoteIndex = 0
-    const quoteTimer = setInterval(() => {
-      if (!quoteText || !quoteAuthor) return
-      quoteIndex = (quoteIndex + 1) % quotes.length
-      quoteText.textContent = quotes[quoteIndex].text
-      quoteAuthor.textContent = quotes[quoteIndex].author
-    }, 5500)
-
-    return () => {
-      inputs.forEach((input) => {
-        if (input._handlers) {
-          input.removeEventListener('focus', input._handlers.onFocus)
-          input.removeEventListener('blur', input._handlers.onBlur)
-          input.removeEventListener('input', input._handlers.onInput)
+    try {
+      const response = await login(formData)
+      
+      if (response.success) {
+        // Store auth token
+        localStorage.setItem('auth_token', response.token)
+        localStorage.setItem('user', JSON.stringify(response.user))
+        
+        // Redirect based on user role
+        if (response.user.role === 'admin') {
+          navigate('/admin/dashboard')
+        } else if (response.user.role === 'manager' || response.user.role === 'staff') {
+          navigate('/admin/dashboard')
+        } else {
+          navigate('/dashboard')
         }
-      })
-      form?.removeEventListener('submit', onSubmit)
-      clearInterval(slideTimer)
-      clearInterval(quoteTimer)
+      } else {
+        setErrors(response.errors || { general: 'Login failed' })
+      }
+    } catch (error) {
+      setErrors({ general: 'Network error. Please try again.' })
+    } finally {
+      setLoading(false)
     }
-  }, [])
+  }
 
   return (
     <div className="page">
@@ -75,12 +66,11 @@ const AuthLogin = () => {
           <img className="auth-slide is-active" src="/images/newslide1.jpg" alt="Books shelf" />
           <img className="auth-slide" src="/images/newslide2.jpg" alt="Books and coffee" />
           <img className="auth-slide" src="/images/bookslide1.jpg" alt="Reading corner" />
-
           <div className="auth-media-overlay"></div>
-
+          
           <div className="auth-quote-wrap">
-            <p className="auth-quote" id="authQuoteText">A reader lives a thousand lives before he dies.</p>
-            <span className="auth-quote-author" id="authQuoteAuthor">George R.R. Martin</span>
+            <p className="auth-quote">A reader lives a thousand lives before he dies.</p>
+            <span className="auth-quote-author">George R.R. Martin</span>
           </div>
         </section>
 
@@ -88,26 +78,50 @@ const AuthLogin = () => {
           <div className="auth-card auth-card--split">
             <h2 className="auth-title">Login</h2>
 
-            <form>
+            <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label htmlFor="email">Email</label>
-                <input id="email" type="email" name="email" required autoComplete="username" />
-                <small className="error"></small>
+                <input 
+                  id="email" 
+                  type="email" 
+                  name="email" 
+                  value={formData.email}
+                  onChange={handleChange}
+                  required 
+                  autoComplete="username"
+                  className={errors.email ? 'error' : ''}
+                />
+                {errors.email && <small className="error">{errors.email}</small>}
               </div>
 
               <div className="form-group">
                 <label htmlFor="password">Password</label>
-                <input id="password" type="password" name="password" required autoComplete="current-password" />
-                <small className="error"></small>
+                <input 
+                  id="password" 
+                  type="password" 
+                  name="password" 
+                  value={formData.password}
+                  onChange={handleChange}
+                  required 
+                  autoComplete="current-password"
+                  className={errors.password ? 'error' : ''}
+                />
+                {errors.password && <small className="error">{errors.password}</small>}
               </div>
 
               <div className="form-remember">
-                <input type="checkbox" id="remember" name="remember" />
+                <input 
+                  type="checkbox" 
+                  id="remember" 
+                  name="remember" 
+                  checked={formData.remember}
+                  onChange={handleChange}
+                />
                 <label htmlFor="remember">Remember me</label>
               </div>
 
               <div className="auth-switch">
-                <span>Don&apos;t have an account?</span>
+                <span>Don't have an account?</span>
                 <Link to="/register">Register</Link>
               </div>
 
@@ -116,8 +130,8 @@ const AuthLogin = () => {
                   Forgot password?
                 </Link>
 
-                <button type="submit" className="btn-primary">
-                  Login
+                <button type="submit" className="btn-primary" disabled={loading}>
+                  {loading ? 'Logging in...' : 'Login'}
                 </button>
               </div>
             </form>

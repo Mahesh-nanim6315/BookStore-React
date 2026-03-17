@@ -1692,3 +1692,65 @@ body {
         right: -52px;
     }
 }
+
+/* Dashboard specific styles */
+.card-section {
+    margin: 20px 0;
+}
+
+.section-title {
+    margin-bottom: 15px;
+    color: var(--text-main);
+}
+
+.card-box {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.table-custom {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table-custom thead {
+    background: #2c3e50;
+    color: #fff;
+}
+
+.table-custom th, .table-custom td {
+    padding: 12px;
+    text-align: left;
+    font-size: 14px;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.table-custom tbody tr:hover {
+    background: #f9fcff;
+}
+
+.badge-sales {
+    background: #10b981;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.empty-data {
+    text-align: center;
+    color: #6b7280;
+    font-style: italic;
+}
+
+/* Chart responsive styles */
+.chart-box canvas {
+    width: 100% !important; 
+    height: 100% !important;
+}

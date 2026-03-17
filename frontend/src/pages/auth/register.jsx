@@ -1,40 +1,64 @@
-﻿import React, { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+﻿import React, { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { register } from '../../api/auth'
 
 const AuthRegister = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    password_confirmation: ''
+  })
+  const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState({})
+  const navigate = useNavigate()
+
   useEffect(() => {
-    const slides = document.querySelectorAll('.auth-slide')
-    let slideIndex = 0
-
-    const slideTimer = setInterval(() => {
-      if (!slides.length) return
-      slides[slideIndex].classList.remove('is-active')
-      slideIndex = (slideIndex + 1) % slides.length
-      slides[slideIndex].classList.add('is-active')
-    }, 4500)
-
-    const quotes = [
-      { text: 'Open a book, and you open your mind.', author: 'BookStore' },
-      { text: 'Read more, imagine more, become more.', author: 'BookStore' },
-      { text: 'Every page is a new beginning.', author: 'BookStore' },
-    ]
-
-    const quoteText = document.getElementById('authQuoteText')
-    const quoteAuthor = document.getElementById('authQuoteAuthor')
-    let quoteIndex = 0
-
-    const quoteTimer = setInterval(() => {
-      if (!quoteText || !quoteAuthor) return
-      quoteIndex = (quoteIndex + 1) % quotes.length
-      quoteText.textContent = quotes[quoteIndex].text
-      quoteAuthor.textContent = quotes[quoteIndex].author
-    }, 5500)
-
-    return () => {
-      clearInterval(slideTimer)
-      clearInterval(quoteTimer)
+    // Check if user is already logged in
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+      navigate('/dashboard')
     }
-  }, [])
+  }, [navigate])
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setErrors({})
+
+    try {
+      const response = await register(formData)
+      
+      if (response.success) {
+        // Store auth token
+        localStorage.setItem('auth_token', response.token)
+        localStorage.setItem('user', JSON.stringify(response.user))
+        
+        // Redirect based on user role
+        if (response.user.role === 'admin') {
+          navigate('/admin/dashboard')
+        } else if (response.user.role === 'manager' || response.user.role === 'staff') {
+          navigate('/admin/dashboard')
+        } else {
+          navigate('/dashboard')
+        }
+      } else {
+        setErrors(response.errors || { general: 'Registration failed' })
+      }
+    } catch (error) {
+      setErrors({ general: 'Network error. Please try again.' })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="page">
@@ -58,8 +82,8 @@ const AuthRegister = () => {
           <div className="auth-media-overlay"></div>
 
           <div className="auth-quote-wrap">
-            <p className="auth-quote" id="authQuoteText">Open a book, and you open your mind.</p>
-            <span className="auth-quote-author" id="authQuoteAuthor">BookStore</span>
+            <p className="auth-quote">Open a book, and you open your mind.</p>
+            <span className="auth-quote-author">BookStore</span>
           </div>
         </section>
 
@@ -67,23 +91,50 @@ const AuthRegister = () => {
           <div className="auth-card auth-card--split">
             <h2 className="auth-title">Create Account</h2>
 
-            <form>
+            <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label htmlFor="name">Name</label>
-                <input id="name" type="text" name="name" required autoComplete="name" />
-                <small className="error"></small>
+                <input 
+                  id="name" 
+                  type="text" 
+                  name="name" 
+                  value={formData.name}
+                  onChange={handleChange}
+                  required 
+                  autoComplete="name"
+                  className={errors.name ? 'error' : ''}
+                />
+                {errors.name && <small className="error">{errors.name}</small>}
               </div>
 
               <div className="form-group">
                 <label htmlFor="email">Email</label>
-                <input id="email" type="email" name="email" required autoComplete="username" />
-                <small className="error"></small>
+                <input 
+                  id="email" 
+                  type="email" 
+                  name="email" 
+                  value={formData.email}
+                  onChange={handleChange}
+                  required 
+                  autoComplete="username"
+                  className={errors.email ? 'error' : ''}
+                />
+                {errors.email && <small className="error">{errors.email}</small>}
               </div>
 
               <div className="form-group">
                 <label htmlFor="password">Password</label>
-                <input id="password" type="password" name="password" required autoComplete="new-password" />
-                <small className="error"></small>
+                <input 
+                  id="password" 
+                  type="password" 
+                  name="password" 
+                  value={formData.password}
+                  onChange={handleChange}
+                  required 
+                  autoComplete="new-password"
+                  className={errors.password ? 'error' : ''}
+                />
+                {errors.password && <small className="error">{errors.password}</small>}
               </div>
 
               <div className="form-group">
@@ -92,10 +143,13 @@ const AuthRegister = () => {
                   id="password_confirmation"
                   type="password"
                   name="password_confirmation"
+                  value={formData.password_confirmation}
+                  onChange={handleChange}
                   required
                   autoComplete="new-password"
+                  className={errors.password_confirmation ? 'error' : ''}
                 />
-                <small className="error"></small>
+                {errors.password_confirmation && <small className="error">{errors.password_confirmation}</small>}
               </div>
 
               <div className="auth-switch">
@@ -104,8 +158,8 @@ const AuthRegister = () => {
               </div>
 
               <div className="form-actions form-actions--single">
-                <button type="submit" className="btn-primary">
-                  Register
+                <button type="submit" className="btn-primary" disabled={loading}>
+                  {loading ? 'Creating Account...' : 'Register'}
                 </button>
               </div>
             </form>

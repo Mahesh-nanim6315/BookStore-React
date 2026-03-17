@@ -1,52 +1,69 @@
-﻿import React from 'react'
+﻿import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { fetchAuthors } from '../../api/books'
+import { getImageUrl } from '../../utils/imageUtils'
 
 const AuthorsIndex = () => {
+  const [authors, setAuthors] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadAuthors = async () => {
+      try {
+        const data = await fetchAuthors()
+        setAuthors(data.data || [])
+      } catch (error) {
+        console.error('Failed to fetch authors', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadAuthors()
+  }, [])
+
+  if (loading) {
+    return <div className="page"><p>Loading...</p></div>
+  }
+
   return (
     <div className="page">
-<title>Authors</title>
-{/*      */}
-{/* 
+      <title>Authors</title>
+      <div className="container-auth" style={{ marginTop: '120px' }}>
+        <h1 className="page-title">📚 Our Authors</h1>
 
-
- */}
-
-<div className="container-auth" style={{ marginTop: '120px' }}>
-
-    <h1 className="page-title">ðŸ“š Our Authors</h1>
-
-    <div className="authors-grid">
-{/*          */}
-            <div className="author-card">
+        <div className="authors-grid">
+          {authors.length > 0 ? (
+            authors.map((author) => (
+              <div className="author-card" key={author.id}>
                 <img
-                    src=""
-                    alt=""
-                 />
+                  src={getImageUrl(author.image)}
+                  alt={author.name}
+                  onError={(e) => {
+                    e.target.src = '/images/default-author.png'
+                  }}
+                />
 
-                <h3></h3>
+                <h3>{author.name}</h3>
 
                 <p className="bio">
-                    
+                  {author.bio ? `${author.bio.substring(0, 80)}${author.bio.length > 80 ? '...' : ''}` : 'No bio available'}
                 </p>
 
-                <a href=""
-                   className="btn-view">
-                    View Profile â†’
-                </a>
-            </div>
-{/*          */}
+                <Link to={`/authors/${author.id}`} className="btn-view">
+                  View Profile →
+                </Link>
+              </div>
+            ))
+          ) : (
             <p>No authors found.</p>
-{/*          */}
-    </div>
-
-</div>
-{/* 
- */}
+          )}
+        </div>
+      </div>
     </div>
   )
 }
 
 export default AuthorsIndex
-
 
 
 

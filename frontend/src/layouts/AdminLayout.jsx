@@ -1,25 +1,54 @@
-﻿import React from 'react'
-import { Link, Outlet } from 'react-router-dom'
+﻿import React, { useState, useEffect } from 'react'
+import { Outlet } from 'react-router-dom'
+import AdminNavbar from '../components/admin/AdminNavbar'
+import AdminSidebar from '../components/admin/AdminSidebar'
+import { getDashboardInfo } from '../api/auth'
+import '../styles/admin.css'
 
 const AdminLayout = () => {
+  const [user, setUser] = useState(null)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+
+  useEffect(() => {
+    const loadUserInfo = async () => {
+      try {
+        const response = await getDashboardInfo()
+        if (response.success) {
+          setUser(response.data.user)
+        }
+      } catch (error) {
+        console.error('Failed to load user info:', error)
+      }
+    }
+
+    // Try to get user from localStorage first
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      setUser(JSON.parse(userData))
+    } else {
+      loadUserInfo()
+    }
+  }, [])
+
+  const toggleMobileSidebar = () => {
+    setMobileSidebarOpen(!mobileSidebarOpen)
+  }
+
   return (
-    <div className="admin-shell">
-      <aside className="admin-sidebar">
-        <h2>Admin</h2>
-        <nav>
-          <ul>
-            <li><Link to="/admin">Dashboard</Link></li>
-            <li><Link to="/admin/books">Books</Link></li>
-            <li><Link to="/admin/authors">Authors</Link></li>
-            <li><Link to="/admin/orders">Orders</Link></li>
-            <li><Link to="/admin/users">Users</Link></li>
-            <li><Link to="/admin/settings">Settings</Link></li>
-          </ul>
-        </nav>
-      </aside>
-      <section className="admin-content">
-        <Outlet />
-      </section>
+    <div className={`admin-wrapper ${mobileSidebarOpen ? 'sidebar-open' : ''}`}>
+      <AdminSidebar user={user} />
+      
+      <div className="main-content">
+        <AdminNavbar user={user} />
+        
+        <div className="toast-container" id="admin-toast-container" aria-live="polite" aria-atomic="true">
+          {/* Toast notifications will appear here */}
+        </div>
+
+        <div className="content">
+          <Outlet />
+        </div>
+      </div>
     </div>
   )
 }
