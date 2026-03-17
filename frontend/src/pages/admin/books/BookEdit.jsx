@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import BookForm from '../../../components/BookForm'
 import { fetchBook, updateBook } from '../../../api/books'
 import { fetchAuthors, fetchCategories, fetchGenres } from '../../../api/lookups'
+import Loader from '../../../components/common/Loader'
 
 const BookEdit = () => {
   const { id } = useParams()
@@ -69,7 +70,7 @@ const BookEdit = () => {
   }
 
   if (!values) {
-    return <p>Loading...</p>
+    return <Loader />
   }
 
   return (

@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getCart, removeFromCart, updateCartItem, applyCoupon, removeCoupon } from '../../api/cart'
+import Loader from '../../components/common/Loader'
 
 const CartIndex = () => {
   const [cart, setCart] = useState(null)
@@ -69,13 +70,7 @@ const CartIndex = () => {
   }
 
   if (loading) {
-    return (
-      <div className="page">
-        <div style={{ marginTop: '100px', padding: '30px', textAlign: 'center' }}>
-          Loading cart...
-        </div>
-      </div>
-    )
+    return <Loader />
   }
 
   const items = cart?.items || []
@@ -187,7 +182,6 @@ const CartIndex = () => {
 }
 
 export default CartIndex
-
 
 
 

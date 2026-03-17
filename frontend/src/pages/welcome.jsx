@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { fetchHomeData } from '../api/books'
+import Loader from '../components/common/Loader'
 import Hero from '../components/Hero'
 import CategoriesFilter from './categories/filter'
 import Carousel from '../components/Carousel'
@@ -23,7 +24,7 @@ const Welcome = () => {
         loadData()
     }, [])
 
-    if (loading) return <div className="page" style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>
+  if (loading) return <Loader />
 
     return (
         <div className="page">

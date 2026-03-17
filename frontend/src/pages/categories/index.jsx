@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getCategories } from '../../api/categories'
+import Loader from '../../components/common/Loader'
 
 const CategoriesIndex = () => {
   const [categories, setCategories] = useState([])
@@ -22,21 +23,12 @@ const CategoriesIndex = () => {
   }, [])
 
   if (loading) {
-    return (
-      <div className="page">
-        <div className="categories-page" style={{ marginTop: '15px' }}>
-          <div className="categories-header">
-            <h1>All Categories</h1>
-            <p>Loading categories...</p>
-          </div>
-        </div>
-      </div>
-    )
+    return <Loader />
   }
 
   return (
     <div className="page">
-      <div className="categories-page" style={{ marginTop: '15px' }}>
+      <div className="categories-page" style={{ marginTop: '50px' }}>
 
         <div className="categories-header">
           <h1>All Categories</h1>
@@ -81,7 +73,6 @@ const CategoriesIndex = () => {
 }
 
 export default CategoriesIndex
-
 
 
 

@@ -2,6 +2,7 @@
 import { useParams, Link } from 'react-router-dom'
 import { fetchAuthor } from '../../api/books'
 import { getImageUrl } from '../../utils/imageUtils'
+import Loader from '../../components/common/Loader'
 
 const AuthorsShow = () => {
   const { id } = useParams()
@@ -23,7 +24,7 @@ const AuthorsShow = () => {
   }, [id])
 
   if (loading) {
-    return <div className="page"><p>Loading...</p></div>
+    return <Loader />
   }
 
   if (!author) {

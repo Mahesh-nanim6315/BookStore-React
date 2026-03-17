@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { fetchAudiobooks } from '../api/books'
 import PartialsCarousel from './partials/carousel'
+import Loader from '../components/common/Loader'
 
 const Audiobooks = () => {
     const [data, setData] = useState(null)
@@ -25,11 +26,7 @@ const Audiobooks = () => {
     }, [])
 
     if (loading) {
-        return (
-            <div className="page" style={{ padding: '2rem', textAlign: 'center' }}>
-                Loading audiobooks...
-            </div>
-        )
+        return <Loader />
     }
 
     if (error) {

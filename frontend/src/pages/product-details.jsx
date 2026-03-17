@@ -2,6 +2,7 @@
 import { useParams, Link } from 'react-router-dom'
 import { fetchBook } from '../api/books'
 import { getImageUrl } from '../utils/imageUtils'
+import Loader from '../components/common/Loader'
 
 const ProductDetails = () => {
     const { id } = useParams()
@@ -130,7 +131,7 @@ const ProductDetails = () => {
     }
 
     if (loading) {
-        return <div className="page"><p>Loading...</p></div>
+        return <Loader />
     }
 
     if (!book) {

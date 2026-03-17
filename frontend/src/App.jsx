@@ -52,6 +52,7 @@ import AdminUsersCreate from './pages/admin/users/create.jsx'
 import AdminUsersEdit from './pages/admin/users/edit.jsx'
 import AdminPaymentsIndex from './pages/admin/payments/index.jsx'
 import AdminReviewsIndex from './pages/admin/reviews/index.jsx'
+import AdminNotificationsIndex from './pages/admin/notifications/index.jsx'
 import AdminRolesIndex from './pages/admin/roles_permissions/index.jsx'
 import AdminSettingsIndex from './pages/admin/settings/index.jsx'
 
@@ -151,6 +152,20 @@ const App = () => {
             </ProtectedRoute>
           }>
             <Route index element={<Dashboard />} />
+            <Route path="orders" element={<AdminOrdersIndex />} />
+            <Route path="payments" element={<AdminPaymentsIndex />} />
+            <Route path="books" element={<BooksIndex />} />
+            <Route path="books/create" element={<BookCreate />} />
+            <Route path="books/:id" element={<BookShow />} />
+            <Route path="books/:id/edit" element={<BookEdit />} />
+            <Route path="authors" element={<AdminAuthorsIndex />} />
+            <Route path="reviews" element={<AdminReviewsIndex />} />
+            <Route path="users" element={<AdminUsersIndex />} />
+            <Route path="users/create" element={<AdminUsersCreate />} />
+            <Route path="users/:id/edit" element={<AdminUsersEdit />} />
+            <Route path="notifications" element={<AdminNotificationsIndex />} />
+            <Route path="roles-permissions" element={<AdminRolesIndex />} />
+            <Route path="settings" element={<AdminSettingsIndex />} />
           </Route>
 
           {/* Admin Routes */}

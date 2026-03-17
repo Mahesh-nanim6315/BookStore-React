@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { fetchBook } from '../../../api/books'
+import Loader from '../../../components/common/Loader'
 
 const BookShow = () => {
   const { id } = useParams()
@@ -19,7 +20,7 @@ const BookShow = () => {
   }, [id])
 
   if (!book) {
-    return <p>Loading...</p>
+    return <Loader />
   }
 
   return (

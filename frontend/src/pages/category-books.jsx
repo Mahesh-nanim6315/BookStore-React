@@ -2,6 +2,7 @@
 import { useParams, Link } from 'react-router-dom'
 import { fetchCategoryBooks } from '../api/books'
 import { getImageUrl } from '../utils/imageUtils'
+import Loader from '../components/common/Loader'
 
 const CategoryBooks = () => {
     const { slug } = useParams()
@@ -31,11 +32,7 @@ const CategoryBooks = () => {
     }, [slug])
 
     if (loading) {
-        return (
-            <div className="page" style={{ padding: '2rem', textAlign: 'center' }}>
-                Loading books...
-            </div>
-        )
+        return <Loader />
     }
 
     if (error) {

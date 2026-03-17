@@ -2,6 +2,7 @@
 import { Link } from 'react-router-dom'
 import { getDashboardStats, getDashboardInfo } from '../../api/auth'
 import SalesChart from '../../components/admin/SalesChart'
+import Loader from '../../components/common/Loader'
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -46,11 +47,7 @@ const AdminDashboard = () => {
   }, [])
 
   if (loading) {
-    return (
-      <div className="dashboard">
-        <p>Loading dashboard...</p>
-      </div>
-    )
+    return <Loader />
   }
 
   return (

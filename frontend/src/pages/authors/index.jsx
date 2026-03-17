@@ -2,6 +2,7 @@
 import { Link } from 'react-router-dom'
 import { fetchAuthors } from '../../api/books'
 import { getImageUrl } from '../../utils/imageUtils'
+import Loader from '../../components/common/Loader'
 
 const AuthorsIndex = () => {
   const [authors, setAuthors] = useState([])
@@ -22,7 +23,7 @@ const AuthorsIndex = () => {
   }, [])
 
   if (loading) {
-    return <div className="page"><p>Loading...</p></div>
+    return <Loader />
   }
 
   return (

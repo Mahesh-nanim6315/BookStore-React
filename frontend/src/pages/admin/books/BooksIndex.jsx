@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { deleteBook, fetchBooks } from '../../../api/books'
+import Loader from '../../../components/common/Loader'
 
 const BooksIndex = () => {
   const [books, setBooks] = useState([])
@@ -63,7 +64,7 @@ const BooksIndex = () => {
       </form>
 
       {loading ? (
-        <p>Loading...</p>
+        <Loader />
       ) : (
         <table className="admin-table">
           <thead>

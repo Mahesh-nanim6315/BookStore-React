@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { fetchProducts } from '../api/books'
 import { toggleWishlist } from '../api/wishlist'
 import { useAuth } from '../contexts/AuthContext'
+import Loader from '../components/common/Loader'
 
 const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -91,11 +92,7 @@ const Products = () => {
   }
 
   if (loading) {
-    return (
-      <div className="products-page">
-        <h1 className="page-title" style={{ marginTop: '100px' }}>Loading...</h1>
-      </div>
-    )
+    return <Loader />
   }
 
   return (

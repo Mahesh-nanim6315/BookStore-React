@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { fetchPaperbacks } from '../api/books'
 import PartialsCarousel from './partials/carousel'
+import Loader from '../components/common/Loader'
 
 const Paperbacks = () => {
     const [data, setData] = useState(null)
@@ -25,11 +26,7 @@ const Paperbacks = () => {
     }, [])
 
     if (loading) {
-        return (
-            <div className="page" style={{ padding: '2rem', textAlign: 'center' }}>
-                Loading paperbacks...
-            </div>
-        )
+        return <Loader />
     }
 
     if (error) {
