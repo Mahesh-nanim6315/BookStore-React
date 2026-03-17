@@ -135,11 +135,6 @@ const App = () => {
                 <ProfileEdit />
               </ProtectedRoute>
             } />
-            <Route path="dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
           </Route>
           
           {/* Public Auth Routes - Standalone (no header/footer) */}
@@ -148,6 +143,15 @@ const App = () => {
           <Route path="forgot-password" element={<AuthForgot />} />
           <Route path="reset-password" element={<AuthReset />} />
           <Route path="faq" element={<FaqIndex />} />
+          
+          {/* Standalone Protected Routes (no header/footer) */}
+          <Route path="dashboard" element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Dashboard />} />
+          </Route>
 
           {/* Admin Routes */}
           <Route path="/admin" element={

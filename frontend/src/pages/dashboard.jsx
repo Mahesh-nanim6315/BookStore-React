@@ -1,126 +1,219 @@
-import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import api from '../api';
+import Loader from '../components/common/Loader';
+import SalesChart from '../components/admin/SalesChart';
 
-const Dashboard = () => {
-  const [user, setUser] = useState(null)
+const AdminDashboard = () => {
+    const [loading, setLoading] = useState(true);
+    const [dashboardData, setDashboardData] = useState({
+        total_orders: 0,
+        total_revenue: 0,
+        total_users: 0,
+        total_books: 0,
+        chart_data: {
+            months: [],
+            sales: []
+        },
+        recent_orders: [],
+        low_stock_books: [],
+        top_selling_books: []
+    });
 
-  useEffect(() => {
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      setUser(JSON.parse(userData))
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
+
+    const fetchDashboardData = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/admin/dashboard');
+            if (response.data.success) {
+                setDashboardData(response.data.data);
+            }
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            minimumFractionDigits: 0
+        }).format(amount);
+    };
+
+    if (loading) {
+        return <Loader />;
     }
-  }, [])
 
-  const handleLogout = () => {
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('user')
-    window.location.href = '/'
-  }
+    return (
+        <div className="dashboard">
+            {/* Stats Cards */}
+            <div className="stats">
+                <div className="card">
+                    Orders<br />
+                    <strong>{dashboardData.total_orders}</strong>
+                </div>
 
-  return (
-    <div className="page">
-      <div className="container-show" style={{ marginTop: '120px' }}>
-        <div className="welcome-section">
-          <h1>Welcome back, {user?.name || 'User'}!</h1>
-          <p>Here's your personal dashboard</p>
-        </div>
+                <div className="card">
+                    Revenue<br />
+                    <strong>{formatCurrency(dashboardData.total_revenue)}</strong>
+                </div>
 
-        <hr />
+                <div className="card">
+                    Users<br />
+                    <strong>{dashboardData.total_users}</strong>
+                </div>
 
-        <div className="dashboard-stats">
-          <div className="stat-card">
-            <h3>📚 My Library</h3>
-            <p>Books you own</p>
-            <Link to="/my-library" className="btn-primary">View Library</Link>
-          </div>
-
-          <div className="stat-card">
-            <h3>🛒 Cart</h3>
-            <p>Items in cart</p>
-            <Link to="/cart" className="btn-primary">View Cart</Link>
-          </div>
-
-          <div className="stat-card">
-            <h3>❤️ Wishlist</h3>
-            <p>Saved books</p>
-            <Link to="/wishlist" className="btn-primary">View Wishlist</Link>
-          </div>
-
-          <div className="stat-card">
-            <h3>📦 Orders</h3>
-            <p>Order history</p>
-            <Link to="/orders" className="btn-primary">View Orders</Link>
-          </div>
-        </div>
-
-        <hr />
-
-        <div className="quick-actions">
-          <h3>⚡ Quick Actions</h3>
-          <div className="action-grid">
-            <Link to="/products" className="action-card">
-              <h4>📖 Browse Books</h4>
-              <p>Discover new books</p>
-            </Link>
-
-            <Link to="/ebooks" className="action-card">
-              <h4>📱 E-books</h4>
-              <p>Digital books</p>
-            </Link>
-
-            <Link to="/audiobooks" className="action-card">
-              <h4>🎧 Audiobooks</h4>
-              <p>Listen to books</p>
-            </Link>
-
-            <Link to="/paperbacks" className="action-card">
-              <h4>📕 Paperbacks</h4>
-              <p>Physical books</p>
-            </Link>
-
-            <Link to="/authors" className="action-card">
-              <h4>✍️ Authors</h4>
-              <p>Meet authors</p>
-            </Link>
-
-            <Link to="/profile" className="action-card">
-              <h4>👤 Profile</h4>
-              <p>Edit your info</p>
-            </Link>
-          </div>
-        </div>
-
-        <hr />
-
-        <div className="recent-activity">
-          <h3>📊 Recent Activity</h3>
-          <div className="activity-list">
-            <div className="activity-item">
-              <span className="activity-icon">📚</span>
-              <div className="activity-content">
-                <p>Welcome to your dashboard!</p>
-                <small>Just now</small>
-              </div>
+                <div className="card">
+                    Books<br />
+                    <strong>{dashboardData.total_books}</strong>
+                </div>
             </div>
-            
-            <div className="activity-item">
-              <span className="activity-icon">👋</span>
-              <div className="activity-content">
-                <p>You've successfully logged in</p>
-                <small>Just now</small>
-              </div>
+
+            <hr />
+
+            {/* Quick Actions */}
+            <h3>⚡ Quick Actions</h3>
+            <div className="quick-actions">
+                <Link to="/admin/books/create" className="quick-card">
+                    ➕ Add Book
+                </Link>
+
+                <Link to="/admin/authors/create" className="quick-card">
+                    ➕ Add Author
+                </Link>
+
+                <Link to="/admin/users" className="quick-card">
+                    👥 Manage Users
+                </Link>
+
+                <Link to="/admin/orders" className="quick-card">
+                    📦 View Orders
+                </Link>
             </div>
-          </div>
-        </div>
 
-        <div className="dashboard-footer">
-          <button onClick={handleLogout} className="btn-logout">
-            Logout
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+            {/* Chart and Alerts */}
+            <div className="chart-alerts">
+                <div className="chart-box">
+                    <SalesChart 
+                        months={dashboardData.chart_data.months} 
+                        sales={dashboardData.chart_data.sales} 
+                    />
+                </div>
 
-export default Dashboard
+                <div className="alerts">
+                    <h3>⚠ Low Stock Alerts</h3>
+                    {dashboardData.low_stock_books && dashboardData.low_stock_books.length > 0 ? (
+                        <div className="alert-box">
+                            {dashboardData.low_stock_books.map(book => (
+                                <div key={book.id} className="alert-item">
+                                    📕 {book.name}
+                                    <span className="stock-count">Stock: {book.stock}</span>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p>All books have sufficient stock 👍</p>
+                    )}
+                </div>
+            </div>
+
+            <hr />
+
+            {/* Top Selling Books */}
+            <div className="card-section">
+                <h3 className="section-title">🏆 Top Selling Books</h3>
+
+                <div className="card-box">
+                    <table className="table-custom">
+                        <thead>
+                            <tr>
+                                <th>Book</th>
+                                <th>Total Sold</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {dashboardData.top_selling_books && dashboardData.top_selling_books.length > 0 ? (
+                                dashboardData.top_selling_books.map((item, index) => (
+                                    <tr key={index}>
+                                        <td>{item.book?.name || 'Book Removed'}</td>
+                                        <td>
+                                            <span className="badge-sales">
+                                                {item.total_sold}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="2" className="empty-data">
+                                        No sales data yet.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Recent Orders */}
+            <div>
+                <h3>🕒 Recent Orders</h3>
+
+                <table className="table">
+                    <thead>
+                        <tr>
+                            <th>#ID</th>
+                            <th>User</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {dashboardData.recent_orders && dashboardData.recent_orders.length > 0 ? (
+                            dashboardData.recent_orders.map(order => (
+                                <tr key={order.id}>
+                                    <td>#{order.id}</td>
+                                    <td>{order.user?.name || 'Guest'}</td>
+                                    <td>{formatCurrency(order.total_amount)}</td>
+                                    <td>
+                                        <span className={`status-badge ${order.status?.toLowerCase()}`}>
+                                            {order.status || 'Pending'}
+                                        </span>
+                                    </td>
+                                    <td>{new Date(order.created_at).toLocaleDateString('en-IN', {
+                                        day: '2-digit',
+                                        month: 'short',
+                                        year: 'numeric'
+                                    })}</td>
+                                    <td>
+                                        <Link to={`/admin/orders/${order.id}`} className="view-link">
+                                            View
+                                        </Link>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan="6" className="text-center">
+                                    No recent orders found.
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
+export default AdminDashboard;

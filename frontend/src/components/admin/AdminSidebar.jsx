@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 
 const AdminSidebar = ({ user }) => {
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
 
   useEffect(() => {
@@ -13,7 +14,36 @@ const AdminSidebar = ({ user }) => {
     }
   }, [])
 
+  useEffect(() => {
+    const wrapper = document.querySelector('.admin-wrapper')
+    if (!wrapper) return
+
+    wrapper.classList.toggle('collapsed', collapsed)
+    wrapper.classList.toggle('sidebar-open', mobileOpen)
+  }, [collapsed, mobileOpen])
+
+  useEffect(() => {
+    if (!mobileOpen) return
+
+    const handleDocumentClick = (event) => {
+      const insideSidebar = event.target.closest('.admin-sidebar')
+      const clickedToggle = event.target.closest('#toggleBtn')
+      if (!insideSidebar && !clickedToggle) {
+        setMobileOpen(false)
+      }
+    }
+
+    document.addEventListener('click', handleDocumentClick)
+    return () => document.removeEventListener('click', handleDocumentClick)
+  }, [mobileOpen])
+
   const toggleSidebar = () => {
+    const isDesktop = window.matchMedia('(min-width: 1025px)').matches
+    if (!isDesktop) {
+      setMobileOpen((prev) => !prev)
+      return
+    }
+
     const newState = !collapsed
     setCollapsed(newState)
     localStorage.setItem('sidebar', newState ? 'collapsed' : 'expanded')
@@ -33,6 +63,7 @@ const AdminSidebar = ({ user }) => {
           </Link>
 
           <button 
+            id="toggleBtn"
             onClick={toggleSidebar}
             className="sidebar-toggle" 
             type="button" 
@@ -131,7 +162,7 @@ const AdminSidebar = ({ user }) => {
             <li className={isActive('/admin/settings') ? 'active' : ''}>
               <Link to="/admin/settings">
                 <span className="icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path d="M19.4 13a7.8 7.8 0 0 0 .1-1 7.8 7.8 0 0 0-.1-1l2.1-1.6-2-3.4-2.5 1a7.8 7.8 0 0 0-1.7-1l-.4-2.7h-4l-.4 2.7a7.8 7.8 0 0 0-1.7 1l-2.5-1-2 3.4L4.6 11a7.8 7.8 0 0 0-.1 1 7.8 7.8 0 0 0 .1 1l-2.1 1.6 2 3.4 2.5-1a7.8 7.8 0 0 0 1.7 1l.4 2.7h4l.4-2.7a7.8 7.8 0 0 0 1.7-1l2.5 1 2-3.4L19.4 13zM12 15.5A3.5 3.5 0 1 1 15.5 12 3.5 3.5 0 0 1 12 15.5z"></path></svg>
+                  <svg viewBox="0 0 24 24"><path d="M19.4 13a7.8 7.8 0 0 0 .1-1 7.8 7.8 0 0 0-.1-1l2.1-1.6-2-3.4-2.5 1a7.8 7.8 0 0 0-1.7-1l-.4-2.7h-4l-.4 2.7a7.8 7.8 0 0 0 1.7 1l-2.5-1-2 3.4L4.6 11a7.8 7.8 0 0 0-.1 1 7.8 7.8 0 0 0 .1 1l-2.1 1.6 2 3.4 2.5-1a7.8 7.8 0 0 0 1.7 1l.4 2.7h4L.4-2.7a7.8 7.8 0 0 0 1.7-1l2.5 1 2-3.4L19.4 13zM12 15.5A3.5 3.5 0 0 1 1 15.5 12 3.5 3.5 0 0 1 12 15.5z"></path></svg>
                 </span>
                 <span className="text">Settings</span>
               </Link>

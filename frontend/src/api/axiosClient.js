@@ -3,7 +3,6 @@
 const axiosClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   headers: {
-    'X-Requested-With': 'XMLHttpRequest',
     'Accept': 'application/json',
     'Content-Type': 'application/json',
   },
@@ -32,7 +31,12 @@ axiosClient.interceptors.response.use(
       // Token expired or invalid
       localStorage.removeItem('auth_token')
       localStorage.removeItem('user')
-      window.location.href = '/login'
+      const url = error.config?.url || ''
+      const hasToken = !!localStorage.getItem('auth_token')
+      // Don't force-login redirect on logout attempts or when already logged out
+      if (!url.includes('/logout') && hasToken) {
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   }

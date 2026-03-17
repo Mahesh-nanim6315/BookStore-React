@@ -35,7 +35,7 @@ const AdminLayout = () => {
   }
 
   return (
-    <div className={`admin-wrapper ${mobileSidebarOpen ? 'sidebar-open' : ''}`}>
+    <div className="admin-wrapper">
       <AdminSidebar user={user} />
       
       <div className="main-content">

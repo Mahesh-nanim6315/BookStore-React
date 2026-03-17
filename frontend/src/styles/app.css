@@ -9,7 +9,7 @@
 }
 
 /* HEADER */
-header {
+.site-header {
     width: 100%;
     /* background: #504224; */
     background: linear-gradient(135deg, #0f172a, #1e293b);
@@ -17,6 +17,17 @@ header {
     position: fixed;
     top: 0;
     z-index: 1000;
+}
+
+/* Offset fixed header only for book format pages */
+.books-page-offset {
+    padding-top: 90px;
+}
+
+@media (max-width: 768px) {
+    .books-page-offset {
+        padding-top: 110px;
+    }
 }
 
 /* NAV */
@@ -2787,7 +2798,7 @@ hr {
 }
 
 /* Dark header support */
-header.dark .lang-switcher {
+.site-header.dark .lang-switcher {
     background-color: #1f1f1f;
     color: #fff;
     border-color: #444;

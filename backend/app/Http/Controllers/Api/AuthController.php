@@ -16,11 +16,17 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request)
     {
-        $request->authenticate();
-        $request->session()->regenerate();
+        $credentials = $request->only('email', 'password');
 
-        $user = Auth::user();
-        
+        // API login should be stateless; avoid session-based auth.
+        $user = User::where('email', $credentials['email'])->first();
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid credentials'
+            ], 422);
+        }
+
         // Create token for API
         $token = $user->createToken('auth_token')->plainTextToken;
 

@@ -41,14 +41,8 @@ const AuthLogin = () => {
         localStorage.setItem('auth_token', response.token)
         localStorage.setItem('user', JSON.stringify(response.user))
         
-        // Redirect based on user role
-        if (response.user.role === 'admin') {
-          navigate('/admin/dashboard')
-        } else if (response.user.role === 'manager' || response.user.role === 'staff') {
-          navigate('/admin/dashboard')
-        } else {
-          navigate('/dashboard')
-        }
+        // Redirect to unified dashboard (role-based navigation handled inside UI)
+        navigate('/dashboard')
       } else {
         setErrors(response.errors || { general: 'Login failed' })
       }

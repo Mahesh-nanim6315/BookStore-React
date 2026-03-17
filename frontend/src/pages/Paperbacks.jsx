@@ -49,10 +49,10 @@ const Paperbacks = () => {
     }
 
     return (
-        <div className="page">
-            <header className="page-header">
+        <div className="page books-page-offset">
+            {/* <header className="page-header">
                 <h2 className="page-titles">Paperback Books</h2>
-            </header>
+            </header> */}
 
             {data.drama && data.drama.length > 0 && (
                 <PartialsCarousel title="Drama" books={data.drama} />
