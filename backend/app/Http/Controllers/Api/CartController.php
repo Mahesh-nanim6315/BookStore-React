@@ -67,24 +67,28 @@ class CartController extends Controller
 
         $subtotal = 0;
         $items_count = 0;
+        $tax = 0;
         
         if ($cart) {
             $subtotal = $cart->items->sum(fn($i) => $i->price * $i->quantity);
             $items_count = $cart->items->count();
+            $tax = round($subtotal * 0.05);
         }
 
-        // Get applied coupon from session
         $coupon = session()->get('coupon');
+        $discount = $coupon['discount'] ?? 0;
+        $total = max(0, $subtotal + $tax - $discount);
 
         return response()->json([
             'success' => true,
             'data' => [
                 'cart' => $cart,
                 'subtotal' => $subtotal,
+                'tax' => $tax,
                 'items_count' => $items_count,
                 'coupon' => $coupon,
-                'discount' => $coupon['discount'] ?? 0,
-                'total' => $subtotal - ($coupon['discount'] ?? 0)
+                'discount' => $discount,
+                'total' => $total
             ]
         ]);
     }
@@ -92,6 +96,13 @@ class CartController extends Controller
     /* ================= REMOVE ITEM ================= */
     public function remove(CartItem $item)
     {
+        if ((int) optional($item->cart)->user_id !== (int) Auth::id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are not allowed to remove this cart item.',
+            ], 403);
+        }
+
         $item->delete();
 
         // Get updated cart
@@ -113,6 +124,17 @@ class CartController extends Controller
     /* ================= UPDATE QTY ================= */
     public function update(Request $request, CartItem $item)
     {
+        if ((int) optional($item->cart)->user_id !== (int) Auth::id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are not allowed to update this cart item.',
+            ], 403);
+        }
+
+        $request->validate([
+            'action' => 'required|in:increase,decrease',
+        ]);
+
         if ($request->action === 'increase') {
             $item->increment('quantity');
             $message = 'Quantity increased';
@@ -134,7 +156,10 @@ class CartController extends Controller
             ->first();
 
         $subtotal = $cart ? $cart->items->sum(fn($i) => $i->price * $i->quantity) : 0;
+        $tax = round($subtotal * 0.05);
         $coupon = session()->get('coupon');
+        $discount = $coupon['discount'] ?? 0;
+        $total = max(0, $subtotal + $tax - $discount);
 
         return response()->json([
             'success' => true,
@@ -142,10 +167,11 @@ class CartController extends Controller
             'data' => [
                 'cart' => $cart,
                 'subtotal' => $subtotal,
+                'tax' => $tax,
                 'items_count' => $cart ? $cart->items->count() : 0,
                 'coupon' => $coupon,
-                'discount' => $coupon['discount'] ?? 0,
-                'total' => $subtotal - ($coupon['discount'] ?? 0)
+                'discount' => $discount,
+                'total' => $total
             ]
         ]);
     }
@@ -158,11 +184,10 @@ class CartController extends Controller
 
         $code = strtoupper($request->code);
 
-        // Match SAVE50, SAVE20, FLAT100 etc
         if (!preg_match('/^(SAVE|FLAT)(\d+)$/', $code, $matches)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid coupon code'
+                'message' => 'Invalid coupon code. Try SAVE10, SAVE20, SAVE30, SAVE50, FLAT50, FLAT100, or FLAT200.'
             ], 422);
         }
 
@@ -174,7 +199,7 @@ class CartController extends Controller
         if (!$rules || !in_array($value, $rules['allowed_values'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid coupon value'
+                'message' => 'That coupon value is not supported.'
             ], 422);
         }
 
@@ -199,13 +224,15 @@ class CartController extends Controller
         if ($rules['type'] === 'percentage') {
             $discount = ($subtotal * $value) / 100;
 
-            // apply max cap if exists
             if (isset($rules['max_discount'])) {
                 $discount = min($discount, $rules['max_discount']);
             }
         } else {
             $discount = $value;
         }
+
+        $tax = round($subtotal * 0.05);
+        $total = max(0, $subtotal + $tax - round($discount));
 
         $couponData = [
             'code' => $code,
@@ -222,8 +249,9 @@ class CartController extends Controller
             'data' => [
                 'coupon' => $couponData,
                 'subtotal' => $subtotal,
-                'discount' => $discount,
-                'total' => $subtotal - $discount
+                'tax' => $tax,
+                'discount' => round($discount),
+                'total' => $total
             ]
         ]);
     }
@@ -234,13 +262,16 @@ class CartController extends Controller
 
         $cart = Cart::with('items')->where('user_id', Auth::id())->first();
         $subtotal = $cart ? $cart->items->sum(fn($i) => $i->price * $i->quantity) : 0;
+        $tax = round($subtotal * 0.05);
+        $total = $subtotal + $tax;
 
         return response()->json([
             'success' => true,
             'message' => 'Coupon removed',
             'data' => [
                 'subtotal' => $subtotal,
-                'total' => $subtotal
+                'tax' => $tax,
+                'total' => $total
             ]
         ]);
     }

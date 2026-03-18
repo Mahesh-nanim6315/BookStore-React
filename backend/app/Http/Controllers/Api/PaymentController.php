@@ -25,7 +25,7 @@ class PaymentController extends Controller
                 return response()->json([
                     'success' => true,
                     'data' => [
-                        'redirect' => route('stripe.checkout', $order->id)
+                        'checkout_url' => url('/api/v1/payments/stripe/checkout/' . $order->id)
                     ]
                 ]);
 
@@ -33,7 +33,7 @@ class PaymentController extends Controller
                 return response()->json([
                     'success' => true,
                     'data' => [
-                        'redirect' => route('paypal.pay', $order->id)
+                        'redirect' => url('/api/v1/payments/paypal/' . $order->id . '/pay')
                     ]
                 ]);
 

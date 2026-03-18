@@ -9,13 +9,18 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
     )
     ->withMiddleware(function (Middleware $middleware) {
+
+        // ✅ ADD THIS BLOCK 👇
+        $middleware->redirectGuestsTo(function () {
+            return null; // or abort(401)
+        });
+
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\CheckMaintenanceMode::class,
         ]);
 
         $middleware->api(append: [
-            // Remove Sanctum stateful middleware for API routes
             // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
 

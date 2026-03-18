@@ -11,6 +11,11 @@ use App\Events\PaymentSuccess;
 
 class PayPalController extends Controller
 {
+    private function backendUrl(Request $request, string $path): string
+    {
+        return rtrim($request->getSchemeAndHttpHost(), '/') . '/' . ltrim($path, '/');
+    }
+
     public function pay(Order $order)
     {
         $provider = new PayPalClient;
@@ -20,8 +25,8 @@ class PayPalController extends Controller
         $response = $provider->createOrder([
             "intent" => "CAPTURE",
             "application_context" => [
-                "return_url" => route('paypal.success', $order->id),
-                "cancel_url" => route('paypal.cancel', $order->id),
+                "return_url" => $this->backendUrl(request(), "/api/v1/payments/paypal/{$order->id}/success"),
+                "cancel_url" => $this->backendUrl(request(), "/api/v1/payments/paypal/{$order->id}/cancel"),
             ],
             "purchase_units" => [
                 [
@@ -79,7 +84,7 @@ class PayPalController extends Controller
                 'message' => 'Payment completed successfully',
                 'data' => [
                     'order' => $order,
-                    'redirect' => route('orders.success', $order->id)
+                    'redirect' => '/checkout/success'
                 ]
             ]);
         }
@@ -88,7 +93,7 @@ class PayPalController extends Controller
             'success' => false,
             'message' => 'Payment not completed',
             'data' => [
-                'redirect' => route('payment.page', $order->id)
+                'redirect' => '/checkout/payment'
             ]
         ], 422);
     }
@@ -99,7 +104,7 @@ class PayPalController extends Controller
             'success' => false,
             'message' => 'Payment cancelled',
             'data' => [
-                'redirect' => route('payment.page', $order->id)
+                'redirect' => '/checkout/payment'
             ]
         ], 422);
     }

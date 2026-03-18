@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Session\Middleware\StartSession;
 use App\Http\Controllers\Api\BookController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\AuthorController;
@@ -100,7 +101,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     });
     
     // Cart
-    Route::prefix('cart')->group(function () {
+    Route::middleware(StartSession::class)->prefix('cart')->group(function () {
         Route::post('/add/{book}', [CartController::class, 'add']);
         Route::get('/', [CartController::class, 'view']);
         Route::delete('/item/{item}', [CartController::class, 'remove']);
@@ -119,7 +120,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     });
     
     // Checkout
-    Route::prefix('checkout')->group(function () {
+    Route::middleware(StartSession::class)->prefix('checkout')->group(function () {
         Route::get('/', [CheckoutController::class, 'index']);
         Route::post('/process', [CheckoutController::class, 'process']);
         Route::get('/payment/{order}', [CheckoutController::class, 'paymentPage']);
@@ -177,7 +178,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 });
 
 /* ================= PAYMENT ROUTES ================= */
-Route::prefix('v1/payments')->middleware('auth:sanctum')->group(function () {
+Route::prefix('v1/payments')->group(function () {
     
     // Stripe
     Route::prefix('stripe')->group(function () {

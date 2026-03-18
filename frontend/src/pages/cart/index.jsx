@@ -1,62 +1,67 @@
-﻿import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getCart, removeFromCart, updateCartItem, applyCoupon, removeCoupon } from '../../api/cart'
+import { applyCoupon, getCart, removeCoupon, removeFromCart, updateCartItem } from '../../api/cart'
 import Loader from '../../components/common/Loader'
+import { getImageUrl } from '../../utils/imageUtils'
 
 const CartIndex = () => {
   const [cart, setCart] = useState(null)
   const [loading, setLoading] = useState(true)
   const [couponCode, setCouponCode] = useState('')
   const [updating, setUpdating] = useState(false)
-
-  useEffect(() => {
-    loadCart()
-  }, [])
+  const [error, setError] = useState('')
 
   const loadCart = async () => {
     try {
+      setError('')
       const response = await getCart()
       setCart(response.data)
-    } catch (error) {
-      console.error('Failed to load cart:', error)
+    } catch (err) {
+      console.error('Failed to load cart:', err)
+      setError('Unable to load your cart right now.')
     } finally {
       setLoading(false)
     }
   }
 
+  useEffect(() => {
+    loadCart()
+  }, [])
+
   const handleRemoveItem = async (itemId) => {
     try {
       await removeFromCart(itemId)
       await loadCart()
-    } catch (error) {
-      console.error('Failed to remove item:', error)
+    } catch (err) {
+      console.error('Failed to remove item:', err)
+      setError('Could not remove that item from your cart.')
     }
   }
 
-  const handleUpdateQuantity = async (itemId, quantity) => {
-    if (quantity < 1) return
-    
+  const handleUpdateQuantity = async (itemId, action) => {
     setUpdating(true)
     try {
-      await updateCartItem(itemId, quantity)
+      await updateCartItem(itemId, action)
       await loadCart()
-    } catch (error) {
-      console.error('Failed to update quantity:', error)
+    } catch (err) {
+      console.error('Failed to update quantity:', err)
+      setError('Could not update cart quantity.')
     } finally {
       setUpdating(false)
     }
   }
 
-  const handleApplyCoupon = async (e) => {
-    e.preventDefault()
+  const handleApplyCoupon = async (event) => {
+    event.preventDefault()
     if (!couponCode.trim()) return
 
     try {
       await applyCoupon(couponCode)
       await loadCart()
       setCouponCode('')
-    } catch (error) {
-      console.error('Failed to apply coupon:', error)
+    } catch (err) {
+      console.error('Failed to apply coupon:', err)
+      setError(err?.response?.data?.message || 'Failed to apply coupon.')
     }
   }
 
@@ -64,8 +69,9 @@ const CartIndex = () => {
     try {
       await removeCoupon()
       await loadCart()
-    } catch (error) {
-      console.error('Failed to remove coupon:', error)
+    } catch (err) {
+      console.error('Failed to remove coupon:', err)
+      setError('Failed to remove coupon.')
     }
   }
 
@@ -73,95 +79,130 @@ const CartIndex = () => {
     return <Loader />
   }
 
-  const items = cart?.items || []
+  const items = cart?.cart?.items || []
+  const subtotal = cart?.subtotal || 0
+  const tax = cart?.tax || 0
+  const discount = cart?.discount || 0
+  const total = cart?.total || 0
 
   return (
     <div className="page">
-      <div style={{ marginTop: '100px', padding: '30px', maxWidth: '1200px', marginLeft: 'auto', marginRight: 'auto' }}>
-        <h2 style={{ marginBottom: '20px' }}>🛒 Your Shopping Cart</h2>
+      <div className="cart-page-shell">
+        <div className="cart-page-header">
+          <h2>Your Shopping Cart</h2>
+          <p>Review your formats, adjust quantity, apply coupons, and continue to checkout.</p>
+        </div>
+
+        {error && <p className="wishlist-message wishlist-message--error">{error}</p>}
 
         {items.length > 0 ? (
-          <div style={{ display: 'flex', gap: '30px' }}>
-            <div style={{ flex: 2, background: '#fff', padding: '20px', borderRadius: '8px' }}>
+          <div className="cart-layout">
+            <div className="cart-items-panel">
               {items.map((item) => (
-                <div key={item.id} style={{ display: 'flex', gap: '20px', padding: '15px 0', borderBottom: '1px solid #eee' }}>
-                  <img 
-                    src={item.book?.cover_image || '/images/default-book.jpg'} 
-                    width="100" 
-                    height="130" 
-                    style={{ objectFit: 'cover' }} 
-                    alt={item.book?.title || 'Book'} 
-                  />
-                  <div style={{ flex: 1 }}>
-                    <h4>{item.book?.title || 'Unknown Book'}</h4>
-                    <p>Author: {item.book?.author?.name || 'Unknown'}</p>
-                    <p>Format: {item.format || 'Unknown'}</p>
-                    <p>Price: ₹{item.price || 0}</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <button 
-                        onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                        disabled={updating}
-                        style={{ padding: '4px 10px' }}
-                      >
-                        −
-                      </button>
-                      <strong>{item.quantity}</strong>
-                      <button 
-                        onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                        disabled={updating}
-                        style={{ padding: '4px 10px' }}
-                      >
-                        +
-                      </button>
+                <div key={item.id} className="cart-item-card">
+                  <Link to={`/products/${item.book?.id}`} className="cart-item-image-link">
+                    <img
+                      src={getImageUrl(item.book?.image)}
+                      alt={item.book?.name || 'Book'}
+                      className="cart-item-image"
+                    />
+                  </Link>
+
+                  <div className="cart-item-main">
+                    <div className="cart-item-copy">
+                      <h4>{item.book?.name || 'Unknown Book'}</h4>
+                      <p>Author: {item.book?.author?.name || 'Unknown'}</p>
+                      <div className="cart-item-tags">
+                        <span className="cart-item-tag">{item.format || 'Unknown'}</span>
+                        <span className="cart-item-tag">Rs. {item.price || 0}</span>
+                      </div>
+                    </div>
+
+                    <div className="cart-item-controls">
+                      <div className="cart-qty-control">
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateQuantity(item.id, 'decrease')}
+                          disabled={updating}
+                          className="cart-qty-btn"
+                        >
+                          -
+                        </button>
+                        <strong>{item.quantity}</strong>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateQuantity(item.id, 'increase')}
+                          disabled={updating}
+                          className="cart-qty-btn"
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      <div className="cart-item-side">
+                        <strong className="cart-item-total">Rs. {(item.price || 0) * item.quantity}</strong>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItem(item.id)}
+                          className="cart-remove-btn"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <strong>₹{(item.price || 0) * item.quantity}</strong>
-                  </div>
-                  <button 
-                    onClick={() => handleRemoveItem(item.id)}
-                    style={{ color: 'red', background: 'none', border: 'none', cursor: 'pointer' }}
-                  >
-                    Remove
-                  </button>
                 </div>
               ))}
             </div>
 
-            <div style={{ flex: 1, background: '#f9f9f9', padding: '20px', borderRadius: '8px', height: 'fit-content' }}>
+            <div className="cart-summary-panel">
               <h3>Summary</h3>
-              <p>Subtotal: ₹{cart?.subtotal || 0}</p>
-              <p>Tax (5%): ₹{cart?.tax || 0}</p>
-              {cart?.discount && (
-                <p>Discount: -₹{cart.discount}</p>
+              <div className="cart-summary-row">
+                <span>Subtotal</span>
+                <span>Rs. {subtotal}</span>
+              </div>
+              <div className="cart-summary-row">
+                <span>Tax (5%)</span>
+                <span>Rs. {tax}</span>
+              </div>
+              {discount > 0 && (
+                <div className="cart-summary-row cart-summary-row--discount">
+                  <span>Discount</span>
+                  <span>- Rs. {discount}</span>
+                </div>
               )}
-              <hr />
-              <h3>Total: ₹{cart?.total || 0}</h3>
-              
-              <Link to="/checkout">
-                <button style={{ width: '100%', padding: '12px', background: '#ddba1d', border: 'none', cursor: 'pointer' }}>
+              <div className="cart-summary-row cart-summary-row--total">
+                <span>Total</span>
+                <span>Rs. {total}</span>
+              </div>
+
+              <Link to="/checkout" className="cart-checkout-link">
+                <button className="cart-checkout-btn">
                   Proceed to Checkout
                 </button>
               </Link>
 
               {cart?.coupon ? (
-                <div style={{ marginTop: '15px' }}>
-                  <p>Coupon applied: {cart.coupon.code}</p>
-                  <button onClick={handleRemoveCoupon} style={{ width: '100%', padding: '8px' }}>
+                <div className="cart-coupon-box coupon-applied">
+                  <p>Coupon applied: <strong>{cart.coupon.code}</strong></p>
+                  <button onClick={handleRemoveCoupon} className="cart-coupon-btn">
                     Remove Coupon
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleApplyCoupon} style={{ marginTop: '15px' }}>
-                  <input 
-                    type="text" 
-                    name="code" 
-                    placeholder="Enter coupon" 
+                <form onSubmit={handleApplyCoupon} className="cart-coupon-box">
+                  <input
+                    type="text"
+                    name="code"
+                    placeholder="Try SAVE10 or FLAT100"
                     value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    style={{ width: '100%', padding: '8px', marginBottom: '8px' }} 
+                    onChange={(event) => setCouponCode(event.target.value)}
+                    className="cart-coupon-input"
                   />
-                  <button type="submit" style={{ width: '100%', padding: '8px' }}>
+                  <p className="cart-coupon-hint">
+                    Available codes: `SAVE10`, `SAVE20`, `SAVE30`, `SAVE50`, `FLAT50`, `FLAT100`, `FLAT200`
+                  </p>
+                  <button type="submit" className="cart-coupon-btn">
                     Apply Coupon
                   </button>
                 </form>
@@ -169,10 +210,11 @@ const CartIndex = () => {
             </div>
           </div>
         ) : (
-          <div style={{ textAlign: 'center', padding: '60px' }}>
-            <h3>Your cart is empty 😔</h3>
+          <div className="cart-empty-state">
+            <h3>Your cart is empty</h3>
+            <p>Pick a format from Top Books or a product details page to get started.</p>
             <Link to="/products">
-              <button style={{ marginTop: '20px', padding: '10px 20px' }}>Continue Shopping</button>
+              <button className="cart-checkout-btn cart-checkout-btn--secondary">Continue Shopping</button>
             </Link>
           </div>
         )}
@@ -182,6 +224,3 @@ const CartIndex = () => {
 }
 
 export default CartIndex
-
-
-

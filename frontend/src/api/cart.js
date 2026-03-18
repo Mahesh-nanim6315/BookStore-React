@@ -5,8 +5,8 @@ export const getCart = async () => {
   return data
 }
 
-export const addToCart = async (bookId, quantity = 1) => {
-  const { data } = await axiosClient.post(`/cart/add/${bookId}`, { quantity })
+export const addToCart = async (bookId, payload) => {
+  const { data } = await axiosClient.post(`/cart/add/${bookId}`, payload)
   return data
 }
 
@@ -15,8 +15,8 @@ export const removeFromCart = async (itemId) => {
   return data
 }
 
-export const updateCartItem = async (itemId, quantity) => {
-  const { data } = await axiosClient.patch(`/cart/item/${itemId}`, { quantity })
+export const updateCartItem = async (itemId, action) => {
+  const { data } = await axiosClient.patch(`/cart/item/${itemId}`, { action })
   return data
 }
 

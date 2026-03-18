@@ -5,6 +5,8 @@ import { createReview, deleteReview, updateReview } from '../api/reviews'
 import { getImageUrl } from '../utils/imageUtils'
 import Loader from '../components/common/Loader'
 import { useAuth } from '../contexts/AuthContext'
+import { addToCart } from '../api/cart'
+import { toggleWishlist } from '../api/wishlist'
 
 const ProductDetails = () => {
     const { id } = useParams()
@@ -48,17 +50,9 @@ const ProductDetails = () => {
 
     const handleAddToCart = async (format, price) => {
         try {
-            const response = await fetch('/api/v1/cart/add', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({
-                    book_id: book.id,
-                    format,
-                    price
-                })
+            const response = await addToCart(book.id, {
+                format,
+                price
             })
 
             if (response.success) {
@@ -72,19 +66,10 @@ const ProductDetails = () => {
 
     const handleAddToWishlist = async () => {
         try {
-            const response = await fetch('/api/v1/wishlist/add', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({
-                    book_id: book.id
-                })
-            })
+            const response = await toggleWishlist(book.id)
 
             if (response.success) {
-                alert('Added to wishlist!')
+                alert(response.action === 'removed' ? 'Removed from wishlist!' : 'Added to wishlist!')
             }
         } catch (error) {
             console.error('Failed to add to wishlist', error)
@@ -321,7 +306,10 @@ const ProductDetails = () => {
                                     <p><strong>Duration:</strong> {book.audio_minutes || '—'} minutes</p>
                                     {book.audio_file && (
                                         <audio controls className="audio-player">
-                                            <source src={`http://localhost:8000/storage/${book.audio_file}`} type="audio/mpeg" />
+                                            <source src={book.audio_file.startsWith('http') 
+                                                ? book.audio_file 
+                                                : `http://localhost:8000/storage/${book.audio_file}`} 
+                                                type="audio/mpeg" />
                                         </audio>
                                     )}
                                 </div>

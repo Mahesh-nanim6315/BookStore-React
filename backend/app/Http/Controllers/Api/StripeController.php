@@ -11,11 +11,31 @@ use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\UserLibrary;
 use App\Models\OrderItem;
+use Illuminate\Support\Facades\Log;
 
 class StripeController extends Controller
 {
+    private function backendUrl(Request $request, string $path): string
+    {
+        return rtrim($request->getSchemeAndHttpHost(), '/') . '/' . ltrim($path, '/');
+    }
+
     public function checkout(Order $order)
     {
+        // Debug: Log the order status
+        Log::info('Stripe checkout called for order: ' . $order->id . ' with status: ' . $order->status);
+
+        // Validate that the order exists and is pending
+        if ($order->status !== 'pending') {
+            Log::error('Order not pending: ' . $order->status);
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid order or order already processed. Status: ' . $order->status
+            ], 400);
+        }
+
+        Log::info('Creating Stripe session for order: ' . $order->id);
+
         Stripe::setApiKey(config('services.stripe.secret'));
 
         $lineItems = [[
@@ -30,27 +50,45 @@ class StripeController extends Controller
             'quantity' => 1,
         ]];
 
-        $session = Session::create([
-            'payment_method_types' => ['card'],
-            'line_items' => $lineItems,
-            'mode' => 'payment',
-            'success_url' => route('stripe.success', $order->id) . '?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url' => route('cart.view'),
-        ]);
+        try {
+            $session = Session::create([
+                'payment_method_types' => ['card'],
+                'line_items' => $lineItems,
+                'mode' => 'payment',
+                'success_url' => url('/api/v1/payments/stripe/success/' . $order->id) . '?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => 'http://localhost:5173/cart',
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'checkout_url' => $session->url,
-                'session_id' => $session->id
-            ]
-        ]);
+            Log::info('Stripe session created: ' . $session->id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'checkout_url' => $session->url,
+                    'session_id' => $session->id
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Stripe session creation failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create Stripe session: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
-    public function success(Order $order)
+    public function success(Request $request, Order $order)
     {
+        // Validate that the order exists
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid order'
+            ], 400);
+        }
+
         $wasPaid = $order->payment_status === 'paid';
-        $sessionId = request('session_id');
+        $sessionId = $request->query('session_id');
         $paymentId = $sessionId;
 
         if ($sessionId) {
@@ -101,8 +139,14 @@ class StripeController extends Controller
             'message' => 'Payment successful',
             'data' => [
                 'order' => $order,
-                'redirect' => route('orders.success', $order->id)
+                'redirect' => '/checkout/success?order=' . $order->id
             ]
         ]);
+    }
+
+    public function cancel()
+    {
+        // Redirect to cart page
+        return redirect()->away('http://localhost:5173/cart');
     }
 }
