@@ -11,7 +11,7 @@ const PartialsCarousel = ({ title, books = [], category, categorySlug }) => {
   return (
     <div className="page">
       <section className="carousel-section">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="carousel-header">
           <h2>{title}</h2>
           {slug && (
             <Link to={`/category/${slug}`} className="view-all-btn">
@@ -29,13 +29,10 @@ const PartialsCarousel = ({ title, books = [], category, categorySlug }) => {
           <div className="carousel-track">
             {books.map((book) => (
               <div className="carousel-card" key={book.id}>
-                <Link to={`/products/${book.id}`}>
+                <Link to={`/products/${book.id}`} className="carousel-card-link">
                   <img 
                     src={getImageUrl(book.image)} 
                     alt={book.name} 
-                    width="200" 
-                    height="200" 
-                    style={{ objectFit: 'cover' }}
                     onError={(e) => {
                       e.target.src = '/placeholder.jpg'
                     }}
@@ -43,7 +40,7 @@ const PartialsCarousel = ({ title, books = [], category, categorySlug }) => {
                   <p className="card-title">{book.name}</p>
                 </Link>
                 {book.is_premium && (
-                  <span style={{ fontSize: '11px', fontWeight: '700', color: '#b45309', background: '#fef3c7', padding: '3px 8px', borderRadius: '999px', display: 'inline-block', marginTop: '5px' }}>
+                  <span className="premium-badge">
                     Premium
                   </span>
                 )}

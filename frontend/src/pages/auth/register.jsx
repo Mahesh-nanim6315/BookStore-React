@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { register } from '../../api/auth'
+import { useAuth } from '../../contexts/AuthContext'
 
 const AuthRegister = () => {
   const [formData, setFormData] = useState({
@@ -12,14 +12,13 @@ const AuthRegister = () => {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
   const navigate = useNavigate()
+  const { register, isAuthenticated, loading: authLoading } = useAuth()
 
   useEffect(() => {
-    // Check if user is already logged in
-    const token = localStorage.getItem('auth_token')
-    if (token) {
+    if (!authLoading && isAuthenticated) {
       navigate('/dashboard')
     }
-  }, [navigate])
+  }, [authLoading, isAuthenticated, navigate])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -38,16 +37,11 @@ const AuthRegister = () => {
       const response = await register(formData)
       
       if (response.success) {
-        // Store auth token
-        localStorage.setItem('auth_token', response.token)
-        localStorage.setItem('user', JSON.stringify(response.user))
-        
-        // Redirect to unified dashboard (role-based navigation handled inside UI)
         navigate('/dashboard')
       } else {
         setErrors(response.errors || { general: 'Registration failed' })
       }
-    } catch (error) {
+    } catch {
       setErrors({ general: 'Network error. Please try again.' })
     } finally {
       setLoading(false)

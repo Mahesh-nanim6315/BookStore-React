@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { login as loginApi, logout as logoutApi, getUser } from '../api/auth'
+import { login as loginApi, register as registerApi, logout as logoutApi, getUser } from '../api/auth'
 
 const AuthContext = createContext()
 
@@ -62,6 +62,25 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const register = async (userData) => {
+    try {
+      const response = await registerApi(userData)
+
+      if (response.success) {
+        localStorage.setItem('auth_token', response.token)
+        localStorage.setItem('user', JSON.stringify(response.user))
+        setUser(response.user)
+        setIsAuthenticated(true)
+        return { success: true, user: response.user }
+      } else {
+        return { success: false, errors: response.errors }
+      }
+    } catch (error) {
+      console.error('Registration failed:', error)
+      return { success: false, errors: { general: 'Network error. Please try again.' } }
+    }
+  }
+
   const logout = async () => {
     try {
       await logoutApi()
@@ -85,6 +104,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     isAuthenticated,
     login,
+    register,
     logout,
     updateUser,
     loadUser

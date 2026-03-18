@@ -6,9 +6,9 @@ const CategoriesFilter = ({ categories = [] }) => {
 
   return (
     <section className="category-buttons">
-      <h2 style={{ marginLeft: '1rem', marginBottom: '1rem', marginTop: '1rem' }}>Browse Categories</h2>
+      <h2 className="category-buttons-title">Browse Categories</h2>
 
-      <div className="category-list" style={{ marginLeft: '15px' }}>
+      <div className="category-list">
         {categories.slice(0, 10).map((cat) => (
           <Link key={cat.id} to={`/category/${cat.slug}`} className="category-btn">
             {cat.name}

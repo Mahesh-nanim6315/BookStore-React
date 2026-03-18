@@ -486,10 +486,10 @@ header .lang-switcher {
 }
 
 /* Category Buttons */
-.category-buttons {
+/* .category-buttons {
     margin: 40px 0;
     padding: 20px;
-}
+} */
 
 .category-list {
     display: flex;

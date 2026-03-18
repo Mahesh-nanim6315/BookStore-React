@@ -9,7 +9,6 @@ import Welcome from './pages/welcome.jsx'
 import Ebooks from './pages/Ebooks.jsx'
 import Audiobooks from './pages/Audiobooks.jsx'
 import Paperbacks from './pages/Paperbacks.jsx'
-import About from './pages/about.jsx'
 import Products from './pages/products.jsx'
 import ProductDetails from './pages/product-details.jsx'
 import CategoryBooks from './pages/category-books.jsx'
@@ -75,7 +74,6 @@ const App = () => {
             <Route path="ebooks" element={<Ebooks />} />
             <Route path="audiobooks" element={<Audiobooks />} />
             <Route path="paperbacks" element={<Paperbacks />} />
-            <Route path="about" element={<About />} />
             <Route path="products" element={<Products />} />
             <Route path="products/:id" element={<ProductDetails />} />
             <Route path="category/:slug" element={<CategoryBooks />} />

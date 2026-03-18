@@ -46,7 +46,7 @@ const CategoryBooks = () => {
     return (
         <div className="page">
             <header className="page-header">
-                <h2 className="page-titles">
+                <h2 className="page-titles page-titles--catalog">
                     {category} Books
                 </h2>
             </header>
@@ -55,7 +55,7 @@ const CategoryBooks = () => {
                 {books.length > 0 ? (
                     books.map((book) => (
                         <div className="book-card" key={book.id}>
-                            <Link to={`/products/${book.id}`}>
+                            <Link to={`/products/${book.id}`} className="book-card-link">
                                 <img 
                                     src={getImageUrl(book.image)} 
                                     alt={book.name} 
@@ -64,19 +64,10 @@ const CategoryBooks = () => {
                                         e.target.src = '/placeholder.jpg'
                                     }}
                                 />
+                                <h4 className="book-title">{book.name}</h4>
                             </Link>
-                            <h4 className="book-title">{book.name}</h4>
                             {book.is_premium && (
-                                <span style={{
-                                    fontSize: '11px',
-                                    fontWeight: '700',
-                                    color: '#b45309',
-                                    background: '#fef3c7',
-                                    padding: '3px 8px',
-                                    borderRadius: '999px',
-                                    display: 'inline-block',
-                                    marginTop: '5px'
-                                }}>
+                                <span className="premium-badge">
                                     Premium
                                 </span>
                             )}
