@@ -89,14 +89,7 @@ class DashboardController extends Controller
             ], 401);
         }
 
-        $dashboardType = match ($user->role) {
-            'admin' => 'admin',
-            'manager' => 'manager',
-            'staff' => 'staff',
-            default => null,
-        };
-
-        if (! $dashboardType) {
+        if (! $user->hasPermission('access_dashboard')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized access',
@@ -112,6 +105,7 @@ class DashboardController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role,
+                    'permissions' => $user->permissions(),
                 ],
             ],
         ]);

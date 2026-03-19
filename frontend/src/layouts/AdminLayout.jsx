@@ -15,6 +15,7 @@ const AdminLayout = () => {
         const response = await getDashboardInfo()
         if (response.success) {
           setUser(response.data.user)
+          localStorage.setItem('user', JSON.stringify(response.data.user))
         }
       } catch (error) {
         console.error('Failed to load user info:', error)
@@ -25,9 +26,9 @@ const AdminLayout = () => {
     const userData = localStorage.getItem('user')
     if (userData) {
       setUser(JSON.parse(userData))
-    } else {
-      loadUserInfo()
     }
+
+    loadUserInfo()
   }, [])
 
   const toggleMobileSidebar = () => {

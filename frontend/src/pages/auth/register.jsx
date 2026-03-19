@@ -1,6 +1,7 @@
-﻿import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { getDefaultPostLoginPath } from '../../utils/permissions'
 
 const AuthRegister = () => {
   const [formData, setFormData] = useState({
@@ -12,13 +13,13 @@ const AuthRegister = () => {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
   const navigate = useNavigate()
-  const { register, isAuthenticated, loading: authLoading } = useAuth()
+  const { register, isAuthenticated, loading: authLoading, user } = useAuth()
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      navigate('/dashboard')
+      navigate(getDefaultPostLoginPath(user), { replace: true })
     }
-  }, [authLoading, isAuthenticated, navigate])
+  }, [authLoading, isAuthenticated, navigate, user])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -37,7 +38,7 @@ const AuthRegister = () => {
       const response = await register(formData)
       
       if (response.success) {
-        navigate('/dashboard')
+        navigate(getDefaultPostLoginPath(response.user), { replace: true })
       } else {
         setErrors(response.errors || { general: 'Registration failed' })
       }
@@ -159,7 +160,3 @@ const AuthRegister = () => {
 }
 
 export default AuthRegister
-
-
-
-

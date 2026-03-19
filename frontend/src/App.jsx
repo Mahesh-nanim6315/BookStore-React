@@ -155,30 +155,30 @@ const App = () => {
           
           {/* Standalone Protected Routes (no header/footer) */}
           <Route path="dashboard" element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredPermission="access_dashboard">
               <AdminLayout />
             </ProtectedRoute>
           }>
             <Route index element={<Dashboard />} />
-            <Route path="orders" element={<AdminOrdersIndex />} />
-            <Route path="orders/:id" element={<AdminOrdersShow />} />
-            <Route path="payments" element={<AdminPaymentsIndex />} />
-            <Route path="books" element={<BooksIndex />} />
-            <Route path="books/create" element={<BookCreate />} />
-            <Route path="books/:id" element={<BookShow />} />
-            <Route path="books/:id/edit" element={<BookEdit />} />
-            <Route path="authors" element={<AdminAuthorsIndex />} />
-            <Route path="authors/create" element={<AdminAuthorsCreate />} />
-            <Route path="authors/:id" element={<AdminAuthorsShow />} />
-            <Route path="authors/:id/edit" element={<AdminAuthorsEdit />} />
-            <Route path="reviews" element={<AdminReviewsIndex />} />
-            <Route path="users" element={<AdminUsersIndex />} />
-            <Route path="users/create" element={<AdminUsersCreate />} />
-            <Route path="users/:id" element={<AdminUsersShow />} />
-            <Route path="users/:id/edit" element={<AdminUsersEdit />} />
-            <Route path="notifications" element={<AdminNotificationsIndex />} />
-            <Route path="roles-permissions" element={<AdminRolesIndex />} />
-            <Route path="settings" element={<AdminSettingsIndex />} />
+            <Route path="orders" element={<ProtectedRoute requiredPermission="manage_orders"><AdminOrdersIndex /></ProtectedRoute>} />
+            <Route path="orders/:id" element={<ProtectedRoute requiredPermission="manage_orders"><AdminOrdersShow /></ProtectedRoute>} />
+            <Route path="payments" element={<ProtectedRoute requiredPermission="manage_payments"><AdminPaymentsIndex /></ProtectedRoute>} />
+            <Route path="books" element={<ProtectedRoute requiredPermission="books.view"><BooksIndex /></ProtectedRoute>} />
+            <Route path="books/create" element={<ProtectedRoute requiredPermission="books.create"><BookCreate /></ProtectedRoute>} />
+            <Route path="books/:id" element={<ProtectedRoute requiredPermission="books.view"><BookShow /></ProtectedRoute>} />
+            <Route path="books/:id/edit" element={<ProtectedRoute requiredPermission="books.edit"><BookEdit /></ProtectedRoute>} />
+            <Route path="authors" element={<ProtectedRoute requiredPermission="authors.view"><AdminAuthorsIndex /></ProtectedRoute>} />
+            <Route path="authors/create" element={<ProtectedRoute requiredPermission="authors.create"><AdminAuthorsCreate /></ProtectedRoute>} />
+            <Route path="authors/:id" element={<ProtectedRoute requiredPermission="authors.view"><AdminAuthorsShow /></ProtectedRoute>} />
+            <Route path="authors/:id/edit" element={<ProtectedRoute requiredPermission="authors.edit"><AdminAuthorsEdit /></ProtectedRoute>} />
+            <Route path="reviews" element={<ProtectedRoute requiredPermission="manage_reviews"><AdminReviewsIndex /></ProtectedRoute>} />
+            <Route path="users" element={<ProtectedRoute requiredPermission="users.view"><AdminUsersIndex /></ProtectedRoute>} />
+            <Route path="users/create" element={<ProtectedRoute requiredPermission="users.create"><AdminUsersCreate /></ProtectedRoute>} />
+            <Route path="users/:id" element={<ProtectedRoute requiredPermission="users.view"><AdminUsersShow /></ProtectedRoute>} />
+            <Route path="users/:id/edit" element={<ProtectedRoute requiredPermission="users.edit"><AdminUsersEdit /></ProtectedRoute>} />
+            <Route path="notifications" element={<ProtectedRoute requiredPermission="manage_notifications"><AdminNotificationsIndex /></ProtectedRoute>} />
+            <Route path="roles-permissions" element={<ProtectedRoute requiredPermission="manage_roles_permissions"><AdminRolesIndex /></ProtectedRoute>} />
+            <Route path="settings" element={<ProtectedRoute requiredRole="admin"><AdminSettingsIndex /></ProtectedRoute>} />
           </Route>
 
           {/* Admin Routes */}

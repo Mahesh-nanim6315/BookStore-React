@@ -130,6 +130,7 @@ class AuthController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'role' => $user->role,
+            'permissions' => $user->permissions(),
             'plan' => $user->plan,
             'billing_cycle' => $user->billing_cycle,
             'plan_expires_at' => $user->plan_expires_at,

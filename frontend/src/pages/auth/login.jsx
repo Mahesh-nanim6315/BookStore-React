@@ -1,6 +1,7 @@
-﻿import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { getDefaultPostLoginPath } from '../../utils/permissions'
 
 const AuthLogin = () => {
   const [formData, setFormData] = useState({
@@ -11,13 +12,13 @@ const AuthLogin = () => {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
   const navigate = useNavigate()
-  const { login, isAuthenticated, loading: authLoading } = useAuth()
+  const { login, isAuthenticated, loading: authLoading, user } = useAuth()
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      navigate('/dashboard')
+      navigate(getDefaultPostLoginPath(user), { replace: true })
     }
-  }, [authLoading, isAuthenticated, navigate])
+  }, [authLoading, isAuthenticated, navigate, user])
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -36,7 +37,7 @@ const AuthLogin = () => {
       const response = await login(formData)
       
       if (response.success) {
-        navigate('/dashboard')
+        navigate(getDefaultPostLoginPath(response.user), { replace: true })
       } else {
         setErrors(response.errors || { general: 'Login failed' })
       }
@@ -131,7 +132,3 @@ const AuthLogin = () => {
 }
 
 export default AuthLogin
-
-
-
-

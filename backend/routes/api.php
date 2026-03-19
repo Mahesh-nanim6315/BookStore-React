@@ -151,12 +151,6 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::delete('/{wishlist}', [WishlistController::class, 'destroy']);
     });
     
-    // Admin Dashboard API
-    Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/dashboard/stats', [AdminDashboardController::class, 'index']);
-        Route::get('/dashboard', [AdminDashboardController::class, 'dashboard']);
-    });
-    
     // Library
     Route::prefix('library')->group(function () {
         Route::get('/', [LibraryController::class, 'index']);
@@ -209,54 +203,55 @@ Route::prefix('v1/subscription')->middleware('auth:sanctum')->group(function () 
 });
 
 /* ================= ADMIN ROUTES ================= */
-Route::prefix('v1/admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
+Route::prefix('v1/admin')->middleware(['auth:sanctum'])->group(function () {
     
     // Dashboard
-    // Route::get('/dashboard', [DashboardController::class, 'index']);
+    Route::get('/dashboard/stats', [AdminDashboardController::class, 'index'])->middleware('permission:access_dashboard');
+    Route::get('/dashboard', [AdminDashboardController::class, 'dashboard'])->middleware('permission:access_dashboard');
     
     // Books Management
     Route::prefix('books')->group(function () {
-        Route::get('/', [AdminBookController::class, 'index']);
-        Route::get('/create', [AdminBookController::class, 'create']);
-        Route::post('/', [AdminBookController::class, 'store']);
-        Route::get('/{book}/edit', [AdminBookController::class, 'edit']);
-        Route::get('/{book}', [AdminBookController::class, 'show']);
-        Route::put('/{book}', [AdminBookController::class, 'update']);
-        Route::delete('/{book}', [AdminBookController::class, 'destroy']);
+        Route::get('/', [AdminBookController::class, 'index'])->middleware('permission:books.view');
+        Route::get('/create', [AdminBookController::class, 'create'])->middleware('permission:books.create');
+        Route::post('/', [AdminBookController::class, 'store'])->middleware('permission:books.create');
+        Route::get('/{book}/edit', [AdminBookController::class, 'edit'])->middleware('permission:books.edit');
+        Route::get('/{book}', [AdminBookController::class, 'show'])->middleware('permission:books.view');
+        Route::put('/{book}', [AdminBookController::class, 'update'])->middleware('permission:books.edit');
+        Route::delete('/{book}', [AdminBookController::class, 'destroy'])->middleware('permission:books.delete');
     });
 
     // Orders Management
     Route::prefix('orders')->group(function () {
-        Route::get('/', [AdminOrderController::class, 'index']);
-        Route::get('/export/csv', [AdminOrderController::class, 'exportCsv']);
-        Route::get('/{id}', [AdminOrderController::class, 'show']);
-        Route::put('/{order}', [AdminOrderController::class, 'update']);
-        Route::put('/{id}/status', [AdminOrderController::class, 'updateStatus']);
-        Route::put('/{id}/payment-status', [AdminOrderController::class, 'updatePaymentStatus']);
+        Route::get('/', [AdminOrderController::class, 'index'])->middleware('permission:manage_orders');
+        Route::get('/export/csv', [AdminOrderController::class, 'exportCsv'])->middleware('permission:manage_orders');
+        Route::get('/{id}', [AdminOrderController::class, 'show'])->middleware('permission:manage_orders');
+        Route::put('/{order}', [AdminOrderController::class, 'update'])->middleware('permission:manage_orders');
+        Route::put('/{id}/status', [AdminOrderController::class, 'updateStatus'])->middleware('permission:manage_orders');
+        Route::put('/{id}/payment-status', [AdminOrderController::class, 'updatePaymentStatus'])->middleware('permission:manage_payments');
     });
 
-    Route::get('/payments', [AdminOrderController::class, 'payments']);
+    Route::get('/payments', [AdminOrderController::class, 'payments'])->middleware('permission:manage_payments');
     
     // Authors Management
     Route::prefix('authors')->group(function () {
-        Route::get('/', [AdminAuthorController::class, 'index']);
-        Route::get('/create', [AdminAuthorController::class, 'create']);
-        Route::post('/', [AdminAuthorController::class, 'store']);
-        Route::get('/{author}/edit', [AdminAuthorController::class, 'edit']);
-        Route::get('/{author}', [AdminAuthorController::class, 'show']);
-        Route::put('/{author}', [AdminAuthorController::class, 'update']);
-        Route::delete('/{author}', [AdminAuthorController::class, 'destroy']);
+        Route::get('/', [AdminAuthorController::class, 'index'])->middleware('permission:authors.view');
+        Route::get('/create', [AdminAuthorController::class, 'create'])->middleware('permission:authors.create');
+        Route::post('/', [AdminAuthorController::class, 'store'])->middleware('permission:authors.create');
+        Route::get('/{author}/edit', [AdminAuthorController::class, 'edit'])->middleware('permission:authors.edit');
+        Route::get('/{author}', [AdminAuthorController::class, 'show'])->middleware('permission:authors.view');
+        Route::put('/{author}', [AdminAuthorController::class, 'update'])->middleware('permission:authors.edit');
+        Route::delete('/{author}', [AdminAuthorController::class, 'destroy'])->middleware('permission:authors.delete');
     });
     
     // Users Management
     Route::prefix('users')->group(function () {
-        Route::get('/', [AdminUserController::class, 'index']);
-        Route::get('/create', [AdminUserController::class, 'create']);
-        Route::post('/', [AdminUserController::class, 'store']);
-        Route::get('/{user}/edit', [AdminUserController::class, 'edit']);
-        Route::get('/{user}', [AdminUserController::class, 'show']);
-        Route::put('/{user}', [AdminUserController::class, 'update']);
-        Route::delete('/{user}', [AdminUserController::class, 'destroy']);
+        Route::get('/', [AdminUserController::class, 'index'])->middleware('permission:users.view');
+        Route::get('/create', [AdminUserController::class, 'create'])->middleware('permission:users.create');
+        Route::post('/', [AdminUserController::class, 'store'])->middleware('permission:users.create');
+        Route::get('/{user}/edit', [AdminUserController::class, 'edit'])->middleware('permission:users.edit');
+        Route::get('/{user}', [AdminUserController::class, 'show'])->middleware('permission:users.view');
+        Route::put('/{user}', [AdminUserController::class, 'update'])->middleware('permission:users.edit');
+        Route::delete('/{user}', [AdminUserController::class, 'destroy'])->middleware('permission:users.delete');
     });
     
     // Orders Management
@@ -274,9 +269,9 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'admin'])->group(function
     
     // Reviews Management
     Route::prefix('reviews')->group(function () {
-        Route::get('/', [AdminReviewController::class, 'index']);
-        Route::delete('/{review}', [AdminReviewController::class, 'destroy']);
-        Route::patch('/{review}/approve', [AdminReviewController::class, 'approve']);
+        Route::get('/', [AdminReviewController::class, 'index'])->middleware('permission:manage_reviews');
+        Route::delete('/{review}', [AdminReviewController::class, 'destroy'])->middleware('permission:manage_reviews');
+        Route::patch('/{review}/approve', [AdminReviewController::class, 'approve'])->middleware('permission:manage_reviews');
     });
 
     // Roles & Permissions
@@ -287,7 +282,7 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'admin'])->group(function
     
     // Settings
     Route::prefix('settings')->group(function () {
-        Route::get('/', [AdminSettingsController::class, 'index']);
-        Route::post('/', [AdminSettingsController::class, 'update']);
+        Route::get('/', [AdminSettingsController::class, 'index'])->middleware('role:admin');
+        Route::post('/', [AdminSettingsController::class, 'update'])->middleware('role:admin');
     });
 });

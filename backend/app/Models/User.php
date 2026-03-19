@@ -15,6 +15,49 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, HasApiTokens, Notifiable, Billable;
 
+    private const DEFAULT_ROLE_PERMISSIONS = [
+        'admin' => [
+            'access_dashboard',
+            'manage_orders',
+            'manage_payments',
+            'books.view',
+            'books.create',
+            'books.edit',
+            'books.delete',
+            'authors.view',
+            'authors.create',
+            'authors.edit',
+            'authors.delete',
+            'users.view',
+            'users.create',
+            'users.edit',
+            'users.delete',
+            'manage_reviews',
+            'manage_notifications',
+            'manage_roles_permissions',
+        ],
+        'manager' => [
+            'access_dashboard',
+            'manage_orders',
+            'books.view',
+            'books.create',
+            'books.edit',
+            'books.delete',
+            'authors.view',
+            'authors.create',
+            'authors.edit',
+            'authors.delete',
+            'manage_reviews',
+            'manage_notifications',
+        ],
+        'staff' => [
+            'access_dashboard',
+            'manage_orders',
+            'manage_reviews',
+        ],
+        'user' => [],
+    ];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -77,19 +120,52 @@ class User extends Authenticatable
         return $this->hasMany(Review::class);
     }
 
-    public function isAdmin()
+public function isAdmin()
 {
-    return $this->role === 'admin';
+    return strtolower((string) $this->role) === 'admin';
 }
 
 public function isManager()
 {
-    return $this->role === 'manager';
+    return strtolower((string) $this->role) === 'manager';
 }
 
 public function isStaff()
 {
-    return $this->role === 'staff';
+    return strtolower((string) $this->role) === 'staff';
+}
+
+public function hasRole(string $role): bool
+{
+    return strtolower((string) $this->role) === strtolower($role);
+}
+
+public function permissions(): array
+{
+    $role = strtolower((string) ($this->role ?? 'user'));
+
+    if ($role === 'admin') {
+        return self::DEFAULT_ROLE_PERMISSIONS['admin'];
+    }
+
+    $saved = RolePermission::query()
+        ->whereRaw('LOWER(role) = ?', [$role])
+        ->value('permissions');
+
+    if (is_array($saved)) {
+        return array_values(array_unique($saved));
+    }
+
+    return self::DEFAULT_ROLE_PERMISSIONS[$role] ?? [];
+}
+
+public function hasPermission(string $permission): bool
+{
+    if ($this->hasRole('admin')) {
+        return true;
+    }
+
+    return in_array($permission, $this->permissions(), true);
 }
 
 public function hasActiveSubscription()

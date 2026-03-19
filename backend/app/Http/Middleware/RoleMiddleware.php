@@ -11,17 +11,22 @@ class RoleMiddleware
     public function handle(Request $request, Closure $next, ...$roles)
     {
         if (!Auth::check()) {
-            return redirect()->route('login');
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated.',
+            ], 401);
         }
 
         $userRole = strtolower(Auth::user()->role);
         $allowedRoles = array_map('strtolower', $roles);
 
         if (!in_array($userRole, $allowedRoles)) {
-            abort(403);
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have the required role for this action.',
+            ], 403);
         }
 
         return $next($request);
     }
 }
-
