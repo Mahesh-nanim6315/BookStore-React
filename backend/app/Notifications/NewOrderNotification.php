@@ -24,10 +24,12 @@ class NewOrderNotification extends Notification
 
     public function toDatabase($notifiable)
     {
+        $frontendBase = rtrim(config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:5173')), '/');
+
         return [
             'order_id' => $this->order->id,
             'message'  => 'New order #' . $this->order->id . ' placed.',
-            'url'      => route('admin.orders.show', $this->order->id),
+            'url'      => $frontendBase . '/admin/orders/' . $this->order->id,
         ];
     }
 }

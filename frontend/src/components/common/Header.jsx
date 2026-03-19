@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { getCart } from '../../api/cart'
+import { CART_UPDATED_EVENT, getCart } from '../../api/cart'
 
 const primaryLinks = [
   { to: '/', label: 'Home' },
@@ -35,6 +35,20 @@ const Header = () => {
       loadCartCount()
     } else {
       setCartCount(0)
+    }
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    const handleCartUpdated = () => {
+      if (isAuthenticated) {
+        loadCartCount()
+      }
+    }
+
+    window.addEventListener(CART_UPDATED_EVENT, handleCartUpdated)
+
+    return () => {
+      window.removeEventListener(CART_UPDATED_EVENT, handleCartUpdated)
     }
   }, [isAuthenticated])
 
