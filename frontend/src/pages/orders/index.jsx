@@ -1,7 +1,14 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Loader from '../../components/common/Loader'
 import { downloadInvoice, getOrders } from '../../api/orders'
+
+const formatCurrency = (value) => `Rs. ${Number(value || 0).toLocaleString()}`
+
+const formatStatus = (value) => {
+  if (!value) return 'Unknown'
+  return value.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
+}
 
 const OrdersIndex = () => {
   const [loading, setLoading] = useState(true)
@@ -39,58 +46,99 @@ const OrdersIndex = () => {
     }
   }
 
+  const metrics = useMemo(() => {
+    const totalSpend = orders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0)
+    const paidOrders = orders.filter((order) => order.payment_status === 'paid').length
+
+    return [
+      { label: 'Total orders', value: orders.length, detail: 'All time purchases' },
+      { label: 'Total spend', value: formatCurrency(totalSpend), detail: 'Across all completed checkouts' },
+      { label: 'Paid orders', value: paidOrders, detail: 'Settled payments' },
+    ]
+  }, [orders])
+
   if (loading) {
     return <Loader />
   }
 
   return (
     <div className="page">
-      <div className="orders-page">
-        <h2 className="page-title">My Orders</h2>
+      <div className="orders-shell">
+        <section className="orders-hero">
+          <div>
+            <p className="orders-eyebrow">Account</p>
+            <h1>Order History</h1>
+            <p className="orders-subtitle">Track purchases, payment status, invoices, and the latest updates on every order.</p>
+          </div>
+          <Link to="/products" className="orders-hero-action">
+            Continue shopping
+          </Link>
+        </section>
 
         {error && <p className="wishlist-message wishlist-message--error">{error}</p>}
 
+        <section className="orders-metrics">
+          {metrics.map((metric) => (
+            <div key={metric.label} className="orders-metric-card">
+              <span>{metric.label}</span>
+              <strong>{metric.value}</strong>
+              <small>{metric.detail}</small>
+            </div>
+          ))}
+        </section>
+
         {orders.length > 0 ? (
-          <div className="orders-list">
+          <section className="orders-grid">
             {orders.map((order) => (
-              <div className="order-card" key={order.id}>
-                <div className="order-header">
+              <article key={order.id} className="orders-card">
+                <div className="orders-card__top">
                   <div>
-                    <strong>Order #{order.id}</strong>
-                    <p className="order-date">
+                    <p className="orders-card__label">Order #{order.id}</p>
+                    <h2>{formatCurrency(order.total_amount)}</h2>
+                    <span className="orders-card__date">
                       {order.created_at ? new Date(order.created_at).toLocaleString() : ''}
-                    </p>
+                    </span>
                   </div>
-
-                  <span className="order-status">
-                    {order.status}
-                  </span>
+                  <div className="orders-card__status-group">
+                    <span className={`orders-pill orders-pill--${order.status || 'unknown'}`}>
+                      {formatStatus(order.status)}
+                    </span>
+                    <span className={`orders-pill orders-pill--payment-${order.payment_status || 'unknown'}`}>
+                      {formatStatus(order.payment_status)}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="order-body">
-                  <p><strong>Total:</strong> Rs. {order.total_amount}</p>
-                  <p><strong>Payment:</strong> {order.payment_status}</p>
-                  <p><strong>Method:</strong> {order.payment_method || 'N/A'}</p>
-                  <p><strong>Items:</strong> {order.items_count || 0}</p>
+                <div className="orders-card__body">
+                  <div>
+                    <span>Payment method</span>
+                    <strong>{formatStatus(order.payment_method || 'not set')}</strong>
+                  </div>
+                  <div>
+                    <span>Items</span>
+                    <strong>{order.items_count || 0}</strong>
+                  </div>
                 </div>
 
-                <div className="order-footer">
-                  <Link to={`/orders/${order.id}`} className="btnes view-btns">
-                    View Details
+                <div className="orders-card__footer">
+                  <Link to={`/orders/${order.id}`} className="orders-button orders-button--primary">
+                    View details
                   </Link>
-
-                  <button type="button" onClick={() => handleDownloadInvoice(order.id)} className="btnes invoice-btn">
-                    Download Invoice
+                  <button type="button" onClick={() => handleDownloadInvoice(order.id)} className="orders-button orders-button--ghost">
+                    Invoice
                   </button>
                 </div>
-              </div>
+              </article>
             ))}
-          </div>
+          </section>
         ) : (
-          <div className="empty-orders">
-            <p>You haven't placed any orders yet.</p>
-            <Link to="/products" className="btnes shop-btns">Browse Books</Link>
-          </div>
+          <section className="orders-empty">
+            <h2>No orders yet</h2>
+            <p>Your purchases will appear here after you complete checkout.</p>
+            <Link to="/products" className="orders-button orders-button--primary">
+              Browse books
+            </Link>
+          </section>
         )}
       </div>
     </div>

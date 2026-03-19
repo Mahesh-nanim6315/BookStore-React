@@ -33,12 +33,7 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role
-            ],
+            'user' => $this->formatUser($user),
             'message' => 'Login successful'
         ]);
     }
@@ -67,12 +62,7 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role
-            ],
+            'user' => $this->formatUser($user),
             'message' => 'Registration successful'
         ]);
     }
@@ -129,12 +119,22 @@ class AuthController extends Controller
     {
         return response()->json([
             'success' => true,
-            'user' => [
-                'id' => $request->user()->id,
-                'name' => $request->user()->name,
-                'email' => $request->user()->email,
-                'role' => $request->user()->role
-            ]
+            'user' => $this->formatUser($request->user())
         ]);
+    }
+
+    private function formatUser(User $user): array
+    {
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+            'plan' => $user->plan,
+            'billing_cycle' => $user->billing_cycle,
+            'plan_expires_at' => $user->plan_expires_at,
+            'avatar_url' => $user->avatar_url,
+            'cover_url' => $user->cover_url,
+        ];
     }
 }

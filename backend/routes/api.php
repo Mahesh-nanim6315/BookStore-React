@@ -48,11 +48,13 @@ Route::prefix('v1')->group(function () {
     });
     
     // Home & Books
-    Route::get('/home', [BookController::class, 'home']);
+    Route::middleware(StartSession::class)->group(function () {
+        Route::get('/home', [BookController::class, 'home']);
+        Route::get('/books/{book}', [BookController::class, 'show']);
+        Route::get('/books/{book}/details', [BookController::class, 'details']);
+    });
     Route::get('/products', [ProductController::class, 'home']);
     Route::get('/books', [BookController::class, 'index']);
-    Route::get('/books/{book}', [BookController::class, 'show']);
-    Route::get('/books/{book}/details', [BookController::class, 'details']);
     
     // Format-based books
     Route::get('/ebooks', [ProductController::class, 'ebooks']);

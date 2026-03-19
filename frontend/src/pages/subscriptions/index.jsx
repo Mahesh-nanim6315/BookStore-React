@@ -198,13 +198,22 @@ const SubscriptionsIndex = () => {
 
         {user?.plan && user.plan !== 'free' && (
           <div className="subscription-section">
-            <h3>Subscription Management</h3>
-            <p>
-              Plan: <strong>{user.plan}</strong>
-              {user.billing_cycle ? ` | ${user.billing_cycle}` : ''}
-              {user.plan_expires_at ? ` | expires ${new Date(user.plan_expires_at).toLocaleDateString()}` : ''}
+            <div className="subscription-section__header">
+              <div>
+                <p className="subscription-section__eyebrow">Active Membership</p>
+                <h3>Subscription Management</h3>
+              </div>
+              <div className="subscription-section__summary">
+                <span className="subscription-summary-pill">{user.plan}</span>
+                {user.billing_cycle && <span className="subscription-summary-pill subscription-summary-pill--muted">{user.billing_cycle}</span>}
+              </div>
+            </div>
+            <p className="subscription-section__copy">
+              Your current plan is <strong>{user.plan}</strong>
+              {user.billing_cycle ? ` on the ${user.billing_cycle} cycle` : ''}.
+              {user.plan_expires_at ? ` Access renews or expires on ${new Date(user.plan_expires_at).toLocaleDateString()}.` : ' You can manage changes below.'}
             </p>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <div className="subscription-section__actions">
               <button type="button" className="upgrade-btn" onClick={handleCancel} disabled={submitting === 'cancel'}>
                 {submitting === 'cancel' ? 'Cancelling...' : 'Cancel Subscription'}
               </button>
