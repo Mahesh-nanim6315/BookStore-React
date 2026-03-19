@@ -10,8 +10,8 @@ export const getStripeCheckout = async (orderId) => {
   return data
 }
 
-export const getStripeSuccess = async (orderId) => {
-  const { data } = await axiosClient.get(`/payments/stripe/success/${orderId}`)
+export const getStripeSuccess = async (orderId, params = {}) => {
+  const { data } = await axiosClient.get(`/payments/stripe/success/${orderId}`, { params })
   return data
 }
 
@@ -25,17 +25,7 @@ export const getPaypalPay = async (orderId) => {
   return data
 }
 
-export const getPaypalSuccess = async (orderId) => {
-  const { data } = await axiosClient.get(`/payments/paypal/${orderId}/success`)
-  return data
-}
-
-export const getPaypalCancel = async (orderId) => {
-  const { data } = await axiosClient.get(`/payments/paypal/${orderId}/cancel`)
-  return data
-}
-
-export const getPaypalCheckout = async (orderId) => {
-  const { data } = await axiosClient.get(`/payments/paypal/checkout/${orderId}`)
+export const getPaypalSuccess = async (orderId, params = {}) => {
+  const { data } = await axiosClient.get(`/payments/paypal/${orderId}/success`, { params })
   return data
 }

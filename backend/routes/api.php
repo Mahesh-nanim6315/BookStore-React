@@ -178,7 +178,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 });
 
 /* ================= PAYMENT ROUTES ================= */
-Route::prefix('v1/payments')->group(function () {
+Route::prefix('v1/payments')->middleware('auth:sanctum')->group(function () {
     
     // Stripe
     Route::prefix('stripe')->group(function () {
@@ -192,7 +192,6 @@ Route::prefix('v1/payments')->group(function () {
         Route::get('/{order}/pay', [PayPalController::class, 'pay']);
         Route::get('/{order}/success', [PayPalController::class, 'success']);
         Route::get('/{order}/cancel', [PayPalController::class, 'cancel']);
-        Route::get('/checkout/{order}', [PayPalController::class, 'checkout']);
     });
     
     // General payment processing

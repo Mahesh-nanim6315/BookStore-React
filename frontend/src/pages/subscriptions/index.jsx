@@ -1,102 +1,222 @@
-﻿import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import Loader from '../../components/common/Loader'
+import { useAuth } from '../../contexts/AuthContext'
+import {
+  cancelSubscription,
+  checkoutSubscription,
+  confirmSubscriptionSuccess,
+  getPlans,
+  resumeSubscription,
+} from '../../api/subscriptions'
 
 const SubscriptionsIndex = () => {
+  const { user, loadUser } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState('')
+  const [billingCycle, setBillingCycle] = useState('monthly')
+  const [plansData, setPlansData] = useState([])
+  const [subscriptionsEnabled, setSubscriptionsEnabled] = useState(true)
+  const [freeTrialDays, setFreeTrialDays] = useState(0)
+  const [message, setMessage] = useState(location.state?.message || '')
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        setError('')
+        const response = await getPlans()
+        setPlansData(response.data?.plans || [])
+        setSubscriptionsEnabled(Boolean(response.data?.subscriptions_enabled))
+        setFreeTrialDays(response.data?.free_trial_days || 0)
+
+        const status = searchParams.get('subscription')
+        if (status === 'success') {
+          const confirm = await confirmSubscriptionSuccess({
+            plan: searchParams.get('plan'),
+            billing: searchParams.get('billing'),
+          })
+          await loadUser()
+          navigate('/plans', {
+            replace: true,
+            state: { message: confirm.message || 'Subscription activated successfully.' },
+          })
+        } else if (status === 'cancelled') {
+          navigate('/plans', {
+            replace: true,
+            state: { message: 'Subscription checkout was cancelled.' },
+          })
+        }
+      } catch (err) {
+        setError(err?.response?.data?.message || 'Unable to load subscription plans.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadPlans()
+  }, [loadUser, navigate, searchParams])
+
+  const currentPlan = useMemo(() => user?.plan || 'free', [user?.plan])
+
+  const handleCheckout = async (planKey) => {
+    try {
+      setSubmitting(planKey)
+      setError('')
+      const response = await checkoutSubscription({
+        plan: planKey,
+        billing_cycle: billingCycle,
+      })
+
+      if (response.data?.checkout_url) {
+        window.location.href = response.data.checkout_url
+        return
+      }
+
+      if (response.data?.redirect) {
+        await loadUser()
+        navigate(response.data.redirect)
+      }
+
+      setMessage(response.message || 'Subscription updated.')
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Unable to update subscription.')
+    } finally {
+      setSubmitting('')
+    }
+  }
+
+  const handleCancel = async () => {
+    try {
+      setSubmitting('cancel')
+      setError('')
+      const response = await cancelSubscription()
+      setMessage(response.message)
+      await loadUser()
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Unable to cancel subscription.')
+    } finally {
+      setSubmitting('')
+    }
+  }
+
+  const handleResume = async () => {
+    try {
+      setSubmitting('resume')
+      setError('')
+      const response = await resumeSubscription()
+      setMessage(response.message)
+      await loadUser()
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Unable to resume subscription.')
+    } finally {
+      setSubmitting('')
+    }
+  }
+
+  if (loading) {
+    return <Loader />
+  }
+
+  const normalizePlanKey = (name) => name.toLowerCase().split(' ')[0]
+
   return (
     <div className="page">
-{/*  */}
-{/* 
- */}
-<div className="plans-container">
-
-    <div className="plans-header">
-        <h1>Choose Your Reading Plan</h1>
-        <p>Unlock unlimited stories and immersive audiobooks.</p>
-{/*          */}
+      <div className="plans-container">
+        <div className="plans-header">
+          <h1>Choose Your Reading Plan</h1>
+          <p>Unlock unlimited stories and immersive audiobooks.</p>
+          <p style={{ marginTop: '8px', color: '#475569' }}>
+            Current plan: <strong>{currentPlan}</strong>
+            {user?.billing_cycle ? ` (${user.billing_cycle})` : ''}
+            {freeTrialDays > 0 ? ` | ${freeTrialDays}-day trial available on paid plans` : ''}
+          </p>
+          {!subscriptionsEnabled && (
             <p style={{ marginTop: '8px', color: '#b45309', background: '#fef3c7', padding: '8px 12px', borderRadius: '8px' }}>
-                Subscriptions are currently disabled. Existing subscribers keep access, but new upgrades are paused.
+              Subscriptions are currently disabled. Existing subscribers keep access, but new upgrades are paused.
             </p>
-{/*          */}
-    </div>
+          )}
+          {message && <p style={{ marginTop: '8px', color: '#166534' }}>{message}</p>}
+          {error && <p style={{ marginTop: '8px', color: '#dc2626' }}>{error}</p>}
+        </div>
 
-    <div className="billing-toggle">
-        <button id="monthlyBtn" className="active">Monthly</button>
-        <button id="yearlyBtn">Yearly</button>
-    </div>
+        <div className="billing-toggle">
+          <button
+            type="button"
+            id="monthlyBtn"
+            className={billingCycle === 'monthly' ? 'active' : ''}
+            onClick={() => setBillingCycle('monthly')}
+          >
+            Monthly
+          </button>
+          <button
+            type="button"
+            id="yearlyBtn"
+            className={billingCycle === 'yearly' ? 'active' : ''}
+            onClick={() => setBillingCycle('yearly')}
+          >
+            Yearly
+          </button>
+        </div>
 
-    <div className="plans-grid">
-{/*          */}
-{/*              */}
-                $planKey = strtolower(explode(' ', $plan['name'])[0]);
-                $isCurrentPlan = auth()->check() && auth()->user()->plan === $planKey;
-{/*              */}
+        <div className="plans-grid">
+          {plansData.map((plan) => {
+            const planKey = normalizePlanKey(plan.name)
+            const isCurrentPlan = currentPlan === planKey
+            const price = billingCycle === 'yearly' ? plan.yearly : plan.monthly
+            const disabled = (!subscriptionsEnabled && planKey !== 'free') || submitting === planKey || isCurrentPlan
 
-            <div className="plan-card ">
-{/*                 ) */}
-                    <div className="popular-badge">Most Popular</div>
-{/*                  */}
-
-                <h2></h2>
-
+            return (
+              <div key={planKey} className={`plan-card ${isCurrentPlan ? 'current-plan' : ''}`}>
+                {plan.popular && <div className="popular-badge">Most Popular</div>}
+                <h2>{plan.name}</h2>
                 <div className="price">
-                    <span className="amount" data-monthly="" data-yearly="">
-                        $
-                    </span>
-                    <small>/month</small>
+                  <span className="amount">${price}</span>
+                  <small>/{billingCycle === 'yearly' ? 'year' : 'month'}</small>
                 </div>
-
                 <ul>
-{/*                      */}
-                        <li>&#10004; </li>
-{/*                      */}
+                  {plan.features.map((feature) => (
+                    <li key={feature}>&#10004; {feature}</li>
+                  ))}
                 </ul>
-{/* 
-                 */}
-                    <div className="current-plan-badge">Current Plan</div>
-{/*                  */}
-{/* 
-                 */}
-                    <button type="button" className="subscribe-btn" disabled>
-                        Subscriptions Disabled
-                    </button>
-{/*                  */}
-                    <form method="POST" action="">
-{/*                          */}
-                        <input type="hidden" name="plan" value="" />
-                        <input type="hidden" name="billing_cycle" value="monthly" />
-{/* 
-                         */}
-                            $buttonText = 'Choose Plan';
+                {isCurrentPlan && <div className="current-plan-badge">Current Plan</div>}
+                <button
+                  type="button"
+                  className="subscribe-btn"
+                  disabled={disabled}
+                  onClick={() => handleCheckout(planKey)}
+                >
+                  {submitting === planKey ? 'Please wait...' : isCurrentPlan ? 'Current Plan' : planKey === 'free' ? 'Switch to Free' : `Choose ${plan.name}`}
+                </button>
+              </div>
+            )
+          })}
+        </div>
 
-                            if ($isCurrentPlan) {
-                                $buttonText = 'Current Plan';
-                            } elseif (auth()->check() && $planKey === 'free' && auth()->user()->plan !== 'free') {
-                                $buttonText = 'Downgrade to Free';
-                            } elseif (auth()->check() && auth()->user()->plan === 'premium' && $planKey === 'ultimate') {
-                                $buttonText = 'Upgrade to Ultimate';
-                            }
-{/*                          */}
-
-                        <button type="submit" className="subscribe-btn" >
-                            
-                        </button>
-                    </form>
-{/*                  */}
+        {user?.plan && user.plan !== 'free' && (
+          <div className="subscription-section">
+            <h3>Subscription Management</h3>
+            <p>
+              Plan: <strong>{user.plan}</strong>
+              {user.billing_cycle ? ` | ${user.billing_cycle}` : ''}
+              {user.plan_expires_at ? ` | expires ${new Date(user.plan_expires_at).toLocaleDateString()}` : ''}
+            </p>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <button type="button" className="upgrade-btn" onClick={handleCancel} disabled={submitting === 'cancel'}>
+                {submitting === 'cancel' ? 'Cancelling...' : 'Cancel Subscription'}
+              </button>
+              <button type="button" className="upgrade-btn" onClick={handleResume} disabled={submitting === 'resume'}>
+                {submitting === 'resume' ? 'Resuming...' : 'Resume Subscription'}
+              </button>
             </div>
-{/*          */}
-    </div>
-</div>
-{/*  */}
-
-
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
 export default SubscriptionsIndex
-
-
-
-
-
-
-

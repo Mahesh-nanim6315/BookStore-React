@@ -20,6 +20,7 @@ import * as adminUsers from './adminUsers'
 import * as adminNotifications from './adminNotifications'
 import * as adminRoles from './adminRoles'
 import * as adminSettings from './adminSettings'
+import * as subscriptions from './subscriptions'
 
 // Default export for api
 export default {
@@ -82,6 +83,9 @@ export default {
 
   // Admin settings API
   ...adminSettings,
+
+  // Subscription API
+  ...subscriptions,
   
   // Lookups API
   ...lookups,

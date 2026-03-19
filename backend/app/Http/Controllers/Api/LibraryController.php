@@ -55,7 +55,7 @@ class LibraryController extends Controller
 
     public function index()
     {
-        $libraries = UserLibrary::with('book')
+        $libraries = UserLibrary::with(['book.author', 'book.category'])
             ->where('user_id', Auth::id())
             ->orderBy('created_at', 'desc')
             ->get();

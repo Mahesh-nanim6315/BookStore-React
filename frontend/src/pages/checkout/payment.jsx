@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import Loader from '../../components/common/Loader'
 import { getCheckout, getPaymentPage, processCheckout, processPayment } from '../../api/checkout'
+import { getPaypalPay, getStripeCheckout } from '../../api/payments'
 
 const CheckoutPayment = () => {
   const location = useLocation()
@@ -67,33 +68,30 @@ const CheckoutPayment = () => {
       }
 
       const paymentResponse = await processPayment(nextOrderId, { payment_method: paymentMethod })
-      
-      console.log('Payment Response:', paymentResponse)
-      
-      // Handle API response with checkout_url
-      if (paymentResponse.success && paymentResponse.data?.checkout_url) {
-        console.log('Redirecting to Stripe checkout:', paymentResponse.data.checkout_url)
-        window.location.href = paymentResponse.data.checkout_url
-        return
+
+      if (paymentResponse.success && paymentMethod === 'stripe') {
+        const stripeResponse = await getStripeCheckout(nextOrderId)
+        if (stripeResponse.success && stripeResponse.data?.checkout_url) {
+          window.location.href = stripeResponse.data.checkout_url
+          return
+        }
       }
 
-      // Handle API response with redirect (for other payment methods)
+      if (paymentResponse.success && paymentMethod === 'paypal') {
+        const paypalResponse = await getPaypalPay(nextOrderId)
+        if (paypalResponse.success && paypalResponse.data?.redirect_url) {
+          window.location.href = paypalResponse.data.redirect_url
+          return
+        }
+      }
+
       if (paymentResponse.success && paymentResponse.data?.redirect) {
-        console.log('Redirecting to:', paymentResponse.data.redirect)
         window.location.href = paymentResponse.data.redirect
-        return
-      }
-
-      // For COD, redirect to success page
-      if (paymentMethod === 'cod') {
-        navigate('/checkout/success?order=' + nextOrderId)
         return
       }
 
       setError('Payment processing failed. Please try again.')
     } catch (err) {
-      console.error('Payment Error:', err)
-      console.error('Error Response:', err?.response?.data)
       setError(err?.response?.data?.message || 'Could not continue to payment.')
     } finally {
       setSubmitting(false)

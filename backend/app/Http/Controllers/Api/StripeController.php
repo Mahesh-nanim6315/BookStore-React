@@ -11,17 +11,27 @@ use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\UserLibrary;
 use App\Models\OrderItem;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class StripeController extends Controller
 {
-    private function backendUrl(Request $request, string $path): string
+    private function frontendUrl(string $path): string
     {
-        return rtrim($request->getSchemeAndHttpHost(), '/') . '/' . ltrim($path, '/');
+        $base = rtrim(config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:5173')), '/');
+
+        return $base . '/' . ltrim($path, '/');
     }
 
     public function checkout(Order $order)
     {
+        if ($order->user_id !== Auth::id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access to this order'
+            ], 403);
+        }
+
         // Debug: Log the order status
         Log::info('Stripe checkout called for order: ' . $order->id . ' with status: ' . $order->status);
 
@@ -55,8 +65,8 @@ class StripeController extends Controller
                 'payment_method_types' => ['card'],
                 'line_items' => $lineItems,
                 'mode' => 'payment',
-                'success_url' => url('/api/v1/payments/stripe/success/' . $order->id) . '?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => 'http://localhost:5173/cart',
+                'success_url' => $this->frontendUrl('/checkout/success?provider=stripe&order=' . $order->id . '&session_id={CHECKOUT_SESSION_ID}'),
+                'cancel_url' => $this->frontendUrl('/checkout/payment?order=' . $order->id . '&cancelled=1'),
             ]);
 
             Log::info('Stripe session created: ' . $session->id);
@@ -79,12 +89,18 @@ class StripeController extends Controller
 
     public function success(Request $request, Order $order)
     {
-        // Validate that the order exists
-        if (!$order) {
+        if ($order->user_id !== Auth::id()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid order'
-            ], 400);
+                'message' => 'Unauthorized access to this order'
+            ], 403);
+        }
+
+        if (! $request->query('session_id')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Missing Stripe session identifier.'
+            ], 422);
         }
 
         $wasPaid = $order->payment_status === 'paid';
@@ -146,7 +162,9 @@ class StripeController extends Controller
 
     public function cancel()
     {
-        // Redirect to cart page
-        return redirect()->away('http://localhost:5173/cart');
+        return response()->json([
+            'success' => false,
+            'message' => 'Payment cancelled',
+        ], 422);
     }
 }

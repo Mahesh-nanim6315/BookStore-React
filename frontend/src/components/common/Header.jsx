@@ -19,7 +19,7 @@ const Header = () => {
   const loadCartCount = async () => {
     try {
       const response = await getCart()
-      const count = response.data?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0
+      const count = response.data?.cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0
       setCartCount(count)
     } catch (error) {
       console.error('Failed to load cart count:', error)

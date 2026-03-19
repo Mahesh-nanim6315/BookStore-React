@@ -9,6 +9,18 @@ use App\Models\Setting;
 
 class SubscriptionController extends Controller
 {
+    private function frontendUrl(string $path): string
+    {
+        $base = rtrim(config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:5173')), '/');
+
+        return $base . '/' . ltrim($path, '/');
+    }
+
+    private function frontendPath(string $path): string
+    {
+        return '/' . ltrim($path, '/');
+    }
+
     public function index()
     {
         $plans = [
@@ -98,7 +110,7 @@ class SubscriptionController extends Controller
                 'success' => true,
                 'message' => 'Downgraded to Free plan successfully.',
                 'data' => [
-                    'redirect' => route('profile')
+                    'redirect' => $this->frontendPath('/profile')
                 ]
             ]);
         }
@@ -126,19 +138,16 @@ class SubscriptionController extends Controller
                 'success' => true,
                 'message' => 'Subscription updated successfully.',
                 'data' => [
-                    'redirect' => route('profile')
+                    'redirect' => $this->frontendPath('/profile')
                 ]
             ]);
         }
 
-        $request->session()->put('pending_subscription_plan', $plan);
-        $request->session()->put('pending_subscription_billing', $billing);
-
         $checkout = $user->newSubscription('default', $priceId)
             ->trialDays($trialDays)
             ->checkout([
-                'success_url' => route('subscription.success'),
-                'cancel_url' => route('plans.index'),
+                'success_url' => $this->frontendUrl("/plans?subscription=success&plan={$plan}&billing={$billing}"),
+                'cancel_url' => $this->frontendUrl('/plans?subscription=cancelled'),
             ]);
 
         return response()->json([
@@ -155,9 +164,8 @@ class SubscriptionController extends Controller
     {
         $user = Auth::user();
 
-        // Primary source for fresh Checkout completion: values set by server before redirect.
-        $pendingPlan = $request->session()->pull('pending_subscription_plan');
-        $pendingBilling = $request->session()->pull('pending_subscription_billing');
+        $pendingPlan = $request->query('plan');
+        $pendingBilling = $request->query('billing');
 
         if (in_array($pendingPlan, ['premium', 'ultimate'], true) && in_array($pendingBilling, ['monthly', 'yearly'], true)) {
             $this->syncPlanData($user, $pendingPlan, $pendingBilling, $this->nextExpiry($pendingBilling));
@@ -166,7 +174,7 @@ class SubscriptionController extends Controller
                 'success' => true,
                 'message' => 'Subscription activated successfully.',
                 'data' => [
-                    'redirect' => route('profile')
+                    'redirect' => $this->frontendPath('/profile')
                 ]
             ]);
         }
@@ -179,7 +187,7 @@ class SubscriptionController extends Controller
                 'success' => false,
                 'message' => 'No active Stripe subscription found.',
                 'data' => [
-                    'redirect' => route('plans.index')
+                    'redirect' => $this->frontendPath('/plans')
                 ]
             ], 422);
         }
@@ -191,7 +199,7 @@ class SubscriptionController extends Controller
                 'success' => false,
                 'message' => 'Could not determine subscription plan from Stripe.',
                 'data' => [
-                    'redirect' => route('plans.index')
+                    'redirect' => $this->frontendPath('/plans')
                 ]
             ], 422);
         }
@@ -203,7 +211,7 @@ class SubscriptionController extends Controller
                 'success' => false,
                 'message' => 'Unknown Stripe price mapping for your plan.',
                 'data' => [
-                    'redirect' => route('plans.index')
+                    'redirect' => $this->frontendPath('/plans')
                 ]
             ], 422);
         }
@@ -214,7 +222,7 @@ class SubscriptionController extends Controller
             'success' => true,
             'message' => 'Subscription activated successfully.',
             'data' => [
-                'redirect' => route('profile')
+                'redirect' => $this->frontendPath('/profile')
             ]
         ]);
     }

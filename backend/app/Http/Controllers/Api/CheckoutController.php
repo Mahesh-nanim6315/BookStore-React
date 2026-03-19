@@ -206,6 +206,13 @@ class CheckoutController extends Controller
 
         $method = $request->payment_method;
 
+        if ($order->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This order has already been processed.'
+            ], 422);
+        }
+
         Log::info('Payment method: ' . $method);
 
         $order->update([
@@ -223,11 +230,9 @@ class CheckoutController extends Controller
         ];
 
         if ($method === 'stripe') {
-            $checkoutUrl = $this->backendUrl($request, "/api/v1/payments/stripe/checkout/{$order->id}");
-            Log::info('Stripe checkout URL: ' . $checkoutUrl);
-            $response['data']['checkout_url'] = $checkoutUrl;
+            $response['data']['provider'] = 'stripe';
         } elseif ($method === 'paypal') {
-            $response['data']['redirect'] = $this->backendUrl($request, "/api/v1/payments/paypal/{$order->id}/pay");
+            $response['data']['provider'] = 'paypal';
         } elseif ($method === 'cod') {
             $order->update([
                 'payment_status' => 'pending',
@@ -235,7 +240,7 @@ class CheckoutController extends Controller
             ]);
 
             event(new OrderPlaced($order->fresh('user')));
-            $response['data']['redirect'] = $this->frontendPath('/checkout/success');
+            $response['data']['redirect'] = $this->frontendPath('/checkout/success?order=' . $order->id);
         }
 
         Log::info('Payment response: ' . json_encode($response));

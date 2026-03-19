@@ -5,19 +5,38 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Srmklive\PayPal\Services\PayPal as PayPalClient;
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\UserLibrary;
 use Illuminate\Http\Request;
 use App\Events\OrderPlaced;
 use App\Events\PaymentSuccess;
+use Illuminate\Support\Facades\Auth;
 
 class PayPalController extends Controller
 {
-    private function backendUrl(Request $request, string $path): string
+    private function frontendUrl(string $path): string
     {
-        return rtrim($request->getSchemeAndHttpHost(), '/') . '/' . ltrim($path, '/');
+        $base = rtrim(config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:5173')), '/');
+
+        return $base . '/' . ltrim($path, '/');
     }
 
     public function pay(Order $order)
     {
+        if ($order->user_id !== Auth::id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access to this order'
+            ], 403);
+        }
+
+        if ($order->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid order or order already processed.'
+            ], 422);
+        }
+
         $provider = new PayPalClient;
         $provider->setApiCredentials(config('paypal'));
         $provider->getAccessToken();
@@ -25,8 +44,8 @@ class PayPalController extends Controller
         $response = $provider->createOrder([
             "intent" => "CAPTURE",
             "application_context" => [
-                "return_url" => $this->backendUrl(request(), "/api/v1/payments/paypal/{$order->id}/success"),
-                "cancel_url" => $this->backendUrl(request(), "/api/v1/payments/paypal/{$order->id}/cancel"),
+                "return_url" => $this->frontendUrl("/checkout/success?provider=paypal&order={$order->id}"),
+                "cancel_url" => $this->frontendUrl("/checkout/payment?order={$order->id}&cancelled=1"),
             ],
             "purchase_units" => [
                 [
@@ -59,6 +78,20 @@ class PayPalController extends Controller
 
     public function success(Request $request, Order $order)
     {
+        if ($order->user_id !== Auth::id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access to this order'
+            ], 403);
+        }
+
+        if (! $request->query('token')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Missing PayPal approval token.'
+            ], 422);
+        }
+
         $wasPaid = $order->payment_status === 'paid';
 
         $provider = new PayPalClient;
@@ -71,8 +104,25 @@ class PayPalController extends Controller
             $order->update([
                 'payment_id' => $response['id'],
                 'payment_status' => 'paid',
-                'status' => 'completed'
+                'status' => 'confirmed'
             ]);
+
+            $orderItems = OrderItem::where('order_id', $order->id)->get();
+
+            foreach ($orderItems as $item) {
+                UserLibrary::firstOrCreate(
+                    [
+                        'user_id' => $order->user_id,
+                        'book_id' => $item->book_id,
+                        'format'  => $item->format,
+                    ],
+                    [
+                        'expires_at' => in_array($item->format, ['ebook', 'audio'], true)
+                            ? now()->addDays(30)
+                            : null
+                    ]
+                );
+            }
 
             if (! $wasPaid) {
                 event(new PaymentSuccess($order->fresh('user')));

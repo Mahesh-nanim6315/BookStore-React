@@ -25,6 +25,7 @@ import CheckoutAddress from './pages/checkout/address.jsx'
 import CheckoutPayment from './pages/checkout/payment.jsx'
 import CheckoutPaypal from './pages/checkout/paypal.jsx'
 import CheckoutSuccess from './pages/checkout/success.jsx'
+import SubscriptionsIndex from './pages/subscriptions/index.jsx'
 
 import OrdersIndex from './pages/orders/index.jsx'
 import OrdersShow from './pages/orders/show.jsx'
@@ -136,6 +137,11 @@ const App = () => {
             <Route path="profile/edit" element={
               <ProtectedRoute>
                 <ProfileEdit />
+              </ProtectedRoute>
+            } />
+            <Route path="plans" element={
+              <ProtectedRoute>
+                <SubscriptionsIndex />
               </ProtectedRoute>
             } />
           </Route>

@@ -110,7 +110,8 @@ class OrderController extends Controller
     /* ================= MY ORDERS ================= */
     public function index()
     {
-        $orders = Order::where('user_id', Auth::id())
+        $orders = Order::withCount('items')
+            ->where('user_id', Auth::id())
             ->latest()
             ->get();
 
@@ -178,4 +179,3 @@ class OrderController extends Controller
         ]);
     }
 }
-
