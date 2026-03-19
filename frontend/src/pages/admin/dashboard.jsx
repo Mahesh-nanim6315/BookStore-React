@@ -185,8 +185,13 @@ const AdminDashboard = () => {
                   </td>
                   <td>{new Date(order.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
                   <td>
-                    <Link to={`/admin/orders/${order.id}`}>
-                      View
+                    <Link
+                      to={`/admin/orders/${order.id}`}
+                      className="admin-icon-action admin-icon-action--view"
+                      aria-label={`View order ${order.id}`}
+                      title="View order"
+                    >
+                      <img src="/images/view.png" alt="" className="admin-icon-action__icon" />
                     </Link>
                   </td>
                 </tr>
@@ -204,6 +209,5 @@ const AdminDashboard = () => {
 }
 
 export default AdminDashboard
-
 
 

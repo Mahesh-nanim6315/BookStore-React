@@ -215,18 +215,30 @@ const BooksIndex = () => {
                   <td>{formatCurrency(book.price)}</td>
                   <td>
                     <div className="book-action-row">
-                      <Link to={`/dashboard/books/${book.id}`} className="view-link">
-                        View
+                      <Link
+                        to={`/dashboard/books/${book.id}`}
+                        className="admin-icon-action admin-icon-action--view"
+                        aria-label={`View ${book.name}`}
+                        title="View"
+                      >
+                        <img src="/images/view.png" alt="" className="admin-icon-action__icon" />
                       </Link>
-                      <Link to={`/dashboard/books/${book.id}/edit`} className="view-link">
-                        Edit
+                      <Link
+                        to={`/dashboard/books/${book.id}/edit`}
+                        className="admin-icon-action admin-icon-action--edit"
+                        aria-label={`Edit ${book.name}`}
+                        title="Edit"
+                      >
+                        <img src="/images/edit.png" alt="" className="admin-icon-action__icon" />
                       </Link>
                       <button
                         type="button"
-                        className="admin-button book-delete-button"
+                        className="admin-icon-action admin-icon-action--delete"
                         onClick={() => handleDelete(book.id)}
+                        aria-label={`Delete ${book.name}`}
+                        title="Delete"
                       >
-                        Delete
+                        <img src="/images/delete.png" alt="" className="admin-icon-action__icon" />
                       </button>
                     </div>
                   </td>

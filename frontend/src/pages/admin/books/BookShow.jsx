@@ -58,8 +58,13 @@ const BookShow = () => {
           <p><strong>Paperback:</strong> {book.has_paperback ? 'Available' : 'No'}</p>
 
           <div className="book-action-row">
-            <Link to={`/dashboard/books/${book.id}/edit`} className="view-link">
-              Edit
+            <Link
+              to={`/dashboard/books/${book.id}/edit`}
+              className="admin-icon-action admin-icon-action--edit"
+              aria-label={`Edit ${book.name}`}
+              title="Edit"
+            >
+              <img src="/images/edit.png" alt="" className="admin-icon-action__icon" />
             </Link>
           </div>
         </div>

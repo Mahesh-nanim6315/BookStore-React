@@ -52,8 +52,13 @@ const AdminUsersShow = () => {
           <p><strong>Plan:</strong> {user.plan || 'free'}</p>
 
           <div className="book-action-row">
-            <Link to={`/dashboard/users/${user.id}/edit`} className="view-link">
-              Edit
+            <Link
+              to={`/dashboard/users/${user.id}/edit`}
+              className="admin-icon-action admin-icon-action--edit"
+              aria-label={`Edit ${user.name}`}
+              title="Edit"
+            >
+              <img src="/images/edit.png" alt="" className="admin-icon-action__icon" />
             </Link>
           </div>
         </div>

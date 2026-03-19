@@ -191,10 +191,12 @@ const AdminReviewsIndex = () => {
                       </button>
                       <button
                         type="button"
-                        className="admin-button book-delete-button"
+                        className="admin-icon-action admin-icon-action--delete"
                         onClick={() => handleDelete(review.id)}
+                        aria-label={`Delete review ${review.id}`}
+                        title="Delete"
                       >
-                        Delete
+                        <img src="/images/delete.png" alt="" className="admin-icon-action__icon" />
                       </button>
                     </div>
                   </td>

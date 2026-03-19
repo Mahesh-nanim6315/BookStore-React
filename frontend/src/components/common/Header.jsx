@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { CART_UPDATED_EVENT, getCart } from '../../api/cart'
+import searchIcon from '../../assets/search-icon.png'
+import languageIcon from '../../assets/lang-icon.png'
 
 const primaryLinks = [
   { to: '/', label: 'Home' },
@@ -170,26 +172,32 @@ const Header = () => {
               className={`site-search-toggle ${searchOpen ? 'site-search-toggle--active' : ''}`}
               onClick={() => setSearchOpen((open) => !open)}
               aria-label="Open search"
+              title="Search"
               aria-expanded={searchOpen}
             >
-              Search
+              <img src={searchIcon} alt="" className="site-control__icon" />
             </button>
 
-            <select
-              className="site-language"
-              defaultValue=""
-              onChange={(event) => {
-                if (event.target.value) {
-                  window.location.href = event.target.value
-                }
-              }}
-            >
-              <option value="">Language</option>
-              <option value="/lang/en">English</option>
-              <option value="/lang/hi">Hindi</option>
-              <option value="/lang/ta">Tamil</option>
-              <option value="/lang/te">Telugu</option>
-            </select>
+            <label className="site-language site-language--icon" title="Language">
+              <img src={languageIcon} alt="" className="site-control__icon" />
+              <span className="site-language__sr">Language</span>
+              <select
+                className="site-language__select"
+                defaultValue=""
+                aria-label="Change language"
+                onChange={(event) => {
+                  if (event.target.value) {
+                    window.location.href = event.target.value
+                  }
+                }}
+              >
+                <option value="">Language</option>
+                <option value="/lang/en">English</option>
+                <option value="/lang/hi">Hindi</option>
+                <option value="/lang/ta">Tamil</option>
+                <option value="/lang/te">Telugu</option>
+              </select>
+            </label>
 
             <Link to="/cart" className="site-cart" aria-label="Cart">
               <span className="site-cart__icon">Cart</span>

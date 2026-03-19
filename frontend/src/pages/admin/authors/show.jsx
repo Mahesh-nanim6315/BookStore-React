@@ -54,8 +54,13 @@ const AdminAuthorsShow = () => {
           <p><strong>Bio:</strong> {author.bio || 'No bio available.'}</p>
 
           <div className="book-action-row">
-            <Link to={`/dashboard/authors/${author.id}/edit`} className="view-link">
-              Edit
+            <Link
+              to={`/dashboard/authors/${author.id}/edit`}
+              className="admin-icon-action admin-icon-action--edit"
+              aria-label={`Edit ${author.name}`}
+              title="Edit"
+            >
+              <img src="/images/edit.png" alt="" className="admin-icon-action__icon" />
             </Link>
           </div>
         </div>

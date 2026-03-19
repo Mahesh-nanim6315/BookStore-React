@@ -152,18 +152,30 @@ const AdminAuthorsIndex = () => {
                   <td className="author-bio-cell">{truncateBio(author.bio)}</td>
                   <td>
                     <div className="book-action-row">
-                      <Link to={`/dashboard/authors/${author.id}`} className="view-link">
-                        View
+                      <Link
+                        to={`/dashboard/authors/${author.id}`}
+                        className="admin-icon-action admin-icon-action--view"
+                        aria-label={`View ${author.name}`}
+                        title="View"
+                      >
+                        <img src="/images/view.png" alt="" className="admin-icon-action__icon" />
                       </Link>
-                      <Link to={`/dashboard/authors/${author.id}/edit`} className="view-link">
-                        Edit
+                      <Link
+                        to={`/dashboard/authors/${author.id}/edit`}
+                        className="admin-icon-action admin-icon-action--edit"
+                        aria-label={`Edit ${author.name}`}
+                        title="Edit"
+                      >
+                        <img src="/images/edit.png" alt="" className="admin-icon-action__icon" />
                       </Link>
                       <button
                         type="button"
-                        className="admin-button book-delete-button"
+                        className="admin-icon-action admin-icon-action--delete"
                         onClick={() => handleDelete(author.id)}
+                        aria-label={`Delete ${author.name}`}
+                        title="Delete"
                       >
-                        Delete
+                        <img src="/images/delete.png" alt="" className="admin-icon-action__icon" />
                       </button>
                     </div>
                   </td>

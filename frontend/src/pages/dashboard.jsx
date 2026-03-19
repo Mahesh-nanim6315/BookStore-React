@@ -196,8 +196,13 @@ const AdminDashboard = () => {
                                         year: 'numeric'
                                     })}</td>
                                     <td>
-                                        <Link to={`/admin/orders/${order.id}`} className="view-link">
-                                            View
+                                        <Link
+                                            to={`/admin/orders/${order.id}`}
+                                            className="admin-icon-action admin-icon-action--view"
+                                            aria-label={`View order ${order.id}`}
+                                            title="View order"
+                                        >
+                                            <img src="/images/view.png" alt="" className="admin-icon-action__icon" />
                                         </Link>
                                     </td>
                                 </tr>

@@ -144,18 +144,30 @@ const AdminUsersIndex = () => {
                   <td>{formatDate(user.created_at)}</td>
                   <td>
                     <div className="book-action-row">
-                      <Link to={`/dashboard/users/${user.id}`} className="view-link">
-                        View
+                      <Link
+                        to={`/dashboard/users/${user.id}`}
+                        className="admin-icon-action admin-icon-action--view"
+                        aria-label={`View ${user.name}`}
+                        title="View"
+                      >
+                        <img src="/images/view.png" alt="" className="admin-icon-action__icon" />
                       </Link>
-                      <Link to={`/dashboard/users/${user.id}/edit`} className="view-link">
-                        Edit
+                      <Link
+                        to={`/dashboard/users/${user.id}/edit`}
+                        className="admin-icon-action admin-icon-action--edit"
+                        aria-label={`Edit ${user.name}`}
+                        title="Edit"
+                      >
+                        <img src="/images/edit.png" alt="" className="admin-icon-action__icon" />
                       </Link>
                       <button
                         type="button"
-                        className="admin-button book-delete-button"
+                        className="admin-icon-action admin-icon-action--delete"
                         onClick={() => handleDelete(user.id)}
+                        aria-label={`Delete ${user.name}`}
+                        title="Delete"
                       >
-                        Delete
+                        <img src="/images/delete.png" alt="" className="admin-icon-action__icon" />
                       </button>
                     </div>
                   </td>
