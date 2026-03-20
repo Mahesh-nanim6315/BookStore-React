@@ -1,29 +1,31 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 import { CART_UPDATED_EVENT, getCart } from '../../api/cart'
 import searchIcon from '../../assets/search-icon.png'
 import languageIcon from '../../assets/lang-icon.png'
 
 const primaryLinks = [
-  { to: '/', label: 'Home' },
-  { to: '/products', label: 'Browse' },
-  { to: '/ebooks', label: 'Ebooks' },
-  { to: '/audiobooks', label: 'Audiobooks' },
-  { to: '/paperbacks', label: 'Paperbacks' },
-  { to: '/authors', label: 'Authors' },
+  { to: '/', labelKey: 'site.home' },
+  { to: '/products', labelKey: 'site.browse' },
+  { to: '/ebooks', labelKey: 'site.ebooks' },
+  { to: '/audiobooks', labelKey: 'site.audiobooks' },
+  { to: '/paperbacks', labelKey: 'site.paperbacks' },
+  { to: '/authors', labelKey: 'site.authors' },
 ]
 
 const accountLinks = [
-  { to: '/profile', label: 'Profile' },
-  { to: '/orders', label: 'Orders' },
-  { to: '/wishlist', label: 'Wishlist' },
-  { to: '/my-library', label: 'Library' },
-  { to: '/plans', label: 'Subscriptions' },
+  { to: '/profile', labelKey: 'site.profile' },
+  { to: '/orders', labelKey: 'site.orders' },
+  { to: '/wishlist', labelKey: 'site.wishlist' },
+  { to: '/my-library', labelKey: 'site.library' },
+  { to: '/plans', labelKey: 'site.subscriptions' },
 ]
 
 const Header = () => {
   const { user, isAuthenticated, logout } = useAuth()
+  const { language, changeLanguage, t } = useLanguage()
   const [cartCount, setCartCount] = useState(0)
   const [showUserDropdown, setShowUserDropdown] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -135,8 +137,8 @@ const Header = () => {
           <Link to="/" className="brand-mark" aria-label="Bookstore home">
             <img src="/images/booklogo.png" width="42" height="34" alt="Bookstore" />
             <div className="brand-copy">
-              <strong>BookSphere</strong>
-              <span>Digital bookstore</span>
+              <strong>{t('brand.name')}</strong>
+              <span>{t('brand.tagline')}</span>
             </div>
           </Link>
 
@@ -160,7 +162,7 @@ const Header = () => {
                   to={link.to}
                   className={activeSection === link.to ? 'site-link site-link--active' : 'site-link'}
                 >
-                  {link.label}
+                  {t(link.labelKey)}
                 </Link>
               </li>
             ))}
@@ -183,19 +185,16 @@ const Header = () => {
               <span className="site-language__sr">Language</span>
               <select
                 className="site-language__select"
-                defaultValue=""
+                value={language}
                 aria-label="Change language"
                 onChange={(event) => {
-                  if (event.target.value) {
-                    window.location.href = event.target.value
-                  }
+                  changeLanguage(event.target.value)
                 }}
               >
-                <option value="">Language</option>
-                <option value="/lang/en">English</option>
-                <option value="/lang/hi">Hindi</option>
-                <option value="/lang/ta">Tamil</option>
-                <option value="/lang/te">Telugu</option>
+                <option value="en">{t('language.english')}</option>
+                <option value="hi">{t('language.hindi')}</option>
+                <option value="ta">{t('language.tamil')}</option>
+                <option value="te">{t('language.telugu')}</option>
               </select>
             </label>
 
@@ -222,18 +221,18 @@ const Header = () => {
                   <div className="site-account__menu">
                     {accountLinks.map((link) => (
                       <Link key={link.to} to={link.to} className="site-account__link">
-                        {link.label}
+                        {t(link.labelKey)}
                       </Link>
                     ))}
                     <button type="button" onClick={handleLogout} className="site-account__logout">
-                      Logout
+                      {t('site.logout')}
                     </button>
                   </div>
                 )}
               </div>
             ) : (
               <Link to="/login" className="site-login">
-                Sign in
+                {t('site.signIn')}
               </Link>
             )}
           </div>
@@ -245,12 +244,12 @@ const Header = () => {
             <input
               type="text"
               name="search"
-              placeholder="Search books, authors, categories, formats"
+              placeholder={t('site.searchPlaceholder')}
               className="site-search-panel__input"
               autoFocus
             />
             <button type="submit" className="site-search-panel__button">
-              Search
+              {t('site.search')}
             </button>
           </form>
         </div>

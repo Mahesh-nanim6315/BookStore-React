@@ -1,6 +1,7 @@
 ﻿import React from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { LanguageProvider } from './contexts/LanguageContext.jsx'
 import ProtectedRoute from './components/ProtectedRoute'
 import MainLayout from './layouts/MainLayout'
 import AdminLayout from './layouts/AdminLayout'
@@ -68,9 +69,10 @@ import BookShow from './pages/admin/books/BookShow.jsx'
 
 const App = () => {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
+    <LanguageProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
           <Route path="/" element={<MainLayout />}>
             <Route index element={<Welcome />} />
             <Route path="ebooks" element={<Ebooks />} />
@@ -212,6 +214,7 @@ const App = () => {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+    </LanguageProvider>
   )
 }
 
