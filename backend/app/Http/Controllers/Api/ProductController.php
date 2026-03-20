@@ -46,7 +46,7 @@ class ProductController extends Controller
             $query->latest();
         }
 
-        $books = $query->paginate(15);
+        $books = $query->paginate((int) Setting::get('books_per_page', 12));
         $categories = Category::orderBy('name')->get();
         $authors = Author::orderBy('name')->get();
         $genres = Genre::orderBy('name')->get();

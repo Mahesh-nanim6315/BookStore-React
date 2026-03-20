@@ -16,6 +16,7 @@ const AdminSettingsIndex = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
   const [initialValues, setInitialValues] = useState(defaultSettings)
   const [values, setValues] = useState(defaultSettings)
 
@@ -23,6 +24,7 @@ const AdminSettingsIndex = () => {
     const loadSettings = async () => {
       try {
         setLoading(true)
+        setErrorMessage('')
         const response = await getAdminSettings()
 
         if (response.success) {
@@ -33,9 +35,12 @@ const AdminSettingsIndex = () => {
 
           setInitialValues(settings)
           setValues(settings)
+        } else {
+          setErrorMessage(response.message || 'Failed to load settings.')
         }
       } catch (error) {
         console.error('Failed to load settings:', error)
+        setErrorMessage(error.response?.data?.message || 'Failed to load settings.')
       } finally {
         setLoading(false)
       }
@@ -53,6 +58,7 @@ const AdminSettingsIndex = () => {
     event.preventDefault()
     setSaving(true)
     setSaveMessage('')
+    setErrorMessage('')
 
     try {
       const response = await updateAdminSettings(values)
@@ -65,9 +71,12 @@ const AdminSettingsIndex = () => {
         setInitialValues(updated)
         setValues(updated)
         setSaveMessage(response.message || 'Settings updated successfully.')
+      } else {
+        setErrorMessage(response.message || 'Failed to save settings.')
       }
     } catch (error) {
       console.error('Failed to save settings:', error)
+      setErrorMessage(error.response?.data?.message || 'Failed to save settings.')
     } finally {
       setSaving(false)
     }
@@ -75,6 +84,8 @@ const AdminSettingsIndex = () => {
 
   const handleReset = () => {
     setValues(initialValues)
+    setSaveMessage('')
+    setErrorMessage('')
   }
 
   if (loading) {
@@ -92,6 +103,12 @@ const AdminSettingsIndex = () => {
         {saveMessage ? (
           <div className="roles-save-banner">
             {saveMessage}
+          </div>
+        ) : null}
+
+        {errorMessage ? (
+          <div className="settings-error-banner">
+            {errorMessage}
           </div>
         ) : null}
 

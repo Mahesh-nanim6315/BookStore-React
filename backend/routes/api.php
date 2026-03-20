@@ -27,13 +27,14 @@ use App\Http\Controllers\Api\WishlistController;
 use App\Http\Controllers\Api\NewsletterController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\ProfileController;
-use App\Http\Controllers\Api\SettingsController;
+use App\Http\Controllers\Api\PublicSettingsController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\Admin\BookControllers as AdminBookController;
 use App\Http\Controllers\Api\Admin\OrderControllers as AdminOrderController;
 
 /* ================= PUBLIC ROUTES ================= */
-Route::prefix('v1')->group(function () {
+Route::prefix('v1')->middleware('maintenance')->group(function () {
+    Route::get('/settings/public', [PublicSettingsController::class, 'index']);
     
     // Authentication
     Route::post('/login', [AuthController::class, 'login']);
@@ -92,7 +93,7 @@ Route::prefix('v1')->group(function () {
 });
 
 /* ================= AUTHENTICATED USER ROUTES ================= */
-Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
+Route::prefix('v1')->middleware(['auth:sanctum', 'maintenance'])->group(function () {
     
     // Profile
     Route::prefix('profile')->group(function () {
@@ -174,7 +175,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 });
 
 /* ================= PAYMENT ROUTES ================= */
-Route::prefix('v1/payments')->middleware('auth:sanctum')->group(function () {
+Route::prefix('v1/payments')->middleware(['auth:sanctum', 'maintenance'])->group(function () {
     
     // Stripe
     Route::prefix('stripe')->group(function () {
@@ -195,7 +196,7 @@ Route::prefix('v1/payments')->middleware('auth:sanctum')->group(function () {
 });
 
 /* ================= SUBSCRIPTION ROUTES ================= */
-Route::prefix('v1/subscription')->middleware('auth:sanctum')->group(function () {
+Route::prefix('v1/subscription')->middleware(['auth:sanctum', 'maintenance'])->group(function () {
     Route::post('/checkout', [SubscriptionController::class, 'checkout']);
     Route::get('/success', [SubscriptionController::class, 'success']);
     Route::post('/cancel', [SubscriptionController::class, 'cancel']);
@@ -203,7 +204,7 @@ Route::prefix('v1/subscription')->middleware('auth:sanctum')->group(function () 
 });
 
 /* ================= ADMIN ROUTES ================= */
-Route::prefix('v1/admin')->middleware(['auth:sanctum'])->group(function () {
+Route::prefix('v1/admin')->middleware(['auth:sanctum', 'maintenance'])->group(function () {
     
     // Dashboard
     Route::get('/dashboard/stats', [AdminDashboardController::class, 'index'])->middleware('permission:access_dashboard');

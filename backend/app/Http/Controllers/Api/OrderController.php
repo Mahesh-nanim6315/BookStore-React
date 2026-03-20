@@ -97,7 +97,7 @@ class OrderController extends Controller
             ], 403);
         }
 
-        $order->load('items.book');
+        $order->load(['items.book', 'user']);
 
         return response()->json([
             'success' => true,

@@ -41,6 +41,7 @@ import AuthLogin from './pages/auth/login.jsx'
 import AuthRegister from './pages/auth/register.jsx'
 import AuthForgot from './pages/auth/forgot-password.jsx'
 import AuthReset from './pages/auth/reset-password.jsx'
+import Maintenance from './pages/maintenance.jsx'
 
 import Dashboard from './pages/dashboard.jsx'
 import AdminDashboard from './pages/admin/dashboard.jsx'
@@ -151,6 +152,7 @@ const App = () => {
           <Route path="register" element={<AuthRegister />} />
           <Route path="forgot-password" element={<AuthForgot />} />
           <Route path="reset-password" element={<AuthReset />} />
+          <Route path="maintenance" element={<Maintenance />} />
           <Route path="faq" element={<FaqIndex />} />
           
           {/* Standalone Protected Routes (no header/footer) */}

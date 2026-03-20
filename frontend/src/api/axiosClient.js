@@ -27,12 +27,21 @@ axiosClient.interceptors.request.use(
 axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.response?.status === 503) {
+      const message = error.response?.data?.message || ''
+      const isMaintenance = /maintenance/i.test(message)
+
+      if (isMaintenance && window.location.pathname !== '/maintenance') {
+        window.location.href = '/maintenance'
+      }
+    }
+
     if (error.response?.status === 401) {
       // Token expired or invalid
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('user')
       const url = error.config?.url || ''
       const hasToken = !!localStorage.getItem('auth_token')
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('user')
       // Don't force-login redirect on logout attempts or when already logged out
       if (!url.includes('/logout') && hasToken) {
         window.location.href = '/login'

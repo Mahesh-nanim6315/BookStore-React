@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -27,6 +28,13 @@ class AuthController extends Controller
             ], 422);
         }
 
+        if ((string) Setting::get('maintenance_mode', 0) === '1' && strtolower((string) $user->role) !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'The site is currently in maintenance mode. Only admins can sign in.',
+            ], 503);
+        }
+
         // Create token for API
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -43,6 +51,13 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
+        if ((string) Setting::get('maintenance_mode', 0) === '1') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Registration is unavailable while maintenance mode is enabled.',
+            ], 503);
+        }
+
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users'],
@@ -86,6 +101,13 @@ class AuthController extends Controller
      */
     public function forgotPassword(Request $request)
     {
+        if ((string) Setting::get('maintenance_mode', 0) === '1') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Password reset is unavailable while maintenance mode is enabled.',
+            ], 503);
+        }
+
         $request->validate(['email' => 'required|email']);
         
         // Implementation would send password reset link
@@ -100,6 +122,13 @@ class AuthController extends Controller
      */
     public function resetPassword(Request $request)
     {
+        if ((string) Setting::get('maintenance_mode', 0) === '1') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Password reset is unavailable while maintenance mode is enabled.',
+            ], 503);
+        }
+
         $request->validate([
             'token' => 'required',
             'password' => 'required|confirmed|min:8'

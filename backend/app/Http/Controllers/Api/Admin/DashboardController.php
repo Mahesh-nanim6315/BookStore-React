@@ -96,6 +96,8 @@ class DashboardController extends Controller
             ], 403);
         }
 
+        $dashboardType = strtolower((string) $user->role) === 'admin' ? 'admin' : 'dashboard';
+
         return response()->json([
             'success' => true,
             'data' => [
