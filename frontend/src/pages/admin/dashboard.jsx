@@ -24,13 +24,35 @@ const AdminDashboard = () => {
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
+        console.log('Loading admin dashboard data...')
         const [statsResponse, infoResponse] = await Promise.all([
           getDashboardStats(),
           getDashboardInfo()
         ])
         
+        console.log('Dashboard stats response:', statsResponse)
+        
         if (statsResponse.success) {
-          setStats(statsResponse.data)
+          // Map snake_case API response to camelCase state
+          const apiData = statsResponse.data
+          console.log('API Data:', apiData)
+          const mappedStats = {
+            totalOrders: apiData.total_orders || 0,
+            totalRevenue: apiData.total_revenue || 0,
+            totalUsers: apiData.total_users || 0,
+            totalBooks: apiData.total_books || 0,
+            chartData: {
+              months: apiData.chart_data?.months || [],
+              sales: apiData.chart_data?.sales || []
+            },
+            recentOrders: apiData.recent_orders || [],
+            lowStockBooks: apiData.low_stock_books || [],
+            topSellingBooks: apiData.top_selling_books || []
+          }
+          console.log('Mapped stats:', mappedStats)
+          setStats(mappedStats)
+        } else {
+          console.error('Stats API returned failure:', statsResponse)
         }
         
         if (infoResponse.success) {
@@ -98,7 +120,13 @@ const AdminDashboard = () => {
 
       <div className="chart-alerts">
         <div className="chart-box">
-          <SalesChart months={stats.chartData.months} sales={stats.chartData.sales} />
+          {stats.chartData && stats.chartData.months && stats.chartData.sales ? (
+            <SalesChart months={stats.chartData.months} sales={stats.chartData.sales} />
+          ) : (
+            <div style={{ padding: '20px', textAlign: 'center' }}>
+              <p>Loading chart data...</p>
+            </div>
+          )}
         </div>
 
         <div className="alerts">
@@ -159,17 +187,18 @@ const AdminDashboard = () => {
       <div>
         <h3>🕒 Recent Orders</h3>
 
-        <table className="table">
-          <thead>
-            <tr>
-              <th>#ID</th>
-              <th>User</th>
-              <th>Total</th>
-              <th>Status</th>
-              <th>Date</th>
-              <th></th>
-            </tr>
-          </thead>
+        <div className="admin-table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>#ID</th>
+                <th>User</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Action</th>
+              </tr>
+            </thead>
 
           <tbody>
             {stats.recentOrders && stats.recentOrders.length > 0 ? (
@@ -203,6 +232,7 @@ const AdminDashboard = () => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   )

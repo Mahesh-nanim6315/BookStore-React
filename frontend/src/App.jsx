@@ -44,7 +44,6 @@ import AuthForgot from './pages/auth/forgot-password.jsx'
 import AuthReset from './pages/auth/reset-password.jsx'
 import Maintenance from './pages/maintenance.jsx'
 
-import Dashboard from './pages/dashboard.jsx'
 import AdminDashboard from './pages/admin/dashboard.jsx'
 import AdminAuthorsIndex from './pages/admin/authors/index.jsx'
 import AdminAuthorsCreate from './pages/admin/authors/create.jsx'
@@ -163,7 +162,7 @@ const App = () => {
               <AdminLayout />
             </ProtectedRoute>
           }>
-            <Route index element={<Dashboard />} />
+            <Route index element={<AdminDashboard />} />
             <Route path="orders" element={<ProtectedRoute requiredPermission="manage_orders"><AdminOrdersIndex /></ProtectedRoute>} />
             <Route path="orders/:id" element={<ProtectedRoute requiredPermission="manage_orders"><AdminOrdersShow /></ProtectedRoute>} />
             <Route path="payments" element={<ProtectedRoute requiredPermission="manage_payments"><AdminPaymentsIndex /></ProtectedRoute>} />

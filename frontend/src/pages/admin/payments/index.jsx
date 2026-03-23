@@ -87,8 +87,8 @@ const AdminPaymentsIndex = () => {
                   <td>{payment.payment_status || '-'}</td>
                   <td>{formatDate(payment.created_at)}</td>
                   <td>
-                    <Link to={`/dashboard/orders/${payment.id}`} className="view-link">
-                      View order
+                    <Link to={`/dashboard/orders/${payment.id}`} className="admin-btn admin-btn-primary">
+                      View Order
                     </Link>
                   </td>
                 </tr>

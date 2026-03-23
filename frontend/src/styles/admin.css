@@ -1009,6 +1009,64 @@ div .pagination a:hover {
     background: #1d4ed8;
 }
 
+.pagination-btn.active:hover {
+    background: #1d4ed8;
+}
+
+/* Pagination */
+.admin-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: #f8f9fa;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 0;
+}
+
+.pagination-info {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.pagination-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.pagination-btn {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    color: #374151;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.pagination-btn.active {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-ellipsis {
+    padding: 8px 4px;
+    color: #6b7280;
+    font-size: 14px;
+}
+
 /* Search Box */
 
 

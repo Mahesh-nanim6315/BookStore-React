@@ -18,12 +18,16 @@ const AdminOrdersIndex = () => {
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0 })
 
   const statusFilter = searchParams.get('status') || 'all'
+  const currentPage = parseInt(searchParams.get('page')) || 1
 
   useEffect(() => {
     const loadOrders = async () => {
       try {
         setLoading(true)
-        const params = statusFilter !== 'all' ? { status: statusFilter } : {}
+        const params = {
+          page: currentPage,
+          ...(statusFilter !== 'all' ? { status: statusFilter } : {})
+        }
         const response = await getAdminOrders(params)
 
         if (response.success) {
@@ -42,7 +46,7 @@ const AdminOrdersIndex = () => {
     }
 
     loadOrders()
-  }, [statusFilter])
+  }, [statusFilter, currentPage])
 
   const handleStatusFilter = (nextStatus) => {
     if (nextStatus === 'all') {
@@ -51,6 +55,13 @@ const AdminOrdersIndex = () => {
     }
 
     setSearchParams({ status: nextStatus })
+  }
+
+  const handlePageChange = (page) => {
+    setSearchParams({ 
+      page: page.toString(),
+      ...(statusFilter !== 'all' ? { status: statusFilter } : {})
+    })
   }
 
   const handleOrderStatusChange = async (orderId, status) => {
@@ -226,9 +237,60 @@ const AdminOrdersIndex = () => {
         </table>
       </div>
 
-      <div className="admin-pagination-note">
-        Showing page {meta.current_page} of {meta.last_page} with {meta.total} total orders.
-      </div>
+      {/* Pagination */}
+      {meta.last_page > 1 && (
+        <div className="admin-pagination">
+          <div className="pagination-info">
+            Showing page {meta.current_page} of {meta.last_page} with {meta.total} total orders.
+          </div>
+          <div className="pagination-controls">
+            <button
+              className="pagination-btn"
+              onClick={() => handlePageChange(meta.current_page - 1)}
+              disabled={meta.current_page === 1}
+            >
+              ← Previous
+            </button>
+            
+            {/* Show page numbers */}
+            {[...Array(meta.last_page)].map((_, index) => {
+              const pageNumber = index + 1
+              // Show max 5 page numbers with current page in middle
+              if (
+                pageNumber === 1 || 
+                pageNumber === meta.last_page ||
+                (pageNumber >= meta.current_page - 2 && pageNumber <= meta.current_page + 2)
+              ) {
+                return (
+                  <button
+                    key={pageNumber}
+                    className={`pagination-btn ${meta.current_page === pageNumber ? 'active' : ''}`}
+                    onClick={() => handlePageChange(pageNumber)}
+                  >
+                    {pageNumber}
+                  </button>
+                )
+              }
+              // Show ellipsis for skipped pages
+              if (
+                (pageNumber === meta.current_page - 3 && pageNumber > 1) ||
+                (pageNumber === meta.current_page + 3 && pageNumber < meta.last_page)
+              ) {
+                return <span key={pageNumber} className="pagination-ellipsis">...</span>
+              }
+              return null
+            })}
+            
+            <button
+              className="pagination-btn"
+              onClick={() => handlePageChange(meta.current_page + 1)}
+              disabled={meta.current_page === meta.last_page}
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
