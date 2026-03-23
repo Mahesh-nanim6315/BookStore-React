@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import UserForm from '../../../components/UserForm'
 import { createAdminUser, getAdminUserCreateMeta } from '../../../api/adminUsers'
+import { showToast } from '../../../utils/toast'
 
 const initialValues = {
   name: '',
@@ -41,10 +42,16 @@ const AdminUsersCreate = () => {
     setIsSaving(true)
 
     try {
-      await createAdminUser(values)
-      navigate('/dashboard/users')
+      const response = await createAdminUser(values)
+      if (response.success) {
+        showToast.success('User created successfully!')
+        navigate('/dashboard/users')
+      } else {
+        showToast.error(response.message || 'Failed to create user')
+      }
     } catch (error) {
       console.error('Failed to create user:', error)
+      showToast.error('Failed to create user. Please try again.')
     } finally {
       setIsSaving(false)
     }

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import Loader from '../../../components/common/Loader'
 import AuthorForm from '../../../components/AuthorForm'
 import { getAdminAuthorEditMeta, updateAdminAuthor } from '../../../api/adminAuthors'
+import { showToast } from '../../../utils/toast'
 
 const AdminAuthorsEdit = () => {
   const { id } = useParams()
@@ -40,10 +41,16 @@ const AdminAuthorsEdit = () => {
     setIsSaving(true)
 
     try {
-      await updateAdminAuthor(id, values)
-      navigate('/dashboard/authors')
+      const response = await updateAdminAuthor(id, values)
+      if (response.success) {
+        showToast.success('Author updated successfully!')
+        navigate('/dashboard/authors')
+      } else {
+        showToast.error(response.message || 'Failed to update author')
+      }
     } catch (error) {
       console.error('Failed to update author:', error)
+      showToast.error('Failed to update author. Please try again.')
     } finally {
       setIsSaving(false)
     }

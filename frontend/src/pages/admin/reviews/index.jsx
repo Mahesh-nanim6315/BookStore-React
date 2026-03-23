@@ -5,6 +5,7 @@ import {
   getAdminReviews,
   toggleAdminReviewApproval,
 } from '../../../api/adminReviews'
+import { showToast } from '../../../utils/toast'
 
 const initialFilters = {
   search: '',
@@ -74,14 +75,19 @@ const AdminReviewsIndex = () => {
       const response = await toggleAdminReviewApproval(reviewId)
 
       if (response.success) {
+        const review = response.data.review
+        showToast.success(`Review ${review.is_approved ? 'approved' : 'marked as pending'}!`)
         setReviews((current) =>
-          current.map((review) =>
-            review.id === reviewId ? response.data.review : review,
+          current.map((r) =>
+            r.id === reviewId ? review : r,
           ),
         )
+      } else {
+        showToast.error(response.message || 'Failed to update review status')
       }
     } catch (error) {
       console.error('Failed to update review approval:', error)
+      showToast.error('Failed to update review status. Please try again.')
     }
   }
 
@@ -91,10 +97,16 @@ const AdminReviewsIndex = () => {
     }
 
     try {
-      await deleteAdminReview(reviewId)
-      loadReviews(filters, meta.current_page)
+      const response = await deleteAdminReview(reviewId)
+      if (response.success) {
+        showToast.success('Review deleted successfully!')
+        loadReviews(filters, meta.current_page)
+      } else {
+        showToast.error(response.message || 'Failed to delete review')
+      }
     } catch (error) {
       console.error('Failed to delete review:', error)
+      showToast.error('Failed to delete review. Please try again.')
     }
   }
 

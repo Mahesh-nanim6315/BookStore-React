@@ -9,6 +9,7 @@ import {
   getPlans,
   resumeSubscription,
 } from '../../api/subscriptions'
+import { showToast } from '../../utils/toast'
 
 const SubscriptionsIndex = () => {
   const { user, loadUser } = useAuth()
@@ -81,9 +82,10 @@ const SubscriptionsIndex = () => {
         navigate(response.data.redirect)
       }
 
-      setMessage(response.message || 'Subscription updated.')
+      showToast.success(response.message || 'Subscription updated successfully!')
     } catch (err) {
       setError(err?.response?.data?.message || 'Unable to update subscription.')
+      showToast.error(err?.response?.data?.message || 'Failed to update subscription.')
     } finally {
       setSubmitting('')
     }
@@ -94,10 +96,11 @@ const SubscriptionsIndex = () => {
       setSubmitting('cancel')
       setError('')
       const response = await cancelSubscription()
-      setMessage(response.message)
+      showToast.success(response.message || 'Subscription cancelled successfully!')
       await loadUser()
     } catch (err) {
       setError(err?.response?.data?.message || 'Unable to cancel subscription.')
+      showToast.error(err?.response?.data?.message || 'Failed to cancel subscription.')
     } finally {
       setSubmitting('')
     }
@@ -108,10 +111,11 @@ const SubscriptionsIndex = () => {
       setSubmitting('resume')
       setError('')
       const response = await resumeSubscription()
-      setMessage(response.message)
+      showToast.success(response.message || 'Subscription resumed successfully!')
       await loadUser()
     } catch (err) {
       setError(err?.response?.data?.message || 'Unable to resume subscription.')
+      showToast.error(err?.response?.data?.message || 'Failed to resume subscription.')
     } finally {
       setSubmitting('')
     }

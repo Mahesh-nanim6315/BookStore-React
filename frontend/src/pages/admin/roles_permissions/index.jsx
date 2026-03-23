@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import Loader from '../../../components/common/Loader'
 import { getAdminRolesPermissions, updateAdminRolesPermissions } from '../../../api/adminRoles'
+import { showToast } from '../../../utils/toast'
 
 const groupPermissions = (permissionLabels) => {
   const groups = {
@@ -111,10 +112,13 @@ const AdminRolesPermissionsIndex = () => {
       const response = await updateAdminRolesPermissions(rolePermissions)
       if (response.success) {
         setRolePermissions(response.data.role_permissions || rolePermissions)
-        setSaveMessage(response.message || 'Permissions updated successfully.')
+        showToast.success('Permissions updated successfully!')
+      } else {
+        showToast.error(response.message || 'Failed to update permissions')
       }
     } catch (error) {
       console.error('Failed to update permissions:', error)
+      showToast.error('Failed to update permissions. Please try again.')
     } finally {
       setSaving(false)
     }

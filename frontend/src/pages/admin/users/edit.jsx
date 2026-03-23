@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import Loader from '../../../components/common/Loader'
 import UserForm from '../../../components/UserForm'
 import { getAdminUserEditMeta, updateAdminUser } from '../../../api/adminUsers'
+import { showToast } from '../../../utils/toast'
 
 const AdminUsersEdit = () => {
   const { id } = useParams()
@@ -43,10 +44,16 @@ const AdminUsersEdit = () => {
     setIsSaving(true)
 
     try {
-      await updateAdminUser(id, values)
-      navigate('/dashboard/users')
+      const response = await updateAdminUser(id, values)
+      if (response.success) {
+        showToast.success('User updated successfully!')
+        navigate('/dashboard/users')
+      } else {
+        showToast.error(response.message || 'Failed to update user')
+      }
     } catch (error) {
       console.error('Failed to update user:', error)
+      showToast.error('Failed to update user. Please try again.')
     } finally {
       setIsSaving(false)
     }

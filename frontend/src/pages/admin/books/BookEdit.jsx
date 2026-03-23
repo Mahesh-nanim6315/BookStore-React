@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import Loader from '../../../components/common/Loader'
 import BookForm from '../../../components/BookForm'
 import { getAdminBookEditMeta, updateAdminBook } from '../../../api/adminBooks'
+import { showToast } from '../../../utils/toast'
 
 const BookEdit = () => {
   const { id } = useParams()
@@ -72,10 +73,16 @@ const BookEdit = () => {
     setIsSaving(true)
 
     try {
-      await updateAdminBook(id, values)
-      navigate('/dashboard/books')
+      const response = await updateAdminBook(id, values)
+      if (response.success) {
+        showToast.success('Book updated successfully!')
+        navigate('/dashboard/books')
+      } else {
+        showToast.error(response.message || 'Failed to update book')
+      }
     } catch (error) {
       console.error('Failed to update book:', error)
+      showToast.error('Failed to update book. Please try again.')
     } finally {
       setIsSaving(false)
     }

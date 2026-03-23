@@ -7,6 +7,7 @@ import {
   updateAdminOrderPaymentStatus,
   updateAdminOrderStatus,
 } from '../../../api/adminOrders'
+import { showToast } from '../../../utils/toast'
 
 const FILTERS = ['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled']
 
@@ -54,25 +55,37 @@ const AdminOrdersIndex = () => {
 
   const handleOrderStatusChange = async (orderId, status) => {
     try {
-      await updateAdminOrderStatus(orderId, status)
-      setOrders((currentOrders) =>
-        currentOrders.map((order) => (order.id === orderId ? { ...order, status } : order)),
-      )
+      const response = await updateAdminOrderStatus(orderId, status)
+      if (response.success) {
+        showToast.success(`Order status updated to ${status}!`)
+        setOrders((currentOrders) =>
+          currentOrders.map((order) => (order.id === orderId ? { ...order, status } : order)),
+        )
+      } else {
+        showToast.error(response.message || 'Failed to update order status')
+      }
     } catch (error) {
       console.error('Failed to update order status:', error)
+      showToast.error('Failed to update order status. Please try again.')
     }
   }
 
   const handlePaymentStatusChange = async (orderId, paymentStatus) => {
     try {
-      await updateAdminOrderPaymentStatus(orderId, paymentStatus)
-      setOrders((currentOrders) =>
-        currentOrders.map((order) =>
-          order.id === orderId ? { ...order, payment_status: paymentStatus } : order,
-        ),
-      )
+      const response = await updateAdminOrderPaymentStatus(orderId, paymentStatus)
+      if (response.success) {
+        showToast.success(`Payment status updated to ${paymentStatus}!`)
+        setOrders((currentOrders) =>
+          currentOrders.map((order) =>
+            order.id === orderId ? { ...order, payment_status: paymentStatus } : order,
+          ),
+        )
+      } else {
+        showToast.error(response.message || 'Failed to update payment status')
+      }
     } catch (error) {
       console.error('Failed to update payment status:', error)
+      showToast.error('Failed to update payment status. Please try again.')
     }
   }
 

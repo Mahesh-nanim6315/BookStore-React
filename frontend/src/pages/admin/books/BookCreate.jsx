@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BookForm from '../../../components/BookForm'
 import { createAdminBook, getAdminBookCreateMeta } from '../../../api/adminBooks'
+import { showToast } from '../../../utils/toast'
 
 const initialValues = {
   name: '',
@@ -65,10 +66,16 @@ const BookCreate = () => {
     setIsSaving(true)
 
     try {
-      await createAdminBook(values)
-      navigate('/dashboard/books')
+      const response = await createAdminBook(values)
+      if (response.success) {
+        showToast.success('Book created successfully!')
+        navigate('/dashboard/books')
+      } else {
+        showToast.error(response.message || 'Failed to create book')
+      }
     } catch (error) {
       console.error('Failed to create book:', error)
+      showToast.error('Failed to create book. Please try again.')
     } finally {
       setIsSaving(false)
     }

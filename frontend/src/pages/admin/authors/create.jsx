@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AuthorForm from '../../../components/AuthorForm'
 import { createAdminAuthor } from '../../../api/adminAuthors'
+import { showToast } from '../../../utils/toast'
 
 const initialValues = {
   name: '',
@@ -24,10 +25,16 @@ const AdminAuthorsCreate = () => {
     setIsSaving(true)
 
     try {
-      await createAdminAuthor(values)
-      navigate('/dashboard/authors')
+      const response = await createAdminAuthor(values)
+      if (response.success) {
+        showToast.success('Author created successfully!')
+        navigate('/dashboard/authors')
+      } else {
+        showToast.error(response.message || 'Failed to create author')
+      }
     } catch (error) {
       console.error('Failed to create author:', error)
+      showToast.error('Failed to create author. Please try again.')
     } finally {
       setIsSaving(false)
     }

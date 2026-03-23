@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import Loader from '../../../components/common/Loader'
 import { getAdminSettings, updateAdminSettings } from '../../../api/adminSettings'
+import { showToast } from '../../../utils/toast'
 
 const defaultSettings = {
   site_name: '',
@@ -70,13 +71,13 @@ const AdminSettingsIndex = () => {
 
         setInitialValues(updated)
         setValues(updated)
-        setSaveMessage(response.message || 'Settings updated successfully.')
+        showToast.success('Settings updated successfully!')
       } else {
-        setErrorMessage(response.message || 'Failed to save settings.')
+        showToast.error(response.message || 'Failed to save settings.')
       }
     } catch (error) {
       console.error('Failed to save settings:', error)
-      setErrorMessage(error.response?.data?.message || 'Failed to save settings.')
+      showToast.error(error.response?.data?.message || 'Failed to save settings.')
     } finally {
       setSaving(false)
     }

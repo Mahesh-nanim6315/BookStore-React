@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Loader from '../../../components/common/Loader'
 import { deleteAdminAuthor, getAdminAuthors } from '../../../api/adminAuthors'
+import { showToast } from '../../../utils/toast'
 
 const initialFilters = {
   search: '',
@@ -59,10 +60,16 @@ const AdminAuthorsIndex = () => {
     }
 
     try {
-      await deleteAdminAuthor(authorId)
-      loadAuthors(filters, meta.current_page)
+      const response = await deleteAdminAuthor(authorId)
+      if (response.success) {
+        showToast.success('Author deleted successfully!')
+        loadAuthors(filters, meta.current_page)
+      } else {
+        showToast.error(response.message || 'Failed to delete author')
+      }
     } catch (error) {
       console.error('Failed to delete author:', error)
+      showToast.error('Failed to delete author. Please try again.')
     }
   }
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Loader from '../../../components/common/Loader'
 import { deleteAdminUser, getAdminUsers } from '../../../api/adminUsers'
+import { showToast } from '../../../utils/toast'
 
 const AdminUsersIndex = () => {
   const [loading, setLoading] = useState(true)
@@ -44,10 +45,16 @@ const AdminUsersIndex = () => {
     }
 
     try {
-      await deleteAdminUser(id)
-      loadUsers(meta.current_page, search)
+      const response = await deleteAdminUser(id)
+      if (response.success) {
+        showToast.success('User deleted successfully!')
+        loadUsers(meta.current_page, search)
+      } else {
+        showToast.error(response.message || 'Failed to delete user')
+      }
     } catch (error) {
       console.error('Failed to delete user:', error)
+      showToast.error('Failed to delete user. Please try again.')
     }
   }
 

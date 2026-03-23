@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import Loader from '../../../components/common/Loader'
 import { getAdminNotifications, markAdminNotificationRead } from '../../../api/adminNotifications'
+import { showToast } from '../../../utils/toast'
 
 const formatNotificationMessage = (notification) => {
   return (
@@ -59,6 +60,7 @@ const AdminNotificationsIndex = () => {
     try {
       const response = await markAdminNotificationRead(notificationId)
       if (response.success) {
+        showToast.success('Notification marked as read!')
         setNotifications((current) =>
           current.map((notification) =>
             notification.id === notificationId
@@ -66,9 +68,12 @@ const AdminNotificationsIndex = () => {
               : notification,
           ),
         )
+      } else {
+        showToast.error(response.message || 'Failed to mark notification as read')
       }
     } catch (error) {
       console.error('Failed to mark notification as read:', error)
+      showToast.error('Failed to mark notification as read. Please try again.')
     }
   }
 

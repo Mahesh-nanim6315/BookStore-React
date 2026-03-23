@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Loader from '../../../components/common/Loader'
 import { deleteAdminBook, getAdminBooks } from '../../../api/adminBooks'
+import { showToast } from '../../../utils/toast'
 
 const initialFilters = {
   search: '',
@@ -76,10 +77,16 @@ const BooksIndex = () => {
     }
 
     try {
-      await deleteAdminBook(bookId)
-      loadBooks(filters, meta.current_page)
+      const response = await deleteAdminBook(bookId)
+      if (response.success) {
+        showToast.success('Book deleted successfully!')
+        loadBooks(filters, meta.current_page)
+      } else {
+        showToast.error(response.message || 'Failed to delete book')
+      }
     } catch (error) {
       console.error('Failed to delete book:', error)
+      showToast.error('Failed to delete book. Please try again.')
     }
   }
 

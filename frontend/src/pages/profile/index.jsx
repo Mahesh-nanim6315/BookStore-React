@@ -4,6 +4,7 @@ import Loader from '../../components/common/Loader'
 import { useAuth } from '../../contexts/AuthContext'
 import { getProfile, updateAvatar, updateCover, updateProfile } from '../../api/profile'
 import { getImageUrl } from '../../utils/imageUtils'
+import { showToast } from '../../utils/toast'
 
 const formatPlanLabel = (plan, billingCycle) => {
   const base = plan ? `${plan.charAt(0).toUpperCase()}${plan.slice(1)}` : 'Free'
@@ -69,9 +70,10 @@ const ProfileIndex = () => {
       }
       setProfile((current) => ({ ...current, user: nextUser }))
       updateUser(nextUser)
-      setMessage(response.message || 'Profile image updated.')
+      showToast.success(response.message || 'Profile image updated successfully!')
     } catch (err) {
       setError(err?.response?.data?.message || 'Unable to update image.')
+      showToast.error(err?.response?.data?.message || 'Failed to update profile image.')
     } finally {
       event.target.value = ''
     }
@@ -102,10 +104,11 @@ const ProfileIndex = () => {
         password: '',
         password_confirmation: '',
       }))
-      setMessage(response.message || 'Profile updated successfully.')
+      showToast.success(response.message || 'Profile updated successfully!')
       setIsModalOpen(false)
     } catch (err) {
       setError(err?.response?.data?.message || 'Unable to update profile.')
+      showToast.error(err?.response?.data?.message || 'Failed to update profile.')
     }
   }
 
