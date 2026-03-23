@@ -52,35 +52,35 @@ const Ebooks = () => {
             </header> */}
 
             {data.drama && data.drama.length > 0 && (
-                <PartialsCarousel title="Drama" books={data.drama} />
+                <PartialsCarousel title="Drama" books={data.drama} categorySlug="drama" />
             )}
 
             {data.thriller && data.thriller.length > 0 && (
-                <PartialsCarousel title="Thriller" books={data.thriller} />
+                <PartialsCarousel title="Thriller" books={data.thriller} categorySlug="thriller" />
             )}
 
             {data.social && data.social.length > 0 && (
-                <PartialsCarousel title="Social" books={data.social} />
+                <PartialsCarousel title="Social" books={data.social} categorySlug="social" />
             )}
 
             {data.family && data.family.length > 0 && (
-                <PartialsCarousel title="Family" books={data.family} />
+                <PartialsCarousel title="Family" books={data.family} categorySlug="family" />
             )}
 
             {data.romance && data.romance.length > 0 && (
-                <PartialsCarousel title="Romance" books={data.romance} />
+                <PartialsCarousel title="Romance" books={data.romance} categorySlug="romance" />
             )}
 
             {data.humor && data.humor.length > 0 && (
-                <PartialsCarousel title="Humor" books={data.humor} />
+                <PartialsCarousel title="Humor" books={data.humor} categorySlug="humor" />
             )}
 
             {data.horror && data.horror.length > 0 && (
-                <PartialsCarousel title="Horror" books={data.horror} />
+                <PartialsCarousel title="Horror" books={data.horror} categorySlug="horror" />
             )}
 
             {data.historical && data.historical.length > 0 && (
-                <PartialsCarousel title="Historical" books={data.historical} />
+                <PartialsCarousel title="Historical" books={data.historical} categorySlug="historical" />
             )}
 
             {(!data.drama || data.drama.length === 0) && 

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import Loader from '../../components/common/Loader'
 import { downloadInvoice, getOrder } from '../../api/orders'
 import { getImageUrl } from '../../utils/imageUtils'
+import { showToast } from '../../utils/toast'
 
 const formatCurrency = (value) => `Rs. ${Number(value || 0).toLocaleString()}`
 
@@ -34,17 +35,31 @@ const OrdersShow = () => {
 
   const handleDownloadInvoice = async () => {
     try {
+      showToast.info('Generating invoice...')
       const response = await downloadInvoice(id)
       const pdf = response.data?.pdf
       const filename = response.data?.filename || `invoice-order-${id}.pdf`
-      if (!pdf) return
+      if (!pdf) {
+        showToast.error('No invoice data available')
+        return
+      }
 
       const link = document.createElement('a')
       link.href = `data:application/pdf;base64,${pdf}`
       link.download = filename
       link.click()
+      showToast.success('Invoice downloaded successfully!')
     } catch (err) {
-      setError(err?.response?.data?.message || 'Unable to download invoice.')
+      console.error('Failed to download invoice:', err)
+      if (err.response?.status === 500) {
+        showToast.error('Server error occurred while generating invoice. Please try again later or contact support.')
+      } else if (err.response?.status === 404) {
+        showToast.error('Invoice not found for this order.')
+      } else if (err.response?.status === 403) {
+        showToast.error('You do not have permission to download this invoice.')
+      } else {
+        showToast.error(err?.response?.data?.message || 'Unable to download invoice. Please try again.')
+      }
     }
   }
 

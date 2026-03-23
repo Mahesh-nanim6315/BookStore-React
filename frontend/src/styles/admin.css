@@ -1492,11 +1492,6 @@ button[type="submit"]:hover {
     border-bottom: none;
 }
 
-.stock-count {
-    color: #dc2626;
-    font-weight: bold;
-}
-
 
 .chart-alerts {
     display: flex;

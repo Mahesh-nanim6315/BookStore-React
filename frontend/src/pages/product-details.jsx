@@ -7,6 +7,7 @@ import Loader from '../components/common/Loader'
 import { useAuth } from '../contexts/AuthContext'
 import { addToCart } from '../api/cart'
 import { toggleWishlist } from '../api/wishlist'
+import { showToast } from '../utils/toast'
 
 const ProductDetails = () => {
     const { id } = useParams()
@@ -56,11 +57,11 @@ const ProductDetails = () => {
             })
 
             if (response.success) {
-                alert('Added to cart!')
+                showToast.success('Added to cart!')
             }
         } catch (error) {
             console.error('Failed to add to cart', error)
-            alert('Failed to add to cart')
+            showToast.error('Failed to add to cart')
         }
     }
 
@@ -69,11 +70,11 @@ const ProductDetails = () => {
             const response = await toggleWishlist(book.id)
 
             if (response.success) {
-                alert(response.action === 'removed' ? 'Removed from wishlist!' : 'Added to wishlist!')
+                showToast.success(response.action === 'removed' ? 'Removed from wishlist!' : 'Added to wishlist!')
             }
         } catch (error) {
             console.error('Failed to add to wishlist', error)
-            alert('Failed to add to wishlist')
+            showToast.error('Failed to update wishlist')
         }
     }
 
@@ -89,6 +90,7 @@ const ProductDetails = () => {
             if (response.success) {
                 setReviewForm({ rating: '', comment: '' })
                 await refreshBookData()
+                showToast.success('Review submitted successfully!')
             }
         } catch (error) {
             console.error('Failed to submit review', error)
@@ -97,7 +99,7 @@ const ProductDetails = () => {
                 error?.response?.data?.errors?.comment?.[0] ||
                 error?.response?.data?.errors?.rating?.[0] ||
                 'Failed to submit review'
-            alert(message)
+            showToast.error(message)
         }
     }
 
@@ -124,6 +126,7 @@ const ProductDetails = () => {
             if (response.success) {
                 await refreshBookData()
                 handleEditReviewCancel()
+                showToast.success('Review updated successfully!')
             }
         } catch (error) {
             console.error('Failed to update review', error)
@@ -132,7 +135,7 @@ const ProductDetails = () => {
                 error?.response?.data?.errors?.comment?.[0] ||
                 error?.response?.data?.errors?.rating?.[0] ||
                 'Failed to update review'
-            alert(message)
+            showToast.error(message)
         }
     }
 
@@ -144,10 +147,11 @@ const ProductDetails = () => {
                 if (response.success) {
                     await refreshBookData()
                     handleEditReviewCancel()
+                    showToast.success('Review deleted successfully!')
                 }
             } catch (error) {
                 console.error('Failed to delete review', error)
-                alert(error?.response?.data?.message || 'Failed to delete review')
+                showToast.error(error?.response?.data?.message || 'Failed to delete review')
             }
         }
     }

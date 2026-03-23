@@ -5,6 +5,7 @@ import { toggleWishlist } from '../api/wishlist'
 import { useAuth } from '../contexts/AuthContext'
 import Loader from '../components/common/Loader'
 import { getImageUrl } from '../utils/imageUtils'
+import { showToast } from '../utils/toast'
 
 const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -94,19 +95,24 @@ const Products = () => {
 
   const handleWishlistToggle = async (bookId) => {
     if (!isAuthenticated) {
-      alert('Please login to add items to wishlist')
+      showToast.error('Please login to add items to wishlist')
       return
     }
 
     try {
-      await toggleWishlist(bookId)
+      const response = await toggleWishlist(bookId)
       setBooks((current) =>
         current.map((book) =>
           book.id === bookId ? { ...book, in_wishlist: !book.in_wishlist } : book,
         ),
       )
+      
+      if (response.success) {
+        showToast.success(response.action === 'removed' ? 'Removed from wishlist!' : 'Added to wishlist!')
+      }
     } catch (error) {
       console.error('Failed to toggle wishlist:', error)
+      showToast.error('Failed to update wishlist')
     }
   }
 

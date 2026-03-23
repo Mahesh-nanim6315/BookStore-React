@@ -4,6 +4,7 @@ import Loader from '../../components/common/Loader'
 import { getWishlist, removeFromWishlist } from '../../api/wishlist'
 import { addToCart } from '../../api/cart'
 import { getImageUrl } from '../../utils/imageUtils'
+import { showToast } from '../../utils/toast'
 
 const normalizeWishlistItems = (payload) => {
   const candidates = [
@@ -69,9 +70,10 @@ const WishlistIndex = () => {
       setRemoveLoadingId(wishlistId)
       await removeFromWishlist(wishlistId)
       setItems((current) => current.filter((item) => item.id !== wishlistId))
+      showToast.success('Item removed from wishlist!')
     } catch (err) {
       console.error('Failed to remove wishlist item:', err)
-      setError('Could not remove that item from your wishlist.')
+      showToast.error('Could not remove that item from your wishlist.')
     } finally {
       setRemoveLoadingId(null)
     }
@@ -86,7 +88,7 @@ const WishlistIndex = () => {
       navigate('/cart')
     } catch (err) {
       console.error('Failed to add wishlist item to cart:', err)
-      setError('Could not add that book to your cart.')
+      showToast.error('Could not add that book to your cart.')
     } finally {
       setCartLoadingId(null)
     }
