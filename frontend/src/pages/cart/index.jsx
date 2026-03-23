@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { applyCoupon, getCart, removeCoupon, removeFromCart, updateCartItem } from '../../api/cart'
 import Loader from '../../components/common/Loader'
 import { getImageUrl } from '../../utils/imageUtils'
+import { showToast } from '../../utils/toast'
 
 const CartIndex = () => {
   const [cart, setCart] = useState(null)
@@ -10,6 +11,7 @@ const CartIndex = () => {
   const [couponCode, setCouponCode] = useState('')
   const [updating, setUpdating] = useState(false)
   const [error, setError] = useState('')
+  const navigate = useNavigate()
 
   const loadCart = async () => {
     try {
@@ -32,9 +34,10 @@ const CartIndex = () => {
     try {
       await removeFromCart(itemId)
       await loadCart()
+      showToast.success('Item removed from cart!')
     } catch (err) {
       console.error('Failed to remove item:', err)
-      setError('Could not remove that item from your cart.')
+      showToast.error('Could not remove that item from your cart.')
     }
   }
 
@@ -59,9 +62,10 @@ const CartIndex = () => {
       await applyCoupon(couponCode)
       await loadCart()
       setCouponCode('')
+      showToast.success('Coupon applied successfully!')
     } catch (err) {
       console.error('Failed to apply coupon:', err)
-      setError(err?.response?.data?.message || 'Failed to apply coupon.')
+      showToast.error(err?.response?.data?.message || 'Failed to apply coupon.')
     }
   }
 
@@ -69,10 +73,21 @@ const CartIndex = () => {
     try {
       await removeCoupon()
       await loadCart()
+      showToast.success('Coupon removed successfully!')
     } catch (err) {
       console.error('Failed to remove coupon:', err)
-      setError('Failed to remove coupon.')
+      showToast.error('Failed to remove coupon.')
     }
+  }
+
+  const handleProceedToCheckout = () => {
+    // Validate cart has items before proceeding
+    if (items.length === 0) {
+      showToast.error('Your cart is empty. Add items before checking out.')
+      return
+    }
+    showToast.success('Proceeding to checkout...')
+    navigate('/checkout')
   }
 
   if (loading) {
@@ -176,11 +191,12 @@ const CartIndex = () => {
                 <span>Rs. {total}</span>
               </div>
 
-              <Link to="/checkout" className="cart-checkout-link">
-                <button className="cart-checkout-btn">
-                  Proceed to Checkout
-                </button>
-              </Link>
+              <button 
+                onClick={handleProceedToCheckout}
+                className="cart-checkout-btn"
+              >
+                Proceed to Checkout
+              </button>
 
               {cart?.coupon ? (
                 <div className="cart-coupon-box coupon-applied">
