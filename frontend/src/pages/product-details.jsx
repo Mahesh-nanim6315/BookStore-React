@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { fetchBook } from '../api/books'
 import { createReview, deleteReview, updateReview } from '../api/reviews'
 import { getImageUrl } from '../utils/imageUtils'
@@ -11,6 +11,7 @@ import { showToast } from '../utils/toast'
 
 const ProductDetails = () => {
     const { id } = useParams()
+    const navigate = useNavigate()
     const { user } = useAuth()
     const [book, setBook] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -39,6 +40,16 @@ const ProductDetails = () => {
                 await refreshBookData()
             } catch (error) {
                 console.error('Failed to load book', error)
+                if (error?.response?.status === 403) {
+                    const redirectPath = error?.response?.data?.redirect || '/plans'
+                    const message = error?.response?.data?.message || 'This book requires a premium subscription.'
+
+                    showToast.error(message)
+                    navigate(redirectPath, {
+                        replace: true,
+                        state: { message },
+                    })
+                }
             } finally {
                 setLoading(false)
             }
@@ -47,7 +58,7 @@ const ProductDetails = () => {
         if (id) {
             load()
         }
-    }, [id])
+    }, [id, navigate])
 
     const handleAddToCart = async (format, price) => {
         try {
@@ -239,18 +250,10 @@ const ProductDetails = () => {
                 {/* Right Column */}
                 <div className="product-right">
                     <div className="product-header">
+                        <p className="product-eyebrow">Featured title</p>
                         <h1 className="product-title">{book.name}</h1>
                         {book.is_premium && (
-                            <p style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                background: '#fef3c7',
-                                color: '#b45309',
-                                fontWeight: '600',
-                                padding: '6px 12px',
-                                borderRadius: '999px'
-                            }}>
+                            <p className="product-premium-badge">
                                 Premium book - Active subscription required
                             </p>
                         )}

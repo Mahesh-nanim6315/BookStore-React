@@ -378,13 +378,21 @@ class SubscriptionController extends Controller
     {
         Stripe::setApiKey(config('services.stripe.secret'));
 
-        $session = StripeCheckoutSession::retrieve($sessionId, [
+        $session = StripeCheckoutSession::retrieve([
+            'id' => $sessionId,
             'expand' => ['subscription', 'subscription.items.data.price'],
         ]);
 
         $stripeSubscription = $session->subscription;
 
-        if (! $stripeSubscription || empty($stripeSubscription->id)) {
+        if (is_string($stripeSubscription) && $stripeSubscription !== '') {
+            $stripeSubscription = StripeSubscription::retrieve([
+                'id' => $stripeSubscription,
+                'expand' => ['items.data.price'],
+            ]);
+        }
+
+        if (! is_object($stripeSubscription) || empty($stripeSubscription->id)) {
             return;
         }
 
@@ -392,50 +400,7 @@ class SubscriptionController extends Controller
             'stripe_id' => $session->customer ?: $user->stripe_id,
         ])->save();
 
-        DB::transaction(function () use ($user, $stripeSubscription) {
-            $firstItem = $stripeSubscription->items->data[0] ?? null;
-
-            $subscriptionId = DB::table('subscriptions')->updateOrInsert(
-                ['stripe_id' => $stripeSubscription->id],
-                [
-                    'user_id' => $user->id,
-                    'type' => 'default',
-                    'stripe_status' => $stripeSubscription->status,
-                    'stripe_price' => $firstItem?->price?->id,
-                    'quantity' => $firstItem?->quantity,
-                    'trial_ends_at' => isset($stripeSubscription->trial_end) && $stripeSubscription->trial_end
-                        ? date('Y-m-d H:i:s', $stripeSubscription->trial_end)
-                        : null,
-                    'ends_at' => isset($stripeSubscription->cancel_at) && $stripeSubscription->cancel_at
-                        ? date('Y-m-d H:i:s', $stripeSubscription->cancel_at)
-                        : null,
-                    'updated_at' => now(),
-                    'created_at' => now(),
-                ]
-            );
-
-            $localSubscription = DB::table('subscriptions')
-                ->where('stripe_id', $stripeSubscription->id)
-                ->first();
-
-            if (! $localSubscription) {
-                return;
-            }
-
-            DB::table('subscription_items')->where('subscription_id', $localSubscription->id)->delete();
-
-            foreach ($stripeSubscription->items->data as $item) {
-                DB::table('subscription_items')->insert([
-                    'subscription_id' => $localSubscription->id,
-                    'stripe_id' => $item->id,
-                    'stripe_product' => $item->price?->product ?? '',
-                    'stripe_price' => $item->price?->id ?? '',
-                    'quantity' => $item->quantity,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-        });
+        $this->persistStripeSubscription($user, $stripeSubscription);
     }
 
     private function syncLatestStripeSubscriptionForCustomer($user): void
@@ -458,6 +423,11 @@ class SubscriptionController extends Controller
             return;
         }
 
+        $this->persistStripeSubscription($user, $stripeSubscription);
+    }
+
+    private function persistStripeSubscription($user, $stripeSubscription): void
+    {
         DB::transaction(function () use ($user, $stripeSubscription) {
             $firstItem = $stripeSubscription->items->data[0] ?? null;
 

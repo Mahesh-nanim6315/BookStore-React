@@ -86,7 +86,7 @@ class BookController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'This book requires a premium subscription.',
-                'redirect' => route('plans.index')
+                'redirect' => '/plans'
             ], 403);
         }
 
