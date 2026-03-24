@@ -1,27 +1,29 @@
-import React, { useState } from 'react'
+import React, { useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { getImageUrl } from '../utils/imageUtils'
 
 const Carousel = ({ title, books, category = null }) => {
-  const [currentIndex, setCurrentIndex] = useState(0)
-
-  const slideLeft = () => {
-    setCurrentIndex(Math.max(0, currentIndex - 1))
-  }
-
-  const slideRight = () => {
-    const maxIndex = Math.max(0, books.length - 4)
-    setCurrentIndex(Math.min(maxIndex, currentIndex + 1))
-  }
+  const trackRef = useRef(null)
 
   if (!books || books.length === 0) {
     return null
   }
 
+  const scrollTrack = (direction) => {
+    const track = trackRef.current
+    if (!track) return
+
+    track.scrollBy({
+      left: direction * track.clientWidth,
+      behavior: 'smooth',
+    })
+  }
+
   return (
     <section className="carousel-section">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="carousel-header">
         <h2>{title}</h2>
-        
+
         {category && (
           <Link to={`/category/${category.slug}`} className="view-all-btn">
             View All
@@ -30,24 +32,24 @@ const Carousel = ({ title, books, category = null }) => {
       </div>
 
       <div className="carousel-wrapper">
-        <button className="nav-btn left" onClick={slideLeft}>❮</button>
+        <button
+          type="button"
+          className="nav-btn left"
+          onClick={() => scrollTrack(-1)}
+          aria-label={`Scroll ${title} left`}
+        >
+          &#10094;
+        </button>
 
-        <div className="carousel-track">
-          {books.map((book, index) => (
-            <div key={book.id} className="carousel-card" style={{ transform: `translateX(-${currentIndex * 220}px)` }}>
-              <Link to={`/products/${book.id}`}>
-                <img src={book.image || '/images/default-book.jpg'} width="200" height="200" alt={book.name} />
+        <div ref={trackRef} className="carousel-track">
+          {books.map((book) => (
+            <div key={book.id} className="carousel-card">
+              <Link to={`/products/${book.id}`} className="carousel-card-link">
+                <img src={getImageUrl(book.image)} alt={book.name} />
                 <p className="card-title">{book.name}</p>
               </Link>
               {book.is_premium && (
-                <span style={{
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  color: '#b45309',
-                  background: '#fef3c7',
-                  padding: '3px 8px',
-                  borderRadius: '999px'
-                }}>
+                <span className="premium-badge">
                   Premium
                 </span>
               )}
@@ -55,7 +57,14 @@ const Carousel = ({ title, books, category = null }) => {
           ))}
         </div>
 
-        <button className="nav-btn right" onClick={slideRight}>❯</button>
+        <button
+          type="button"
+          className="nav-btn right"
+          onClick={() => scrollTrack(1)}
+          aria-label={`Scroll ${title} right`}
+        >
+          &#10095;
+        </button>
       </div>
     </section>
   )

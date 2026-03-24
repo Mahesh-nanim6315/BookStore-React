@@ -24,7 +24,7 @@ const PartialsCarousel = ({ title, books = [], category, categorySlug }) => {
           className="nav-btn left"
           onClick={(e) => {
             const track = e.currentTarget.nextElementSibling
-            if (track) track.scrollBy({ left: -300, behavior: 'smooth' })
+            if (track) track.scrollBy({ left: -track.clientWidth, behavior: 'smooth' })
           }}
           aria-label={`Scroll ${title} left`}
         >
@@ -58,7 +58,7 @@ const PartialsCarousel = ({ title, books = [], category, categorySlug }) => {
           className="nav-btn right"
           onClick={(e) => {
             const track = e.currentTarget.previousElementSibling
-            if (track) track.scrollBy({ left: 300, behavior: 'smooth' })
+            if (track) track.scrollBy({ left: track.clientWidth, behavior: 'smooth' })
           }}
           aria-label={`Scroll ${title} right`}
         >

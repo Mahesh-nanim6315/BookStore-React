@@ -19,6 +19,7 @@ const Products = () => {
     languages: [],
   })
   const [loading, setLoading] = useState(true)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [meta, setMeta] = useState({
     current_page: Number(searchParams.get('page') || 1),
     last_page: 1,
@@ -79,6 +80,7 @@ const Products = () => {
     const nextFormData = { ...formData, page: 1 }
     setFormData(nextFormData)
     updateUrl(nextFormData)
+    setMobileFiltersOpen(false)
   }
 
   const handlePageChange = (page) => {
@@ -106,7 +108,7 @@ const Products = () => {
           book.id === bookId ? { ...book, in_wishlist: !book.in_wishlist } : book,
         ),
       )
-      
+
       if (response.success) {
         showToast.success(response.action === 'removed' ? 'Removed from wishlist!' : 'Added to wishlist!')
       }
@@ -184,112 +186,156 @@ const Products = () => {
     return <Loader />
   }
 
+  const activeFilterCount = ['search', 'category_id', 'language', 'author_id', 'genre_id', 'sort']
+    .filter((key) => Boolean(formData[key]))
+    .length
+
   return (
     <div className="products-page">
       <div className="products-page-header">
-        <h1>Pick Top Seller</h1>
-        <p>Explore our best-selling books across all categories and genres.</p>
+        <p className="products-page-title">Curated Shelf</p>
+        <h1>Find your next standout read</h1>
+        <p className="products-page-subtitle">
+          Explore bestselling stories, premium picks, and hidden gems across every category.
+        </p>
       </div>
 
-      <div className="container">
-        <div className="filter-box">
-          <form onSubmit={handleSearch}>
-            <label><strong>Search</strong></label>
-            <input
-              type="text"
-              name="search"
-              value={formData.search}
-              onChange={handleFilterChange}
-              placeholder="Search book..."
-            />
+      <div className="products-shell">
+        <button
+          type="button"
+          className="products-mobile-toggle"
+          onClick={() => setMobileFiltersOpen((open) => !open)}
+          aria-expanded={mobileFiltersOpen}
+        >
+          <span>Filters & Sort</span>
+          <strong>{activeFilterCount}</strong>
+        </button>
 
-            <label><strong>Category</strong></label>
-            <select name="category_id" value={formData.category_id} onChange={handleFilterChange}>
-              <option value="">All</option>
-              {filters.categories?.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+        <aside className={`filter-box ${mobileFiltersOpen ? 'is-open' : ''}`}>
+          <div className="filter-box__header">
+            <p className="filter-box__eyebrow">Refine results</p>
+            <h2>Browse smarter</h2>
+          </div>
 
-            <label><strong>Language</strong></label>
-            <select name="language" value={formData.language} onChange={handleFilterChange}>
-              <option value="">All</option>
-              {filters.languages?.map((language) => (
-                <option key={language} value={language}>
-                  {language}
-                </option>
-              ))}
-            </select>
+          <form onSubmit={handleSearch} className="products-filters__form">
+            <div className="products-filter-group">
+              <label htmlFor="products-search"><strong>Search</strong></label>
+              <input
+                id="products-search"
+                type="text"
+                name="search"
+                value={formData.search}
+                onChange={handleFilterChange}
+                placeholder="Search book..."
+              />
+            </div>
 
-           <label><strong>Author</strong></label>
-            <select name="author_id" value={formData.author_id} onChange={handleFilterChange}>
-              <option value="">All</option>
-              {filters.authors?.map((author) => (
-                <option key={author.id} value={author.id}>
-                  {author.name}
-                </option>
-              ))}
-            </select>  
+            <div className="products-filter-group">
+              <label htmlFor="products-category"><strong>Category</strong></label>
+              <select id="products-category" name="category_id" value={formData.category_id} onChange={handleFilterChange}>
+                <option value="">All</option>
+                {filters.categories?.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            <label><strong>Genre</strong></label>
-            <select name="genre_id" value={formData.genre_id} onChange={handleFilterChange}>
-              <option value="">All</option>
-              {filters.genres?.map((genre) => (
-                <option key={genre.id} value={genre.id}>
-                  {genre.name}
-                </option>
-              ))}
-            </select>
+            <div className="products-filter-group">
+              <label htmlFor="products-language"><strong>Language</strong></label>
+              <select id="products-language" name="language" value={formData.language} onChange={handleFilterChange}>
+                <option value="">All</option>
+                {filters.languages?.map((language) => (
+                  <option key={language} value={language}>
+                    {language}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            <label><strong>Sort by Price</strong></label>
-            <select name="sort" value={formData.sort} onChange={handleFilterChange}>
-              <option value="">Default</option>
-              <option value="price_asc">Low to High</option>
-              <option value="price_desc">High to Low</option>
-            </select>
+            <div className="products-filter-group">
+              <label htmlFor="products-author"><strong>Author</strong></label>
+              <select id="products-author" name="author_id" value={formData.author_id} onChange={handleFilterChange}>
+                <option value="">All</option>
+                {filters.authors?.map((author) => (
+                  <option key={author.id} value={author.id}>
+                    {author.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="products-filter-group">
+              <label htmlFor="products-genre"><strong>Genre</strong></label>
+              <select id="products-genre" name="genre_id" value={formData.genre_id} onChange={handleFilterChange}>
+                <option value="">All</option>
+                {filters.genres?.map((genre) => (
+                  <option key={genre.id} value={genre.id}>
+                    {genre.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="products-filter-group">
+              <label htmlFor="products-sort"><strong>Sort by Price</strong></label>
+              <select id="products-sort" name="sort" value={formData.sort} onChange={handleFilterChange}>
+                <option value="">Default</option>
+                <option value="price_asc">Low to High</option>
+                <option value="price_desc">High to Low</option>
+              </select>
+            </div>
 
             <button type="submit">Apply Filters</button>
           </form>
-        </div>
+        </aside>
 
-        <div className="products-section">
+        <section className="products-section">
           <div className="products-summary">
-            <span>{meta.total} books found</span>
-            <span>Page {meta.current_page} of {meta.last_page}</span>
+            <div className="products-summary__copy">
+              <strong>{meta.total}</strong>
+              <span>books matched your shelf</span>
+            </div>
+            <span className="products-summary__page">Page {meta.current_page} of {meta.last_page}</span>
           </div>
 
           <div className="products-grid">
             {books.length > 0 ? (
               books.map((book) => (
-                <div key={book.id} className="product">
+                <article key={book.id} className="product">
                   <button
                     type="button"
                     className="wishlist-btn"
                     onClick={() => handleWishlistToggle(book.id)}
                     aria-label={book.in_wishlist ? 'Remove from wishlist' : 'Add to wishlist'}
                   >
-                    {book.in_wishlist ? '❤️' : '🤍'}
+                    <span aria-hidden="true">{book.in_wishlist ? '♥' : '♡'}</span>
                   </button>
 
                   <Link to={`/products/${book.id}`} className="product-cover-link">
                     <img src={getImageUrl(book.image)} alt={book.name} className="book-image" />
                   </Link>
 
-                  <div className="product-header">
-                    <div className="product-title-block">
-                      <h3>{book.name}</h3>
-                      {/* {book.author?.name && <p className="product-author">{book.author.name}</p>} */}
+                  <div className="product-card-body">
+                    <div className="product-header">
+                      <div className="product-title-block">
+                        <h3>{book.name}</h3>
+                        {/* {book.author?.name && <p className="product-author">{book.author.name}</p>} */}
+                      </div>
+                      {book.is_premium && <span className="premium-badge">Premium</span>}
                     </div>
-                    {book.is_premium && <span className="premium-badge">Premium</span>}
-                  </div>
 
-                  {/* <div className="product-meta">
-                    {book.category?.name && <span>{book.category.name}</span>}
-                    {book.language && <span>{book.language}</span>}
-                  </div> */}
-                </div>
+                    {/* <div className="product-meta">
+                      {book.category?.name && <span>{book.category.name}</span>}
+                      {book.language && <span>{book.language}</span>}
+                    </div> */}
+
+                    <Link to={`/products/${book.id}`} className="product-view-link">
+                      View details
+                    </Link>
+                  </div>
+                </article>
               ))
             ) : (
               <p className="empty-state">No books found.</p>
@@ -297,7 +343,7 @@ const Products = () => {
           </div>
 
           {renderPagination()}
-        </div>
+        </section>
       </div>
     </div>
   )
