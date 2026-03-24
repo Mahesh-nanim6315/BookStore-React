@@ -11,12 +11,9 @@ const Welcome = () => {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        console.log('Welcome component mounted')
         const loadData = async () => {
             try {
-                console.log('Loading home data...')
                 const response = await fetchHomeData()
-                console.log('Home data response:', response)
                 setHomeData(response.data)
             } catch (error) {
                 console.error("Failed to fetch home data", error)
@@ -35,11 +32,8 @@ const Welcome = () => {
     }, [])
 
     if (loading) {
-        console.log('Welcome component: showing loader')
         return <Loader />
     }
-
-    console.log('Welcome component: rendering with data:', homeData)
 
     return (
         <div className="page">

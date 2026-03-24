@@ -7,6 +7,15 @@
     font-family: Georgia, "Times New Roman", serif;
 }
 
+html,
+body,
+#root,
+.app-shell {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+}
+
 
 .site-header {
     position: fixed;
@@ -25,6 +34,7 @@
 .site-nav {
     max-width: 1400px;
     margin: 0 auto;
+    width: 100%;
     padding: 14px 20px;
     display: flex;
     align-items: center;
@@ -45,26 +55,35 @@
     align-items: center;
     gap: 12px;
     text-decoration: none;
+    min-width: 0;
 }
 
 .brand-mark img {
     border-radius: 12px;
+    flex-shrink: 0;
 }
 
 .brand-copy {
     display: flex;
     flex-direction: column;
+    min-width: 0;
 }
 
 .brand-copy strong {
     color: #0f172a;
     font-size: 1.1rem;
     letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .brand-copy span {
     color: #64748b;
     font-size: 0.82rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .site-nav__panel {
@@ -113,6 +132,7 @@
     align-items: center;
     gap: 14px;
     flex-shrink: 0;
+    min-width: 0;
 }
 
 .site-search-toggle,
@@ -199,7 +219,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 76px;
+    min-width: 0;
     padding: 10px 16px;
     border-radius: 999px;
     background: #fff7ed;
@@ -241,6 +261,7 @@
     cursor: pointer;
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
     min-width: 148px;
+    max-width: 100%;
 }
 
 .site-account__avatar {
@@ -260,16 +281,25 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    min-width: 0;
 }
 
 .site-account__copy strong {
     color: #0f172a;
     font-size: 0.9rem;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .site-account__copy small {
     color: #64748b;
     font-size: 0.76rem;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .site-account__menu {
@@ -358,6 +388,7 @@
     border: 1px solid #e2e8f0;
     background: #fff;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 .site-nav__toggle span {
@@ -372,6 +403,7 @@
 @media (max-width: 1180px) {
     .site-nav {
         flex-wrap: wrap;
+        padding-inline: 16px;
     }
 
     .site-nav__panel {
@@ -379,7 +411,7 @@
         flex-direction: column;
         align-items: stretch;
         display: none;
-        padding-top: 8px;
+        padding-top: 12px;
     }
 
     .site-nav__panel--open {
@@ -393,6 +425,7 @@
     .site-nav__actions {
         flex-wrap: wrap;
         justify-content: space-between;
+        width: 100%;
     }
 
     .site-nav__toggle {
@@ -434,10 +467,15 @@
     .site-nav__brand {
         min-width: 0;
         width: 100%;
+        gap: 12px;
     }
 
     .brand-copy span {
         display: none;
+    }
+
+    .brand-mark {
+        flex: 1;
     }
 
     .site-nav__links {
@@ -452,6 +490,7 @@
     .site-nav__actions {
         flex-direction: column;
         align-items: stretch;
+        gap: 10px;
     }
 
     .site-language,
@@ -465,6 +504,10 @@
     .site-language--icon,
     .site-search-toggle {
         min-height: 48px;
+    }
+
+    .site-account__trigger {
+        min-width: 0;
     }
 
     .site-search-panel {
@@ -497,7 +540,7 @@
 /* HERO SLIDER WRAPPER */
 .hero-slider {
     position: relative;
-    height: 75vh;
+    height: clamp(440px, 75vh, 760px);
     overflow: hidden;
     width: 100%;
 }
@@ -577,17 +620,21 @@
     align-items: center;
     color: #fff;
     text-align: center;
+    padding: 0 20px;
 }
 
 .hero-content h1 {
-    font-size: 3rem;
+    font-size: clamp(2.5rem, 5vw, 3.6rem);
     margin-bottom: 10px;
+    line-height: 1.05;
+    max-width: 12ch;
 }
 
 .hero-content p {
-    font-size: 1.3rem;
+    font-size: clamp(1rem, 2.2vw, 1.3rem);
     margin-bottom: 20px;
     opacity: 0.9;
+    max-width: 28ch;
 }
 
 .hero-content button {
@@ -607,12 +654,22 @@
 
 /* RESPONSIVE */
 @media (max-width: 768px) {
+    .hero-slider {
+        height: min(72vh, 560px);
+    }
+
     .hero-content h1 {
-        font-size: 2rem;
+        font-size: clamp(2rem, 8vw, 2.6rem);
     }
 
     .hero-content p {
         font-size: 1rem;
+        margin-bottom: 18px;
+    }
+
+    .hero-content button {
+        width: 100%;
+        max-width: 220px;
     }
 }
 
@@ -621,11 +678,12 @@
 /* Carousel Section */
 .carousel-section {
     margin: 0 auto;
-    padding: 10px;
+    padding: 10px 20px;
     color: #fff;
     /* background-color: #111; */
     border-radius: 10px;
     overflow: hidden;
+    max-width: 1400px;
 }
 
 .carousel-header {
@@ -669,6 +727,7 @@
     overflow-x: auto;
     scroll-behavior: smooth;
     scrollbar-width: none;
+    padding-bottom: 8px;
     /* Firefox */
 }
 
@@ -6372,8 +6431,15 @@ hr {
     gap: 16px;
 }
 
+.category-buttons {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 10px 20px 0;
+}
+
 .category-buttons-title {
-    margin: 10px 0 16px 20px;
+    margin: 10px 0 16px;
     font-size: 1.5rem;
     color: #0f172a;
 }
@@ -6382,14 +6448,20 @@ hr {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
 .category-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 8px 16px;
     border-radius: 20px;
     background: #f3f4f6;
     text-decoration: none;
     font-weight: 500;
+    color: #0f172a;
+    max-width: 100%;
 }
 
 .view-all-btn {
@@ -6397,16 +6469,51 @@ hr {
     border-radius: 20px;
     background: #4f46e5;
     color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 @media (max-width: 768px) {
     .carousel-header {
         flex-direction: column;
         align-items: flex-start;
+        gap: 10px;
     }
 
     .carousel-card {
-        width: 180px;
+        width: min(180px, 62vw);
+    }
+
+    .carousel-section {
+        padding-inline: 14px;
+    }
+
+    .carousel-wrapper {
+        margin-top: 14px;
+    }
+
+    .nav-btn {
+        display: none;
+    }
+
+    .category-buttons {
+        padding-inline: 14px;
+    }
+
+    .category-buttons-title {
+        font-size: 1.3rem;
+        margin-bottom: 12px;
+    }
+
+    .category-list {
+        gap: 8px;
+    }
+
+    .category-btn,
+    .view-all-btn {
+        padding: 8px 14px;
+        font-size: 0.92rem;
     }
 
     .page-titles--catalog {
@@ -6416,6 +6523,28 @@ hr {
     .wishlist-container {
         margin-top: 86px;
         padding-inline: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .site-nav {
+        padding-inline: 12px;
+    }
+
+    .brand-copy strong {
+        font-size: 1rem;
+    }
+
+    .hero-slider {
+        height: 460px;
+    }
+
+    .hero-content {
+        padding-inline: 16px;
+    }
+
+    .carousel-card {
+        width: min(164px, 68vw);
     }
 }
 
