@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { hasPermission } from '../../utils/permissions'
 
-const AdminSidebar = ({ user }) => {
+const AdminSidebar = ({ user, mobileOpen, setMobileOpen }) => {
   const [collapsed, setCollapsed] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
 
   useEffect(() => {
@@ -20,15 +19,14 @@ const AdminSidebar = ({ user }) => {
     if (!wrapper) return
 
     wrapper.classList.toggle('collapsed', collapsed)
-    wrapper.classList.toggle('sidebar-open', mobileOpen)
-  }, [collapsed, mobileOpen])
+  }, [collapsed])
 
   useEffect(() => {
     if (!mobileOpen) return
 
     const handleDocumentClick = (event) => {
       const insideSidebar = event.target.closest('.admin-sidebar')
-      const clickedToggle = event.target.closest('#toggleBtn')
+      const clickedToggle = event.target.closest('.mobile-sidebar-btn')
       if (!insideSidebar && !clickedToggle) {
         setMobileOpen(false)
       }
@@ -36,7 +34,7 @@ const AdminSidebar = ({ user }) => {
 
     document.addEventListener('click', handleDocumentClick)
     return () => document.removeEventListener('click', handleDocumentClick)
-  }, [mobileOpen])
+  }, [mobileOpen, setMobileOpen])
 
   const toggleSidebar = () => {
     const isDesktop = window.matchMedia('(min-width: 1025px)').matches

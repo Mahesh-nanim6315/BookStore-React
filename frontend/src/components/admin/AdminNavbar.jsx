@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { getAdminNotifications, markAdminNotificationRead } from '../../api/adminNotifications'
 
-const AdminNavbar = ({ user }) => {
+const AdminNavbar = ({ user, onToggleSidebar }) => {
   const { logout } = useAuth()
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
@@ -94,7 +94,12 @@ const AdminNavbar = ({ user }) => {
   return (
     <nav className="topbar" aria-label="Admin top navigation">
       <div className="topbar-left">
-        <button id="mobileSidebarToggle" className="icon-btn mobile-sidebar-btn" type="button" aria-label="Open sidebar">
+        <button 
+          onClick={onToggleSidebar}
+          className="icon-btn mobile-sidebar-btn" 
+          type="button" 
+          aria-label="Open sidebar"
+        >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2"></path>
           </svg>

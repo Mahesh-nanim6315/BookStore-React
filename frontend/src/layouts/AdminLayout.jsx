@@ -37,11 +37,11 @@ const AdminLayout = () => {
   }
 
   return (
-    <div className="admin-wrapper">
-      <AdminSidebar user={user} />
+    <div className={`admin-wrapper ${mobileSidebarOpen ? 'sidebar-open' : ''}`}>
+      <AdminSidebar user={user} mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />
       
       <div className="main-content">
-        <AdminNavbar user={user} />
+        <AdminNavbar user={user} onToggleSidebar={toggleMobileSidebar} />
         
         <ToastContainer
           position="top-right"

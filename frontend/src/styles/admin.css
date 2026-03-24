@@ -2617,3 +2617,244 @@ body {
     width: 100% !important; 
     height: 100% !important;
 }
+
+/* ================= MOBILE RESPONSIVE STYLES ================= */
+
+/* Dashboard mobile responsive */
+@media (max-width: 1024px) {
+    .stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .chart-alerts {
+        grid-template-columns: 1fr;
+    }
+    
+    .alerts {
+        width: 100%;
+    }
+    
+    .quick-actions {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .content {
+        padding: 12px;
+    }
+    
+    .stats {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .card {
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .quick-actions {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .quick-card {
+        padding: 15px;
+    }
+    
+    .chart-box,
+    .card-box,
+    .alerts {
+        padding: 15px;
+    }
+    
+    .chart-alerts {
+        gap: 15px;
+    }
+    
+    .section-title {
+        font-size: 16px;
+    }
+    
+    h3 {
+        font-size: 18px;
+    }
+}
+
+/* Table mobile improvements */
+@media (max-width: 768px) {
+    .admin-table-wrap {
+        padding: 8px;
+    }
+    
+    .table-custom th,
+    .table-custom td {
+        padding: 8px;
+        font-size: 13px;
+    }
+    
+    .admin-list-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+    
+    .admin-list-header h2 {
+        font-size: 18px;
+    }
+    
+    .admin-filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .admin-filter-chip,
+    .admin-button {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* Form mobile improvements */
+@media (max-width: 768px) {
+    .book-filter-panel {
+        padding: 15px;
+    }
+    
+    .book-filter-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .book-filter-actions {
+        flex-direction: column;
+    }
+    
+    .book-form-card {
+        padding: 15px;
+    }
+    
+    .book-field-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Order show page mobile */
+@media (max-width: 768px) {
+    .order-show-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .order-show-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .order-items-table th,
+    .order-items-table td {
+        padding: 8px 5px;
+        font-size: 13px;
+    }
+}
+
+/* Pagination mobile */
+@media (max-width: 640px) {
+    .admin-pagination {
+        flex-direction: column;
+        gap: 12px;
+        align-items: center;
+    }
+    
+    .pagination-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+/* ================= SETTINGS PAGE MOBILE RESPONSIVE ================= */
+@media (max-width: 768px) {
+    .settings-container {
+        padding: 0;
+    }
+    
+    .settings-header {
+        margin-bottom: 15px;
+    }
+    
+    .settings-title {
+        font-size: 20px;
+    }
+    
+    .settings-subtitle {
+        font-size: 13px;
+    }
+    
+    .settings-card {
+        margin-bottom: 15px;
+    }
+    
+    .settings-card-header {
+        padding: 15px;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .settings-card-title {
+        font-size: 16px;
+    }
+    
+    .settings-card-body {
+        padding: 15px;
+    }
+    
+    .settings-form-group {
+        margin-bottom: 15px;
+    }
+    
+    .settings-label {
+        font-size: 14px;
+    }
+    
+    .settings-input,
+    .settings-select {
+        padding: 10px 12px;
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+    
+    .settings-actions {
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px;
+    }
+    
+    .settings-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .settings-container {
+        padding: 0;
+    }
+    
+    .settings-header {
+        padding: 0 10px;
+    }
+    
+    .settings-card {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+    
+    .settings-card-header,
+    .settings-card-body {
+        padding: 12px;
+    }
+    
+    .settings-help-text {
+        font-size: 12px;
+    }
+}
