@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CartItem;
 use App\Models\Cart;
 use App\Models\Book;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -68,11 +69,12 @@ class CartController extends Controller
         $subtotal = 0;
         $items_count = 0;
         $tax = 0;
+        $taxRate = Setting::taxRate();
         
         if ($cart) {
             $subtotal = $cart->items->sum(fn($i) => $i->price * $i->quantity);
             $items_count = $cart->items->count();
-            $tax = round($subtotal * 0.05);
+            $tax = Setting::calculateTax($subtotal);
         }
 
         $coupon = session()->get('coupon');
@@ -85,6 +87,7 @@ class CartController extends Controller
                 'cart' => $cart,
                 'subtotal' => $subtotal,
                 'tax' => $tax,
+                'tax_rate' => $taxRate,
                 'items_count' => $items_count,
                 'coupon' => $coupon,
                 'discount' => $discount,
@@ -156,7 +159,8 @@ class CartController extends Controller
             ->first();
 
         $subtotal = $cart ? $cart->items->sum(fn($i) => $i->price * $i->quantity) : 0;
-        $tax = round($subtotal * 0.05);
+        $tax = Setting::calculateTax($subtotal);
+        $taxRate = Setting::taxRate();
         $coupon = session()->get('coupon');
         $discount = $coupon['discount'] ?? 0;
         $total = max(0, $subtotal + $tax - $discount);
@@ -168,6 +172,7 @@ class CartController extends Controller
                 'cart' => $cart,
                 'subtotal' => $subtotal,
                 'tax' => $tax,
+                'tax_rate' => $taxRate,
                 'items_count' => $cart ? $cart->items->count() : 0,
                 'coupon' => $coupon,
                 'discount' => $discount,
@@ -231,7 +236,8 @@ class CartController extends Controller
             $discount = $value;
         }
 
-        $tax = round($subtotal * 0.05);
+        $tax = Setting::calculateTax($subtotal);
+        $taxRate = Setting::taxRate();
         $total = max(0, $subtotal + $tax - round($discount));
 
         $couponData = [
@@ -250,6 +256,7 @@ class CartController extends Controller
                 'coupon' => $couponData,
                 'subtotal' => $subtotal,
                 'tax' => $tax,
+                'tax_rate' => $taxRate,
                 'discount' => round($discount),
                 'total' => $total
             ]
@@ -262,7 +269,8 @@ class CartController extends Controller
 
         $cart = Cart::with('items')->where('user_id', Auth::id())->first();
         $subtotal = $cart ? $cart->items->sum(fn($i) => $i->price * $i->quantity) : 0;
-        $tax = round($subtotal * 0.05);
+        $tax = Setting::calculateTax($subtotal);
+        $taxRate = Setting::taxRate();
         $total = $subtotal + $tax;
 
         return response()->json([
@@ -271,6 +279,7 @@ class CartController extends Controller
             'data' => [
                 'subtotal' => $subtotal,
                 'tax' => $tax,
+                'tax_rate' => $taxRate,
                 'total' => $total
             ]
         ]);

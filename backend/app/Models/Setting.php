@@ -20,4 +20,20 @@ class Setting extends Model
             ['value' => $value]
         );
     }
+
+    public static function taxRate(): float
+    {
+        $value = static::get('tax_rate', '5');
+
+        if (!is_numeric($value)) {
+            return 5.0;
+        }
+
+        return max(0, (float) $value);
+    }
+
+    public static function calculateTax(float|int $subtotal): int
+    {
+        return (int) round(((float) $subtotal * static::taxRate()) / 100);
+    }
 }

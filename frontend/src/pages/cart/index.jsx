@@ -97,6 +97,7 @@ const CartIndex = () => {
   const items = cart?.cart?.items || []
   const subtotal = cart?.subtotal || 0
   const tax = cart?.tax || 0
+  const taxRate = cart?.tax_rate ?? 5
   const discount = cart?.discount || 0
   const total = cart?.total || 0
 
@@ -177,7 +178,7 @@ const CartIndex = () => {
                 <span>Rs. {subtotal}</span>
               </div>
               <div className="cart-summary-row">
-                <span>Tax (5%)</span>
+                <span>Tax ({taxRate}%)</span>
                 <span>Rs. {tax}</span>
               </div>
               {discount > 0 && (

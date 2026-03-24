@@ -26,19 +26,26 @@ const SubscriptionsIndex = () => {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    setMessage(location.state?.message || '')
+  }, [location.state])
+
+  const normalizeBoolean = (value) => value === true || value === 1 || value === '1'
+
+  useEffect(() => {
     const loadPlans = async () => {
       try {
         setError('')
         const response = await getPlans()
         setPlansData(response.data?.plans || [])
-        setSubscriptionsEnabled(Boolean(response.data?.subscriptions_enabled))
-        setFreeTrialDays(response.data?.free_trial_days || 0)
+        setSubscriptionsEnabled(normalizeBoolean(response.data?.subscriptions_enabled))
+        setFreeTrialDays(Number(response.data?.free_trial_days || 0))
 
         const status = searchParams.get('subscription')
         if (status === 'success') {
           const confirm = await confirmSubscriptionSuccess({
             plan: searchParams.get('plan'),
             billing: searchParams.get('billing'),
+            session_id: searchParams.get('session_id'),
           })
           await loadUser()
           navigate('/plans', {
@@ -61,7 +68,9 @@ const SubscriptionsIndex = () => {
     loadPlans()
   }, [loadUser, navigate, searchParams])
 
-  const currentPlan = useMemo(() => user?.plan || 'free', [user?.plan])
+  const currentPlan = useMemo(() => (user?.plan || 'free').toLowerCase(), [user?.plan])
+  const isOnGracePeriod = !!user?.subscription_on_grace_period
+  const currentBillingCycle = user?.billing_cycle || null
 
   const handleCheckout = async (planKey) => {
     try {
@@ -169,7 +178,10 @@ const SubscriptionsIndex = () => {
         <div className="plans-grid">
           {plansData.map((plan) => {
             const planKey = normalizePlanKey(plan.name)
-            const isCurrentPlan = currentPlan === planKey
+            const isFreePlan = planKey === 'free'
+            const isCurrentPlan = isFreePlan
+              ? currentPlan === 'free'
+              : currentPlan === planKey && currentBillingCycle === billingCycle && !isOnGracePeriod
             const price = billingCycle === 'yearly' ? plan.yearly : plan.monthly
             const disabled = (!subscriptionsEnabled && planKey !== 'free') || submitting === planKey || isCurrentPlan
 
@@ -218,12 +230,15 @@ const SubscriptionsIndex = () => {
               {user.plan_expires_at ? ` Access renews or expires on ${new Date(user.plan_expires_at).toLocaleDateString()}.` : ' You can manage changes below.'}
             </p>
             <div className="subscription-section__actions">
-              <button type="button" className="upgrade-btn" onClick={handleCancel} disabled={submitting === 'cancel'}>
-                {submitting === 'cancel' ? 'Cancelling...' : 'Cancel Subscription'}
-              </button>
-              <button type="button" className="upgrade-btn" onClick={handleResume} disabled={submitting === 'resume'}>
-                {submitting === 'resume' ? 'Resuming...' : 'Resume Subscription'}
-              </button>
+              {!isOnGracePeriod ? (
+                <button type="button" className="upgrade-btn" onClick={handleCancel} disabled={submitting === 'cancel'}>
+                  {submitting === 'cancel' ? 'Cancelling...' : 'Cancel Subscription'}
+                </button>
+              ) : (
+                <button type="button" className="upgrade-btn" onClick={handleResume} disabled={submitting === 'resume'}>
+                  {submitting === 'resume' ? 'Resuming...' : 'Resume Subscription'}
+                </button>
+              )}
             </div>
           </div>
         )}

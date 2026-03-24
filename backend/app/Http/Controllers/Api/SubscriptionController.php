@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Setting;
+use Illuminate\Support\Facades\DB;
+use Stripe\Checkout\Session as StripeCheckoutSession;
+use Stripe\Stripe;
+use Stripe\Subscription as StripeSubscription;
 
 class SubscriptionController extends Controller
 {
@@ -117,10 +121,10 @@ class SubscriptionController extends Controller
 
         $priceId = $this->resolvePriceId($plan, $billing);
 
-        if (! $priceId) {
+        if (! $priceId || $this->hasDuplicatePriceConfiguration()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid subscription configuration.'
+                'message' => 'Invalid subscription configuration. Please verify your Stripe plan price IDs.'
             ], 422);
         }
 
@@ -146,7 +150,7 @@ class SubscriptionController extends Controller
         $checkout = $user->newSubscription('default', $priceId)
             ->trialDays($trialDays)
             ->checkout([
-                'success_url' => $this->frontendUrl("/plans?subscription=success&plan={$plan}&billing={$billing}"),
+                'success_url' => $this->frontendUrl("/plans?subscription=success&plan={$plan}&billing={$billing}&session_id={CHECKOUT_SESSION_ID}"),
                 'cancel_url' => $this->frontendUrl('/plans?subscription=cancelled'),
             ]);
 
@@ -166,20 +170,17 @@ class SubscriptionController extends Controller
 
         $pendingPlan = $request->query('plan');
         $pendingBilling = $request->query('billing');
+        $sessionId = $request->query('session_id');
 
-        if (in_array($pendingPlan, ['premium', 'ultimate'], true) && in_array($pendingBilling, ['monthly', 'yearly'], true)) {
-            $this->syncPlanData($user, $pendingPlan, $pendingBilling, $this->nextExpiry($pendingBilling));
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Subscription activated successfully.',
-                'data' => [
-                    'redirect' => $this->frontendPath('/profile')
-                ]
-            ]);
+        if ($sessionId) {
+            $this->syncSubscriptionFromStripeCheckoutSession($user, $sessionId);
+            $user = $user->fresh();
+        } elseif ($user->stripe_id) {
+            $this->syncLatestStripeSubscriptionForCustomer($user);
+            $user = $user->fresh();
         }
 
-        // Fallback when session is missing: infer from local Stripe subscription item.
+        // Always verify the actual Stripe subscription instead of trusting query params alone.
         $subscription = $user->subscription('default');
 
         if (! $subscription) {
@@ -192,6 +193,7 @@ class SubscriptionController extends Controller
             ], 422);
         }
 
+        $subscription->loadMissing('items');
         $priceId = optional($subscription->items->first())->stripe_price;
 
         if (! $priceId) {
@@ -210,6 +212,20 @@ class SubscriptionController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Unknown Stripe price mapping for your plan.',
+                'data' => [
+                    'redirect' => $this->frontendPath('/plans')
+                ]
+            ], 422);
+        }
+
+        if (
+            in_array($pendingPlan, ['premium', 'ultimate'], true) &&
+            in_array($pendingBilling, ['monthly', 'yearly'], true) &&
+            ($planMeta['plan'] !== $pendingPlan || $planMeta['billing'] !== $pendingBilling)
+        ) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Subscription confirmation did not match the active Stripe plan.',
                 'data' => [
                     'redirect' => $this->frontendPath('/plans')
                 ]
@@ -314,6 +330,10 @@ class SubscriptionController extends Controller
 
     private function resolvePlanFromPriceId(string $priceId): ?array
     {
+        if ($this->hasDuplicatePriceConfiguration()) {
+            return null;
+        }
+
         $map = [
             env('STRIPE_PREMIUM_MONTHLY') => ['plan' => 'premium', 'billing' => 'monthly'],
             env('STRIPE_PREMIUM_YEARLY') => ['plan' => 'premium', 'billing' => 'yearly'],
@@ -340,5 +360,147 @@ class SubscriptionController extends Controller
             'billing_cycle' => $billing,
             'plan_expires_at' => $expiresAt,
         ]);
+    }
+
+    private function hasDuplicatePriceConfiguration(): bool
+    {
+        $priceIds = array_filter([
+            env('STRIPE_PREMIUM_MONTHLY'),
+            env('STRIPE_PREMIUM_YEARLY'),
+            env('STRIPE_ULTIMATE_MONTHLY'),
+            env('STRIPE_ULTIMATE_YEARLY'),
+        ]);
+
+        return count($priceIds) !== count(array_unique($priceIds));
+    }
+
+    private function syncSubscriptionFromStripeCheckoutSession($user, string $sessionId): void
+    {
+        Stripe::setApiKey(config('services.stripe.secret'));
+
+        $session = StripeCheckoutSession::retrieve($sessionId, [
+            'expand' => ['subscription', 'subscription.items.data.price'],
+        ]);
+
+        $stripeSubscription = $session->subscription;
+
+        if (! $stripeSubscription || empty($stripeSubscription->id)) {
+            return;
+        }
+
+        $user->forceFill([
+            'stripe_id' => $session->customer ?: $user->stripe_id,
+        ])->save();
+
+        DB::transaction(function () use ($user, $stripeSubscription) {
+            $firstItem = $stripeSubscription->items->data[0] ?? null;
+
+            $subscriptionId = DB::table('subscriptions')->updateOrInsert(
+                ['stripe_id' => $stripeSubscription->id],
+                [
+                    'user_id' => $user->id,
+                    'type' => 'default',
+                    'stripe_status' => $stripeSubscription->status,
+                    'stripe_price' => $firstItem?->price?->id,
+                    'quantity' => $firstItem?->quantity,
+                    'trial_ends_at' => isset($stripeSubscription->trial_end) && $stripeSubscription->trial_end
+                        ? date('Y-m-d H:i:s', $stripeSubscription->trial_end)
+                        : null,
+                    'ends_at' => isset($stripeSubscription->cancel_at) && $stripeSubscription->cancel_at
+                        ? date('Y-m-d H:i:s', $stripeSubscription->cancel_at)
+                        : null,
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]
+            );
+
+            $localSubscription = DB::table('subscriptions')
+                ->where('stripe_id', $stripeSubscription->id)
+                ->first();
+
+            if (! $localSubscription) {
+                return;
+            }
+
+            DB::table('subscription_items')->where('subscription_id', $localSubscription->id)->delete();
+
+            foreach ($stripeSubscription->items->data as $item) {
+                DB::table('subscription_items')->insert([
+                    'subscription_id' => $localSubscription->id,
+                    'stripe_id' => $item->id,
+                    'stripe_product' => $item->price?->product ?? '',
+                    'stripe_price' => $item->price?->id ?? '',
+                    'quantity' => $item->quantity,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        });
+    }
+
+    private function syncLatestStripeSubscriptionForCustomer($user): void
+    {
+        Stripe::setApiKey(config('services.stripe.secret'));
+
+        $subscriptions = StripeSubscription::all([
+            'customer' => $user->stripe_id,
+            'status' => 'all',
+            'limit' => 10,
+            'expand' => ['data.items.data.price'],
+        ]);
+
+        $stripeSubscription = collect($subscriptions->data ?? [])
+            ->first(function ($subscription) {
+                return in_array($subscription->status, ['trialing', 'active'], true);
+            });
+
+        if (! $stripeSubscription || empty($stripeSubscription->id)) {
+            return;
+        }
+
+        DB::transaction(function () use ($user, $stripeSubscription) {
+            $firstItem = $stripeSubscription->items->data[0] ?? null;
+
+            DB::table('subscriptions')->updateOrInsert(
+                ['stripe_id' => $stripeSubscription->id],
+                [
+                    'user_id' => $user->id,
+                    'type' => 'default',
+                    'stripe_status' => $stripeSubscription->status,
+                    'stripe_price' => $firstItem?->price?->id,
+                    'quantity' => $firstItem?->quantity,
+                    'trial_ends_at' => isset($stripeSubscription->trial_end) && $stripeSubscription->trial_end
+                        ? date('Y-m-d H:i:s', $stripeSubscription->trial_end)
+                        : null,
+                    'ends_at' => isset($stripeSubscription->cancel_at) && $stripeSubscription->cancel_at
+                        ? date('Y-m-d H:i:s', $stripeSubscription->cancel_at)
+                        : null,
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]
+            );
+
+            $localSubscription = DB::table('subscriptions')
+                ->where('stripe_id', $stripeSubscription->id)
+                ->first();
+
+            if (! $localSubscription) {
+                return;
+            }
+
+            DB::table('subscription_items')->where('subscription_id', $localSubscription->id)->delete();
+
+            foreach ($stripeSubscription->items->data as $item) {
+                DB::table('subscription_items')->insert([
+                    'subscription_id' => $localSubscription->id,
+                    'stripe_id' => $item->id,
+                    'stripe_product' => $item->price?->product ?? '',
+                    'stripe_price' => $item->price?->id ?? '',
+                    'quantity' => $item->quantity,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        });
     }
 }

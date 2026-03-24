@@ -6,6 +6,7 @@ import { showToast } from '../../../utils/toast'
 const defaultSettings = {
   site_name: '',
   support_email: '',
+  tax_rate: '5',
   maintenance_mode: '0',
   subscriptions_enabled: '1',
   free_trial_days: '0',
@@ -146,6 +147,23 @@ const AdminSettingsIndex = () => {
                     onChange={handleChange}
                     placeholder="support@example.com"
                   />
+                </div>
+
+                <div className="settings-form-group">
+                  <label htmlFor="tax_rate" className="settings-label">Tax Rate (%)</label>
+                  <input
+                    type="number"
+                    id="tax_rate"
+                    name="tax_rate"
+                    className="settings-input"
+                    value={values.tax_rate}
+                    onChange={handleChange}
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    placeholder="5"
+                  />
+                  <small className="settings-help-text">Used for cart and checkout tax calculations across the storefront.</small>
                 </div>
 
                 <div className="settings-form-group">

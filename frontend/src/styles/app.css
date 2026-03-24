@@ -906,7 +906,7 @@
 .authors-studio,
 .author-stage {
     max-width: 1320px;
-    margin: 112px auto 48px;
+    margin: 96px auto 48px;
     padding: 0 20px;
 }
 
@@ -1463,7 +1463,7 @@
     display: flex;
     gap: 40px;
     max-width: 1200px;
-    margin: 120px auto 60px;
+    margin: 96px auto 60px;
     padding: 0 20px;
     min-height: calc(100vh - 180px);
 }
@@ -1473,7 +1473,7 @@
     flex: 0 0 40%;
     max-width: 400px;
     position: sticky;
-    top: 120px;
+    top: 96px;
     height: fit-content;
     align-self: flex-start;
 }

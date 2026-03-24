@@ -71,6 +71,14 @@ const BooksIndex = () => {
     loadBooks(initialFilters, 1)
   }
 
+  const handlePageChange = (page) => {
+    if (page < 1 || page > meta.last_page || page === meta.current_page) {
+      return
+    }
+
+    loadBooks(filters, page)
+  }
+
   const handleDelete = async (bookId) => {
     if (!window.confirm('Delete this book?')) {
       return
@@ -262,9 +270,66 @@ const BooksIndex = () => {
         </table>
       </div>
 
-      <div className="admin-pagination-note">
-        Showing page {meta.current_page} of {meta.last_page} with {meta.total} books.
-      </div>
+      {meta.last_page > 1 ? (
+        <div className="admin-pagination">
+          <div className="pagination-info">
+            Showing page {meta.current_page} of {meta.last_page} with {meta.total} total books.
+          </div>
+          <div className="pagination-controls">
+            <button
+              type="button"
+              className="pagination-btn"
+              onClick={() => handlePageChange(meta.current_page - 1)}
+              disabled={meta.current_page === 1}
+            >
+              ← Previous
+            </button>
+
+            {[...Array(meta.last_page)].map((_, index) => {
+              const pageNumber = index + 1
+
+              if (
+                pageNumber === 1 ||
+                pageNumber === meta.last_page ||
+                (pageNumber >= meta.current_page - 2 && pageNumber <= meta.current_page + 2)
+              ) {
+                return (
+                  <button
+                    key={pageNumber}
+                    type="button"
+                    className={`pagination-btn ${meta.current_page === pageNumber ? 'active' : ''}`}
+                    onClick={() => handlePageChange(pageNumber)}
+                  >
+                    {pageNumber}
+                  </button>
+                )
+              }
+
+              if (
+                (pageNumber === meta.current_page - 3 && pageNumber > 1) ||
+                (pageNumber === meta.current_page + 3 && pageNumber < meta.last_page)
+              ) {
+                return <span key={pageNumber} className="pagination-ellipsis">...</span>
+              }
+
+              return null
+            })}
+
+            <button
+              type="button"
+              className="pagination-btn"
+              onClick={() => handlePageChange(meta.current_page + 1)}
+              disabled={meta.current_page === meta.last_page}
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="admin-pagination-note">
+          Showing page {meta.current_page} of {meta.last_page} with {meta.total} books.
+        </div>
+      )}
     </div>
   )
 }

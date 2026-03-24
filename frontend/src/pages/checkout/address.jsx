@@ -83,6 +83,7 @@ const CheckoutAddress = () => {
   }
 
   const items = checkout?.cart?.items || []
+  const taxRate = checkout?.tax_rate ?? 5
   const paperbackCount = items.filter((item) => item.format === 'paperback').length
   const ebookCount = items.filter((item) => item.format === 'ebook').length
   const audioCount = items.filter((item) => item.format === 'audio').length
@@ -181,7 +182,7 @@ const CheckoutAddress = () => {
                   <span>₹{checkout?.subtotal || 0}</span>
                 </div>
                 <div className="breakdown-item">
-                  <span>Tax (5%):</span>
+                  <span>Tax ({taxRate}%):</span>
                   <span>₹{checkout?.tax || 0}</span>
                 </div>
                 {!!checkout?.discount && (

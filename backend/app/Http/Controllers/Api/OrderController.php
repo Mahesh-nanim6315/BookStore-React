@@ -133,7 +133,7 @@ class OrderController extends Controller
             ], 403);
         }
 
-        $order->load('items.book');
+        $order->load(['items.book', 'user']);
 
         $pdf = Pdf::loadView('invoices.invoice', compact('order'));
 

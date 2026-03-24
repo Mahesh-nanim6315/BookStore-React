@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Address;
 use App\Models\Book;
+use App\Models\Setting;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -49,7 +50,8 @@ class CheckoutController extends Controller
             return $item->price * $item->quantity;
         });
 
-        $tax = round($subtotal * 0.05);
+        $tax = Setting::calculateTax($subtotal);
+        $taxRate = Setting::taxRate();
         $coupon = session('coupon');
         $discount = $coupon['discount'] ?? 0;
         $couponCode = $coupon['code'] ?? null;
@@ -61,6 +63,7 @@ class CheckoutController extends Controller
                 'cart' => $cart,
                 'subtotal' => $subtotal,
                 'tax' => $tax,
+                'tax_rate' => $taxRate,
                 'total' => $total,
                 'needs_address' => $needsAddress,
                 'discount' => $discount,
@@ -113,7 +116,7 @@ class CheckoutController extends Controller
             }
 
             $subtotal = $cart->items->sum(fn($item) => $item->price * $item->quantity);
-            $tax = round($subtotal * 0.05);
+            $tax = Setting::calculateTax($subtotal);
             $coupon = session('coupon');
             $discount = $coupon['discount'] ?? 0;
             $couponCode = $coupon['code'] ?? null;
@@ -252,7 +255,7 @@ class CheckoutController extends Controller
     {
         $user = Auth::user();
         $subtotal = $book->price;
-        $tax = round($subtotal * 0.05);
+        $tax = Setting::calculateTax($subtotal);
         $total = $subtotal + $tax;
 
         $order = Order::create([

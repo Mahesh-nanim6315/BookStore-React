@@ -163,6 +163,8 @@ class AuthController extends Controller
             'plan' => $user->plan,
             'billing_cycle' => $user->billing_cycle,
             'plan_expires_at' => $user->plan_expires_at,
+            'has_active_subscription' => $user->hasActiveSubscription(),
+            'subscription_on_grace_period' => (bool) optional($user->subscription('default'))->onGracePeriod(),
             'avatar_url' => $user->avatar_url,
             'cover_url' => $user->cover_url,
         ];
