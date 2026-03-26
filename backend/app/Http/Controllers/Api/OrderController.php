@@ -16,6 +16,11 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class OrderController extends Controller
 {
+    private function frontendPath(string $path): string
+    {
+        return '/' . ltrim($path, '/');
+    }
+
     /* ================= PLACE ORDER ================= */
     public function store(Request $request)
     {
@@ -27,7 +32,7 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Cart is empty',
-                'redirect' => route('cart.view')
+                'redirect' => $this->frontendPath('/cart')
             ], 422);
         }
 
@@ -91,7 +96,7 @@ class OrderController extends Controller
             'message' => 'Order placed successfully',
             'data' => [
                 'order' => $order,
-                'redirect' => route('orders.success', $order->id)
+                'redirect' => $this->frontendPath("/orders/{$order->id}")
             ]
         ]);
     }

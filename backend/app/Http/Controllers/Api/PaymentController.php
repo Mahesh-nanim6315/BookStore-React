@@ -8,6 +8,11 @@ use Illuminate\Http\Request;
 
 class PaymentController extends Controller
 {
+    private function frontendPath(string $path): string
+    {
+        return '/' . ltrim($path, '/');
+    }
+
     public function process(Request $request, Order $order)
     {
         $request->validate([
@@ -48,7 +53,7 @@ class PaymentController extends Controller
                     'message' => 'Order placed successfully',
                     'data' => [
                         'order' => $order,
-                        'redirect' => route('orders.success', $order->id)
+                        'redirect' => $this->frontendPath("/orders/{$order->id}")
                     ]
                 ]);
 

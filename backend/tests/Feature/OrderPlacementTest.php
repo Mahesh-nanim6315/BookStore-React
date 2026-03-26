@@ -76,7 +76,8 @@ class OrderPlacementTest extends TestCase
             ->assertJsonPath('data.order.tax_amount', '20.00')
             ->assertJsonPath('data.order.discount_amount', '40.00')
             ->assertJsonPath('data.order.coupon_code', 'SAVE10')
-            ->assertJsonPath('data.order.total_amount', '380.00');
+            ->assertJsonPath('data.order.total_amount', '380.00')
+            ->assertJsonPath('data.redirect', '/orders/1');
 
         $this->assertDatabaseHas('orders', [
             'user_id' => $user->id,
