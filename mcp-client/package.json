@@ -1,0 +1,19 @@
+{
+  "name": "bookstore-agent-client",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AI agent controller for the bookstore MCP server using Ollama",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "axios": "^1.13.6",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "zod": "^4.1.12"
+  }
+}

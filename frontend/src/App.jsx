@@ -34,6 +34,7 @@ import OrdersShow from './pages/orders/show.jsx'
 import WishlistIndex from './pages/wishlist/index.jsx'
 import LibraryIndex from './pages/library/index.jsx'
 import FaqIndex from './pages/faq/index.jsx'
+import AssistantPage from './pages/assistant/index.jsx'
 
 import ProfileIndex from './pages/profile/index.jsx'
 import ProfileEdit from './pages/profile/edit.jsx'
@@ -84,6 +85,7 @@ const App = () => {
             <Route path="categories/filter" element={<CategoriesFilter />} />
             <Route path="authors" element={<AuthorsIndex />} />
             <Route path="authors/:id" element={<AuthorsShow />} />
+            <Route path="assistant" element={<AssistantPage />} />
             
             {/* Protected Routes */}
             <Route path="cart" element={

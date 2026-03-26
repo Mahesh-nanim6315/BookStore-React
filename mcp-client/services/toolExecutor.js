@@ -1,0 +1,192 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { z } from "zod";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, "..");
+
+const MCP_SERVER_COMMAND = process.env.MCP_SERVER_COMMAND || "node";
+const MCP_SERVER_SCRIPT =
+  process.env.MCP_SERVER_SCRIPT || "../mcp/mcp-server.js";
+const MCP_TOOL_TIMEOUT_MS = parseNumber(process.env.MCP_TOOL_TIMEOUT_MS, 30000);
+
+let mcpClientPromise = null;
+let toolCatalogPromise = null;
+
+const toolSchemas = {
+  searchBooks: z.object({
+    query: z.string().trim().min(1),
+    max_price: z.number().positive().optional(),
+  }),
+  getBookDetails: z.object({
+    book_id: z.number().int().positive(),
+  }),
+  addToCart: z.object({
+    user_id: z.number().int().positive(),
+    book_id: z.number().int().positive(),
+  }),
+  getCart: z.object({
+    user_id: z.number().int().positive(),
+  }),
+  placeOrder: z.object({
+    user_id: z.number().int().positive(),
+    payment_id: z.string().trim().min(1).optional(),
+  }),
+  getOrders: z.object({
+    user_id: z.number().int().positive(),
+  }),
+  getOrderDetails: z.object({
+    user_id: z.number().int().positive(),
+    order_id: z.number().int().positive(),
+  }),
+  getSubscriptionPlans: z.object({}),
+  startSubscriptionCheckout: z.object({
+    user_id: z.number().int().positive(),
+    plan: z.enum(["free", "premium", "ultimate"]),
+    billing_cycle: z.enum(["monthly", "yearly"]),
+  }),
+  cancelSubscription: z.object({
+    user_id: z.number().int().positive(),
+  }),
+  resumeSubscription: z.object({
+    user_id: z.number().int().positive(),
+  }),
+  getWishlist: z.object({
+    user_id: z.number().int().positive(),
+  }),
+  toggleWishlist: z.object({
+    user_id: z.number().int().positive(),
+    book_id: z.number().int().positive(),
+  }),
+  getLibrary: z.object({
+    user_id: z.number().int().positive(),
+  }),
+  addToLibrary: z.object({
+    user_id: z.number().int().positive(),
+    book_id: z.number().int().positive(),
+    format: z.enum(["ebook", "audio", "paperback"]).optional(),
+  }),
+  rentBook: z.object({
+    user_id: z.number().int().positive(),
+    book_id: z.number().int().positive(),
+    format: z.enum(["ebook", "audio"]),
+  }),
+};
+
+export async function listAvailableTools() {
+  if (!toolCatalogPromise) {
+    toolCatalogPromise = getMcpClient()
+      .then((client) => client.listTools())
+      .then(({ tools }) =>
+        tools.map((tool) => ({
+          name: tool.name,
+          description: tool.description || "",
+          inputSchema: tool.inputSchema || {},
+        })),
+      )
+      .catch((error) => {
+        toolCatalogPromise = null;
+        throw error;
+      });
+  }
+
+  return toolCatalogPromise;
+}
+
+export async function executeTool(toolName, rawInput, context = {}) {
+  const schema = toolSchemas[toolName];
+
+  if (!schema) {
+    throw new Error(`Unsupported tool "${toolName}" requested by the model.`);
+  }
+
+  const hydratedInput = injectContextualDefaults(toolName, rawInput, context);
+  const validatedInput = schema.parse(hydratedInput);
+  const client = await getMcpClient();
+  const result = await client.callTool(
+    {
+      name: toolName,
+      arguments: validatedInput,
+    },
+    undefined,
+    {
+      maxTotalTimeout: MCP_TOOL_TIMEOUT_MS,
+    },
+  );
+
+  return {
+    tool: toolName,
+    input: validatedInput,
+    content: result.content ?? [],
+    structuredContent: result.structuredContent ?? null,
+    isError: Boolean(result.isError),
+  };
+}
+
+async function getMcpClient() {
+  if (!mcpClientPromise) {
+    mcpClientPromise = connectClient().catch((error) => {
+      mcpClientPromise = null;
+      throw error;
+    });
+  }
+
+  return mcpClientPromise;
+}
+
+async function connectClient() {
+  const client = new Client({
+    name: "bookstore-agent-client",
+    version: "1.0.0",
+  });
+
+  client.onerror = (error) => {
+    console.error("MCP client error:", error);
+  };
+
+  const scriptPath = path.resolve(projectRoot, MCP_SERVER_SCRIPT);
+  const transport = new StdioClientTransport({
+    command: MCP_SERVER_COMMAND,
+    args: [scriptPath],
+    env: {
+      ...process.env,
+    },
+    cwd: path.dirname(scriptPath),
+  });
+
+  await client.connect(transport);
+  return client;
+}
+
+function injectContextualDefaults(toolName, rawInput, context) {
+  const input = rawInput && typeof rawInput === "object" ? { ...rawInput } : {};
+  const userScopedTools = new Set([
+    "addToCart",
+    "getCart",
+    "placeOrder",
+    "getOrders",
+    "getOrderDetails",
+    "startSubscriptionCheckout",
+    "cancelSubscription",
+    "resumeSubscription",
+    "getWishlist",
+    "toggleWishlist",
+    "getLibrary",
+    "addToLibrary",
+    "rentBook",
+  ]);
+
+  if (userScopedTools.has(toolName) && input.user_id == null && context.userId) {
+    input.user_id = context.userId;
+  }
+
+  return input;
+}
+
+function parseNumber(value, fallback) {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}

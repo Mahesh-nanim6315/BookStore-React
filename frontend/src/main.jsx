@@ -5,6 +5,7 @@ import './styles/app.css'
 import './styles/admin.css'
 import './styles/footer.css'
 import './styles/settings.css'
+import './styles/assistant.css'
 import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(
