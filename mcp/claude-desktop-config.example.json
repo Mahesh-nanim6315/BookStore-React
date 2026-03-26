@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "bookstore-laravel": {
+      "command": "node",
+      "args": [
+        "D:\\BookStore-React\\mcp\\mcp-server.js"
+      ],
+      "env": {
+        "LARAVEL_API_BASE_URL": "http://127.0.0.1:8000/api/v1",
+        "LARAVEL_API_TOKEN": "24|GbCdTZZVD41Dyhqpigvgdd2CHn7yrPET9nQnkYzM40673eb7",
+        "LARAVEL_API_TIMEOUT_MS": "15000"
+      }
+    }
+  }
+}
