@@ -9,6 +9,7 @@ use App\Models\OrderItem;
 use App\Models\Cart;
 use App\Models\UserLibrary;
 use App\Models\Book;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -30,14 +31,21 @@ class OrderController extends Controller
             ], 422);
         }
 
-        // CALCULATE TOTAL
-        $total = $cart->items->sum(function ($item) {
+        $subtotal = $cart->items->sum(function ($item) {
             return $item->price * $item->quantity;
         });
+        $taxAmount = Setting::calculateTax($subtotal);
+        $coupon = session()->get('coupon');
+        $discountAmount = (float) ($coupon['discount'] ?? 0);
+        $total = max(0, $subtotal + $taxAmount - $discountAmount);
 
         // CREATE ORDER
         $order = Order::create([
             'user_id'        => $user->id,
+            'subtotal'       => $subtotal,
+            'tax_amount'     => $taxAmount,
+            'discount_amount'=> $discountAmount,
+            'coupon_code'    => $coupon['code'] ?? null,
             'total_amount'   => $total,
             'status'         => 'completed',
             'payment_status' => 'paid',
@@ -76,6 +84,7 @@ class OrderController extends Controller
         // CLEAR CART
         $cart->items()->delete();
         $cart->delete();
+        session()->forget('coupon');
 
         return response()->json([
             'success' => true,
