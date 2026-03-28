@@ -5,10 +5,15 @@ const assistantClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 90000,
+  timeout: 300000,
 })
 
 export const sendAssistantMessage = async (payload) => {
   const response = await assistantClient.post('/api/chat', payload)
+  return response.data
+}
+
+export const getAssistantHealth = async () => {
+  const response = await assistantClient.get('/health')
   return response.data
 }

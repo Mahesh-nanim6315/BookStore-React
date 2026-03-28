@@ -9,7 +9,7 @@ const ChatMessage = ({ message }) => {
         <span>{isUser ? 'You' : 'Bookstore AI'}</span>
       </div>
       <div className="assistant-message__bubble">
-        <p>{message.content}</p>
+        <p id='back'>{message.content}</p>
       </div>
     </div>
   )

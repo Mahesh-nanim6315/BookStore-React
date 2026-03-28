@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { sendAssistantMessage } from '../../api/assistant'
+import { getAssistantHealth, sendAssistantMessage } from '../../api/assistant'
 import { useAuth } from '../../contexts/AuthContext'
 import ChatMessage from '../../components/chat/ChatMessage'
 import DebugPanel from '../../components/chat/DebugPanel'
@@ -39,11 +39,35 @@ const AssistantPage = () => {
   const [error, setError] = useState('')
   const [debug, setDebug] = useState([])
   const [showDebug, setShowDebug] = useState(false)
+  const [assistantStatus, setAssistantStatus] = useState(null)
   const bottomRef = useRef(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
+
+  useEffect(() => {
+    let active = true
+
+    const loadAssistantHealth = async () => {
+      try {
+        const response = await getAssistantHealth()
+        if (active) {
+          setAssistantStatus(response?.llm || null)
+        }
+      } catch {
+        if (active) {
+          setAssistantStatus(null)
+        }
+      }
+    }
+
+    loadAssistantHealth()
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -122,7 +146,7 @@ const AssistantPage = () => {
           <div className="assistant-toolbar">
             <div>
               <strong>Bookstore Assistant</strong>
-              <span>Powered by Ollama + MCP tools</span>
+              <span>{formatAssistantStatus(assistantStatus)}</span>
             </div>
 
             <button
@@ -175,6 +199,22 @@ const AssistantPage = () => {
       </div>
     </section>
   )
+}
+
+const formatAssistantStatus = (status) => {
+  if (!status?.provider) {
+    return 'Powered by AI + MCP tools'
+  }
+
+  if (status.provider === 'gemini' && status.fallbackToOllama && status.fallbackModel) {
+    return `Powered by Gemini with Ollama fallback (${status.fallbackModel})`
+  }
+
+  if (status.provider === 'gemini') {
+    return 'Powered by Gemini + MCP tools'
+  }
+
+  return 'Powered by Ollama + MCP tools'
 }
 
 export default AssistantPage

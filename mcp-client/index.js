@@ -1,8 +1,18 @@
-import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { z } from "zod";
-import { handleChatTurn } from "./agent/agentController.js";
+import dotenv from "dotenv";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.resolve(__dirname, ".env") });
+dotenv.config({ path: path.resolve(__dirname, "../backend/.env") });
+
+const { handleChatTurn } = await import("./agent/agentController.js");
+const { getLlmStatus } = await import("./services/llmService.js");
 
 const app = express();
 const PORT = parseNumber(process.env.PORT, 8787);
@@ -27,6 +37,7 @@ app.get("/health", (_request, response) => {
   response.json({
     success: true,
     service: "bookstore-agent-client",
+    llm: getLlmStatus(),
   });
 });
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { chatWithOllama } from "../services/ollamaService.js";
+import { chatWithModel } from "../services/llmService.js";
 import { executeTool, listAvailableTools } from "../services/toolExecutor.js";
 import { parseAgentDecision } from "../utils/parser.js";
 
@@ -30,7 +30,7 @@ export async function handleChatTurn(payload) {
   let finalAnswer = "I’m sorry, but I couldn’t complete that request.";
 
   for (let step = 0; step < MAX_TOOL_STEPS; step += 1) {
-    const modelResponse = await chatWithOllama([
+    const modelResponse = await chatWithModel([
       { role: "system", content: systemPrompt },
       ...session.history,
     ]);
@@ -152,7 +152,8 @@ function buildSystemPrompt(toolCatalog, userId) {
   const toolLines = toolCatalog
     .map(
       (tool) =>
-        `- ${tool.name}: ${tool.description || "No description provided."}`,
+        `- ${tool.name}: ${tool.description || "No description provided."}
+  inputSchema: ${JSON.stringify(tool.inputSchema || {})}`,
     )
     .join("\n");
 
@@ -177,7 +178,10 @@ Rules:
 5. Do not invent tool names.
 6. For user-specific actions, use the current user_id when available.
 7. Ask for clarification only when required information is genuinely missing.
-8. After a tool result is provided, use it to answer naturally and concisely.`;
+8. After a tool result is provided, use it to answer naturally and concisely.
+9. When calling a tool, use the exact argument names from that tool's inputSchema.
+10. Never rename fields to camelCase if the schema uses snake_case.
+11. Do not leave required strings empty.`;
 }
 
 function buildToolResultMessage(toolResult) {
