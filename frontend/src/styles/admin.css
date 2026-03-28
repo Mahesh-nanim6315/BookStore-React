@@ -505,12 +505,185 @@ body.admin-page footer {
     gap: 20px;
 }
 
+.book-show-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 24px 28px;
+    margin-bottom: 20px;
+    border: 1px solid #dbe3ef;
+    border-radius: 24px;
+    background:
+        radial-gradient(circle at top right, rgba(96, 165, 250, 0.2), transparent 36%),
+        linear-gradient(135deg, #ffffff 0%, #f8fbff 52%, #eef6ff 100%);
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+}
+
+.book-show-hero__content {
+    display: grid;
+    gap: 14px;
+    max-width: 720px;
+}
+
+.book-show-hero__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(37, 99, 235, 0.1);
+    color: #1d4ed8;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.book-show-hero__stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.book-show-stat {
+    display: grid;
+    gap: 6px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(255, 255, 255, 0.78);
+}
+
+.book-show-stat strong {
+    font-size: 18px;
+    color: #0f172a;
+}
+
+.book-show-stat__label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.book-show-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.book-show-sidebar,
+.book-show-main {
+    display: grid;
+    gap: 20px;
+}
+
 .book-show-cover {
     padding: 16px;
 }
 
+.book-show-cover--framed {
+    position: relative;
+    overflow: hidden;
+}
+
+.book-show-cover--framed::after {
+    content: "";
+    position: absolute;
+    inset: auto 18px 16px 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.16);
+    filter: blur(18px);
+    pointer-events: none;
+}
+
 .book-show-card {
     padding: 22px;
+}
+
+.book-show-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.book-show-card__header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #0f172a;
+}
+
+.book-show-card__caption {
+    color: #64748b;
+    font-size: 13px;
+}
+
+.book-show-description {
+    margin: 0;
+    color: #475569;
+    line-height: 1.8;
+    font-size: 15px;
+}
+
+.book-show-format-list {
+    display: grid;
+    gap: 12px;
+}
+
+.book-show-format-pill {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #f8fafc, #eef6ff);
+    border: 1px solid #dbeafe;
+}
+
+.book-show-format-pill span {
+    color: #334155;
+    font-weight: 600;
+}
+
+.book-show-format-pill strong {
+    color: #1d4ed8;
+    font-size: 14px;
+}
+
+.book-show-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.book-show-detail-item {
+    display: grid;
+    gap: 8px;
+    padding: 16px 18px;
+    border-radius: 18px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.book-show-detail-item__label {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.book-show-detail-item__value {
+    color: #0f172a;
+    font-size: 16px;
+    line-height: 1.4;
 }
 
 .author-filter-grid {
@@ -657,6 +830,14 @@ body.admin-page footer {
     .author-form-grid {
         grid-template-columns: 1fr;
     }
+
+    .book-show-hero {
+        flex-direction: column;
+    }
+
+    .book-show-hero__actions {
+        justify-content: flex-start;
+    }
 }
 
 @media (max-width: 720px) {
@@ -669,6 +850,22 @@ body.admin-page footer {
     .admin-list-header {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .book-show-hero {
+        padding: 20px;
+        border-radius: 20px;
+    }
+
+    .book-show-hero__stats,
+    .book-show-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .book-show-card__header,
+    .book-show-format-pill {
+        align-items: flex-start;
+        flex-direction: column;
     }
 }
 

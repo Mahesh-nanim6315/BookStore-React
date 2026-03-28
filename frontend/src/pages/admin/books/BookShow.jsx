@@ -26,48 +26,114 @@ const BookShow = () => {
     return <Loader />
   }
 
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+    }).format(Number(amount || 0))
+
+  const formatAvailability = (value) => (value ? 'Available' : 'Not available')
+
+  const formatRows = [
+    { label: 'eBook', value: formatAvailability(book.has_ebook) },
+    { label: 'Audio', value: formatAvailability(book.has_audio) },
+    { label: 'Paperback', value: formatAvailability(book.has_paperback) },
+  ]
+
+  const details = [
+    { label: 'Language', value: book.language || '-' },
+    { label: 'Author', value: book.author?.name || '-' },
+    { label: 'Category', value: book.category?.name || '-' },
+    { label: 'Genre', value: book.genre?.name || '-' },
+    { label: 'Premium access', value: book.is_premium ? 'Yes' : 'No' },
+    { label: 'Stock', value: book.has_paperback ? book.stock ?? 0 : 'Digital only' },
+  ]
+
   return (
     <div className="page">
-      <div className="page-header admin-list-header">
-        <div>
+      <section className="book-show-hero">
+        <div className="book-show-hero__content">
+          <span className="book-show-hero__eyebrow">Catalog detail</span>
           <h2>{book.name}</h2>
-          <p className="admin-page-subtitle">Review format availability, pricing, and catalog metadata.</p>
-        </div>
+          <p className="admin-page-subtitle">
+            Review core metadata, format availability, pricing, and inventory from one clean summary view.
+          </p>
 
-        <Link to="/dashboard/books" className="admin-button">
-          Back to list
-        </Link>
-      </div>
-
-      <div className="book-show-layout">
-        <div className="book-show-cover">
-          {book.image ? <img src={book.image} alt={book.name} /> : <div className="book-cover-placeholder">No image</div>}
-        </div>
-
-        <div className="book-show-card">
-          <p><strong>Description:</strong> {book.description}</p>
-          <p><strong>Language:</strong> {book.language}</p>
-          <p><strong>Author:</strong> {book.author?.name || '-'}</p>
-          <p><strong>Category:</strong> {book.category?.name || '-'}</p>
-          <p><strong>Genre:</strong> {book.genre?.name || '-'}</p>
-          <p><strong>Main Price:</strong> {book.price}</p>
-          <p><strong>Stock:</strong> {book.stock ?? 0}</p>
-          <p><strong>Premium:</strong> {book.is_premium ? 'Yes' : 'No'}</p>
-          <p><strong>eBook:</strong> {book.has_ebook ? 'Available' : 'No'}</p>
-          <p><strong>Audio:</strong> {book.has_audio ? 'Available' : 'No'}</p>
-          <p><strong>Paperback:</strong> {book.has_paperback ? 'Available' : 'No'}</p>
-
-          <div className="book-action-row">
-            <Link
-              to={`/dashboard/books/${book.id}/edit`}
-              className="admin-icon-action admin-icon-action--edit"
-              aria-label={`Edit ${book.name}`}
-              title="Edit"
-            >
-              <img src="/images/edit.png" alt="" className="admin-icon-action__icon" />
-            </Link>
+          <div className="book-show-hero__stats">
+            <div className="book-show-stat">
+              <span className="book-show-stat__label">Main price</span>
+              <strong>{formatCurrency(book.price)}</strong>
+            </div>
+            <div className="book-show-stat">
+              <span className="book-show-stat__label">Book ID</span>
+              <strong>#{book.id}</strong>
+            </div>
+            <div className="book-show-stat">
+              <span className="book-show-stat__label">Availability</span>
+              <strong>{book.is_premium ? 'Premium' : 'Standard'}</strong>
+            </div>
           </div>
         </div>
+
+        <div className="book-show-hero__actions">
+          <Link to="/dashboard/books" className="admin-button">
+            Back to list
+          </Link>
+          <Link to={`/dashboard/books/${book.id}/edit`} className="admin-button admin-button-success">
+            Edit book
+          </Link>
+        </div>
+      </section>
+
+      <div className="book-show-layout">
+        <aside className="book-show-sidebar">
+          <div className="book-show-cover book-show-cover--framed">
+            {book.image ? <img src={book.image} alt={book.name} /> : <div className="book-cover-placeholder">No image</div>}
+          </div>
+
+          <div className="book-show-card book-show-formats">
+            <div className="book-show-card__header">
+              <h3>Formats</h3>
+              <span className="book-show-card__caption">Delivery options</span>
+            </div>
+
+            <div className="book-show-format-list">
+              {formatRows.map((item) => (
+                <div key={item.label} className="book-show-format-pill">
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
+
+        <section className="book-show-main">
+          <div className="book-show-card">
+            <div className="book-show-card__header">
+              <h3>Description</h3>
+              <span className="book-show-card__caption">Reader-facing summary</span>
+            </div>
+            <p className="book-show-description">{book.description || 'No description available.'}</p>
+          </div>
+
+          <div className="book-show-card">
+            <div className="book-show-card__header">
+              <h3>Book details</h3>
+              <span className="book-show-card__caption">Catalog metadata</span>
+            </div>
+
+            <div className="book-show-detail-grid">
+              {details.map((item) => (
+                <div key={item.label} className="book-show-detail-item">
+                  <span className="book-show-detail-item__label">{item.label}</span>
+                  <strong className="book-show-detail-item__value">{item.value}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   )
