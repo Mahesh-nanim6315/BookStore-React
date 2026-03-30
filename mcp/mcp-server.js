@@ -129,9 +129,9 @@ defineTool(
       api_token: z.string().trim().min(1).optional(),
     },
   },
-  async ({ user_id, book_id }) => {
+  async ({ user_id, book_id, api_token }) => {
     try {
-      await ensureAuthenticatedUser(user_id);
+      await ensureAuthenticatedUser(user_id, api_token);
 
       const selectedPurchase = await resolveDefaultPurchase(book_id);
       const response = await apiRequest({
@@ -141,7 +141,7 @@ defineTool(
           format: selectedPurchase.format,
           price: selectedPurchase.price,
         },
-      });
+      }, api_token);
 
       const payload = {
         requested_user_id: user_id,
@@ -168,13 +168,13 @@ defineTool(
       api_token: z.string().trim().min(1).optional(),
     },
   },
-  async ({ user_id }) => {
+  async ({ user_id, api_token }) => {
     try {
-      await ensureAuthenticatedUser(user_id);
+      await ensureAuthenticatedUser(user_id, api_token);
       const response = await apiRequest({
         method: "get",
         url: "/cart",
-      });
+      }, api_token);
 
       const payload = {
         requested_user_id: user_id,
@@ -199,13 +199,13 @@ defineTool(
       api_token: z.string().trim().min(1).optional(),
     },
   },
-  async ({ user_id }) => {
+  async ({ user_id, api_token }) => {
     try {
-      await ensureAuthenticatedUser(user_id);
+      await ensureAuthenticatedUser(user_id, api_token);
       const response = await apiRequest({
         method: "get",
         url: "/orders",
-      });
+      }, api_token);
 
       return successResult({
         requested_user_id: user_id,
@@ -229,13 +229,13 @@ defineTool(
       api_token: z.string().trim().min(1).optional(),
     },
   },
-  async ({ user_id, order_id }) => {
+  async ({ user_id, order_id, api_token }) => {
     try {
-      await ensureAuthenticatedUser(user_id);
+      await ensureAuthenticatedUser(user_id, api_token);
       const response = await apiRequest({
         method: "get",
         url: `/orders/${order_id}`,
-      });
+      }, api_token);
 
       return successResult({
         requested_user_id: user_id,
@@ -260,14 +260,14 @@ defineTool(
       api_token: z.string().trim().min(1).optional(),
     },
   },
-  async ({ user_id, payment_id }) => {
+  async ({ user_id, payment_id, api_token }) => {
     try {
-      await ensureAuthenticatedUser(user_id);
+      await ensureAuthenticatedUser(user_id, api_token);
       const response = await apiRequest({
         method: "post",
         url: "/orders",
         data: payment_id ? { payment_id } : {},
-      });
+      }, api_token);
 
       return successResult({
         requested_user_id: user_id,
@@ -315,9 +315,9 @@ defineTool(
       api_token: z.string().trim().min(1).optional(),
     },
   },
-  async ({ user_id, plan, billing_cycle }) => {
+  async ({ user_id, plan, billing_cycle, api_token }) => {
     try {
-      await ensureAuthenticatedUser(user_id);
+      await ensureAuthenticatedUser(user_id, api_token);
       const response = await apiRequest({
         method: "post",
         url: "/subscription/checkout",
@@ -325,7 +325,7 @@ defineTool(
           plan,
           billing_cycle,
         },
-      });
+      }, api_token);
 
       return successResult({
         requested_user_id: user_id,
@@ -350,13 +350,13 @@ defineTool(
       api_token: z.string().trim().min(1).optional(),
     },
   },
-  async ({ user_id }) => {
+  async ({ user_id, api_token }) => {
     try {
-      await ensureAuthenticatedUser(user_id);
+      await ensureAuthenticatedUser(user_id, api_token);
       const response = await apiRequest({
         method: "post",
         url: "/subscription/cancel",
-      });
+      }, api_token);
 
       return successResult({
         requested_user_id: user_id,
@@ -379,13 +379,13 @@ defineTool(
       api_token: z.string().trim().min(1).optional(),
     },
   },
-  async ({ user_id }) => {
+  async ({ user_id, api_token }) => {
     try {
-      await ensureAuthenticatedUser(user_id);
+      await ensureAuthenticatedUser(user_id, api_token);
       const response = await apiRequest({
         method: "post",
         url: "/subscription/resume",
-      });
+      }, api_token);
 
       return successResult({
         requested_user_id: user_id,
@@ -408,13 +408,13 @@ defineTool(
       api_token: z.string().trim().min(1).optional(),
     },
   },
-  async ({ user_id }) => {
+  async ({ user_id, api_token }) => {
     try {
-      await ensureAuthenticatedUser(user_id);
+      await ensureAuthenticatedUser(user_id, api_token);
       const response = await apiRequest({
         method: "get",
         url: "/wishlist",
-      });
+      }, api_token);
 
       return successResult({
         requested_user_id: user_id,
@@ -438,14 +438,14 @@ defineTool(
       api_token: z.string().trim().min(1).optional(),
     },
   },
-  async ({ user_id, book_id }) => {
+  async ({ user_id, book_id, api_token }) => {
     try {
-      await ensureAuthenticatedUser(user_id);
+      await ensureAuthenticatedUser(user_id, api_token);
       const response = await apiRequest({
         method: "post",
         url: "/wishlist/toggle",
         data: { book_id },
-      });
+      }, api_token);
 
       return successResult({
         requested_user_id: user_id,
@@ -469,13 +469,13 @@ defineTool(
       api_token: z.string().trim().min(1).optional(),
     },
   },
-  async ({ user_id }) => {
+  async ({ user_id, api_token }) => {
     try {
-      await ensureAuthenticatedUser(user_id);
+      await ensureAuthenticatedUser(user_id, api_token);
       const response = await apiRequest({
         method: "get",
         url: "/library",
-      });
+      }, api_token);
 
       return successResult({
         requested_user_id: user_id,
@@ -500,9 +500,9 @@ defineTool(
       api_token: z.string().trim().min(1).optional(),
     },
   },
-  async ({ user_id, book_id, format }) => {
+  async ({ user_id, book_id, format, api_token }) => {
     try {
-      await ensureAuthenticatedUser(user_id);
+      await ensureAuthenticatedUser(user_id, api_token);
       const selectedFormat =
         format ?? (await resolveDefaultFormat(book_id, ["ebook", "audio", "paperback"]));
 
@@ -510,7 +510,7 @@ defineTool(
         method: "post",
         url: `/library/add/${book_id}`,
         data: { format: selectedFormat },
-      });
+      }, api_token);
 
       return successResult({
         requested_user_id: user_id,
@@ -537,15 +537,15 @@ defineTool(
       api_token: z.string().trim().min(1).optional(),
     },
   },
-  async ({ user_id, book_id, format }) => {
+  async ({ user_id, book_id, format, api_token }) => {
     try {
-      await ensureAuthenticatedUser(user_id);
+      await ensureAuthenticatedUser(user_id, api_token);
       const endpoint =
         format === "ebook" ? `/ebook/rent/${book_id}` : `/audio/rent/${book_id}`;
       const response = await apiRequest({
         method: "post",
         url: endpoint,
-      });
+      }, api_token);
 
       return successResult({
         requested_user_id: user_id,
@@ -674,8 +674,8 @@ async function resolveDefaultFormat(bookId, allowedFormats) {
   return availableFormats[0];
 }
 
-async function ensureAuthenticatedUser(expectedUserId) {
-  const apiToken = requireApiToken();
+async function ensureAuthenticatedUser(expectedUserId, apiTokenOverride = null) {
+  const apiToken = requireApiToken(apiTokenOverride);
   const cacheKey = String(apiToken);
 
   if (!authenticatedUserPromises.has(cacheKey)) {
@@ -684,7 +684,7 @@ async function ensureAuthenticatedUser(expectedUserId) {
       apiRequest({
         method: "get",
         url: "/user",
-      })
+      }, apiToken)
       .then((response) => response.data?.user ?? response.data?.data?.user)
       .catch((error) => {
         authenticatedUserPromises.delete(cacheKey);
@@ -759,13 +759,13 @@ function extractBooksCollection(payload) {
   return books;
 }
 
-async function apiRequest(config) {
+async function apiRequest(config, apiTokenOverride = null) {
   try {
     return await http.request({
       ...config,
       headers: {
         ...(config.headers || {}),
-        ...buildAuthHeaders(),
+        ...buildAuthHeaders(apiTokenOverride),
       },
     });
   } catch (error) {
@@ -837,8 +837,8 @@ function errorResult(error) {
   };
 }
 
-function requireApiToken() {
-  const apiToken = getApiToken();
+function requireApiToken(apiTokenOverride = null) {
+  const apiToken = getApiToken(apiTokenOverride);
   if (!apiToken) {
     throw new Error(
       "This action requires a signed-in user token. Sign in to the bookstore in the React app, then try the chat request again.",
@@ -875,12 +875,16 @@ function truncateText(value, maxLength) {
   return text.length <= maxLength ? text : `${text.slice(0, maxLength - 3)}...`;
 }
 
-function getApiToken() {
-  return requestContext.getStore()?.apiToken?.trim() || API_TOKEN;
+function getApiToken(apiTokenOverride = null) {
+  return (
+    apiTokenOverride?.trim() ||
+    requestContext.getStore()?.apiToken?.trim() ||
+    API_TOKEN
+  );
 }
 
-function buildAuthHeaders() {
-  const apiToken = getApiToken();
+function buildAuthHeaders(apiTokenOverride = null) {
+  const apiToken = getApiToken(apiTokenOverride);
   return apiToken ? { Authorization: `Bearer ${apiToken}` } : {};
 }
 
