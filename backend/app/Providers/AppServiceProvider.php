@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Services\Contracts\LLMServiceInterface;
+use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
 
@@ -32,5 +34,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrap();
+
+        ResetPassword::createUrlUsing(function (User $user, string $token) {
+            $frontendBase = rtrim(config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:5173')), '/');
+
+            return $frontendBase.'/reset-password/'.$token.'?email='.urlencode($user->email);
+        });
     }
 }

@@ -3,12 +3,13 @@ import { useNavigate, useParams } from 'react-router-dom'
 import Loader from '../../../components/common/Loader'
 import BookForm from '../../../components/BookForm'
 import { getAdminBookEditMeta, updateAdminBook } from '../../../api/adminBooks'
+import { normalizeApiErrors } from '../../../utils/formErrors'
 import { showToast } from '../../../utils/toast'
 
 const BookEdit = () => {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [values, setValues] = useState(null)
+  const [initialValues, setInitialValues] = useState(null)
   const [authors, setAuthors] = useState([])
   const [categories, setCategories] = useState([])
   const [genres, setGenres] = useState([])
@@ -25,7 +26,7 @@ const BookEdit = () => {
 
         const book = response.data.book || {}
 
-        setValues({
+        setInitialValues({
           name: book.name || '',
           description: book.description || '',
           language: book.language || '',
@@ -60,43 +61,47 @@ const BookEdit = () => {
     loadBook()
   }, [id])
 
-  const handleChange = (event) => {
-    const { name, value, type, checked } = event.target
-    setValues((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }))
-  }
-
-  const handleSubmit = async (event) => {
-    event.preventDefault()
+  const handleSubmit = async (values, { setErrors, setStatus }) => {
     setIsSaving(true)
+    setStatus(null)
 
     try {
-      const response = await updateAdminBook(id, values)
+      const response = await updateAdminBook(id, {
+        ...values,
+        name: values.name.trim(),
+        description: values.description.trim(),
+        language: values.language.trim(),
+        image: values.image.trim(),
+        ebook_pdf: values.ebook_pdf.trim(),
+        audio_file: values.audio_file.trim(),
+      })
       if (response.success) {
         showToast.success('Book updated successfully!')
         navigate('/dashboard/books')
       } else {
-        showToast.error(response.message || 'Failed to update book')
+        const message = response.message || 'Failed to update book'
+        setStatus(message)
+        showToast.error(message)
       }
     } catch (error) {
       console.error('Failed to update book:', error)
-      showToast.error('Failed to update book. Please try again.')
+      const nextErrors = normalizeApiErrors(error, 'Failed to update book. Please try again.')
+      setErrors(nextErrors)
+      setStatus(nextErrors.general || null)
+      showToast.error(nextErrors.general || 'Failed to update book. Please try again.')
     } finally {
       setIsSaving(false)
     }
   }
 
-  if (!values) {
+  if (!initialValues) {
     return <Loader />
   }
 
   return (
     <div className="page">
       <BookForm
-        values={values}
-        onChange={handleChange}
+        initialValues={initialValues}
         onSubmit={handleSubmit}
         authors={authors}
         categories={categories}

@@ -20,8 +20,13 @@ export const forgotPassword = async (email) => {
   return data
 }
 
-export const resetPassword = async (token, password) => {
-  const { data } = await axiosClient.post('/reset-password', { token, password })
+export const resetPassword = async ({ token, email, password, password_confirmation }) => {
+  const { data } = await axiosClient.post('/reset-password', {
+    token,
+    email,
+    password,
+    password_confirmation,
+  })
   return data
 }
 

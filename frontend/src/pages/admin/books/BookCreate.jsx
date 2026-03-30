@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BookForm from '../../../components/BookForm'
 import { createAdminBook, getAdminBookCreateMeta } from '../../../api/adminBooks'
+import { normalizeApiErrors } from '../../../utils/formErrors'
 import { showToast } from '../../../utils/toast'
 
 const initialValues = {
@@ -30,7 +31,6 @@ const initialValues = {
 
 const BookCreate = () => {
   const navigate = useNavigate()
-  const [values, setValues] = useState(initialValues)
   const [authors, setAuthors] = useState([])
   const [categories, setCategories] = useState([])
   const [genres, setGenres] = useState([])
@@ -53,29 +53,34 @@ const BookCreate = () => {
     loadLookups()
   }, [])
 
-  const handleChange = (event) => {
-    const { name, value, type, checked } = event.target
-    setValues((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }))
-  }
-
-  const handleSubmit = async (event) => {
-    event.preventDefault()
+  const handleSubmit = async (values, { setErrors, setStatus }) => {
     setIsSaving(true)
+    setStatus(null)
 
     try {
-      const response = await createAdminBook(values)
+      const response = await createAdminBook({
+        ...values,
+        name: values.name.trim(),
+        description: values.description.trim(),
+        language: values.language.trim(),
+        image: values.image.trim(),
+        ebook_pdf: values.ebook_pdf.trim(),
+        audio_file: values.audio_file.trim(),
+      })
       if (response.success) {
         showToast.success('Book created successfully!')
         navigate('/dashboard/books')
       } else {
-        showToast.error(response.message || 'Failed to create book')
+        const message = response.message || 'Failed to create book'
+        setStatus(message)
+        showToast.error(message)
       }
     } catch (error) {
       console.error('Failed to create book:', error)
-      showToast.error('Failed to create book. Please try again.')
+      const nextErrors = normalizeApiErrors(error, 'Failed to create book. Please try again.')
+      setErrors(nextErrors)
+      setStatus(nextErrors.general || null)
+      showToast.error(nextErrors.general || 'Failed to create book. Please try again.')
     } finally {
       setIsSaving(false)
     }
@@ -84,8 +89,7 @@ const BookCreate = () => {
   return (
     <div className="page">
       <BookForm
-        values={values}
-        onChange={handleChange}
+        initialValues={initialValues}
         onSubmit={handleSubmit}
         authors={authors}
         categories={categories}

@@ -155,6 +155,7 @@ const App = () => {
           <Route path="register" element={<AuthRegister />} />
           <Route path="forgot-password" element={<AuthForgot />} />
           <Route path="reset-password" element={<AuthReset />} />
+          <Route path="reset-password/:token" element={<AuthReset />} />
           <Route path="maintenance" element={<Maintenance />} />
           <Route path="faq" element={<FaqIndex />} />
           

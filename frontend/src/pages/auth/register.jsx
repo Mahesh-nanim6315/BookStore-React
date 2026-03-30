@@ -1,17 +1,30 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Formik } from 'formik'
+import * as Yup from 'yup'
 import { useAuth } from '../../contexts/AuthContext'
 import { getDefaultPostLoginPath } from '../../utils/permissions'
 
+const validationSchema = Yup.object({
+  name: Yup.string()
+    .trim()
+    .max(255, 'Name may not be greater than 255 characters.')
+    .required('Name is required.'),
+  email: Yup.string()
+    .trim()
+    .email('Enter a valid email address.')
+    .max(255, 'Email may not be greater than 255 characters.')
+    .required('Email is required.'),
+  password: Yup.string()
+    .min(8, 'Password must be at least 8 characters.')
+    .required('Password is required.'),
+  password_confirmation: Yup.string()
+    .required('Please confirm your password.')
+    .oneOf([Yup.ref('password')], 'Passwords do not match.'),
+})
+
 const AuthRegister = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    password_confirmation: ''
-  })
   const [loading, setLoading] = useState(false)
-  const [errors, setErrors] = useState({})
   const navigate = useNavigate()
   const { register, isAuthenticated, loading: authLoading, user } = useAuth()
 
@@ -20,34 +33,6 @@ const AuthRegister = () => {
       navigate(getDefaultPostLoginPath(user), { replace: true })
     }
   }, [authLoading, isAuthenticated, navigate, user])
-
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setErrors({})
-
-    try {
-      const response = await register(formData)
-      
-      if (response.success) {
-        navigate(getDefaultPostLoginPath(response.user), { replace: true })
-      } else {
-        setErrors(response.errors || { general: 'Registration failed' })
-      }
-    } catch {
-      setErrors({ general: 'Network error. Please try again.' })
-    } finally {
-      setLoading(false)
-    }
-  }
 
   return (
     <div className="page">
@@ -80,78 +65,125 @@ const AuthRegister = () => {
           <div className="auth-card auth-card--split">
             <h2 className="auth-title">Create Account</h2>
 
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label htmlFor="name">Name</label>
-                <input 
-                  id="name" 
-                  type="text" 
-                  name="name" 
-                  value={formData.name}
-                  onChange={handleChange}
-                  required 
-                  autoComplete="name"
-                  className={errors.name ? 'error' : ''}
-                />
-                {errors.name && <small className="error">{errors.name}</small>}
-              </div>
+            <Formik
+              initialValues={{
+                name: '',
+                email: '',
+                password: '',
+                password_confirmation: '',
+              }}
+              validationSchema={validationSchema}
+              onSubmit={async (values, { setErrors, setStatus }) => {
+                setLoading(true)
+                setStatus(null)
 
-              <div className="form-group">
-                <label htmlFor="email">Email</label>
-                <input 
-                  id="email" 
-                  type="email" 
-                  name="email" 
-                  value={formData.email}
-                  onChange={handleChange}
-                  required 
-                  autoComplete="username"
-                  className={errors.email ? 'error' : ''}
-                />
-                {errors.email && <small className="error">{errors.email}</small>}
-              </div>
+                try {
+                  const response = await register({
+                    ...values,
+                    name: values.name.trim(),
+                    email: values.email.trim(),
+                  })
 
-              <div className="form-group">
-                <label htmlFor="password">Password</label>
-                <input 
-                  id="password" 
-                  type="password" 
-                  name="password" 
-                  value={formData.password}
-                  onChange={handleChange}
-                  required 
-                  autoComplete="new-password"
-                  className={errors.password ? 'error' : ''}
-                />
-                {errors.password && <small className="error">{errors.password}</small>}
-              </div>
+                  if (response.success) {
+                    navigate(getDefaultPostLoginPath(response.user), { replace: true })
+                    return
+                  }
 
-              <div className="form-group">
-                <label htmlFor="password_confirmation">Confirm Password</label>
-                <input
-                  id="password_confirmation"
-                  type="password"
-                  name="password_confirmation"
-                  value={formData.password_confirmation}
-                  onChange={handleChange}
-                  required
-                  autoComplete="new-password"
-                  className={errors.password_confirmation ? 'error' : ''}
-                />
-                {errors.password_confirmation && <small className="error">{errors.password_confirmation}</small>}
-              </div>
+                  if (response.errors?.general) {
+                    setStatus(response.errors.general)
+                  }
 
-              <div className="auth-switch">
-                <span>Already have an account?</span>
-                <Link to="/login">Login</Link>
-              </div>
+                  setErrors(response.errors || {})
+                } finally {
+                  setLoading(false)
+                }
+              }}
+            >
+              {({
+                values,
+                errors,
+                touched,
+                status,
+                handleChange,
+                handleBlur,
+                handleSubmit,
+              }) => (
+                <form onSubmit={handleSubmit} noValidate>
+                  {status && <small className="error">{status}</small>}
 
-              <div className="form-actions form-actions--single">
-                <button type="submit" className="btn-primary" disabled={loading}>
-                  {loading ? 'Creating Account...' : 'Register'}
-                </button>
-              </div>
-            </form>
+                  <div className="form-group">
+                    <label htmlFor="name">Name</label>
+                    <input
+                      id="name"
+                      type="text"
+                      name="name"
+                      value={values.name}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      autoComplete="name"
+                      className={touched.name && errors.name ? 'error' : ''}
+                    />
+                    {touched.name && errors.name && <small className="error">{errors.name}</small>}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="email">Email</label>
+                    <input
+                      id="email"
+                      type="email"
+                      name="email"
+                      value={values.email}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      autoComplete="username"
+                      className={touched.email && errors.email ? 'error' : ''}
+                    />
+                    {touched.email && errors.email && <small className="error">{errors.email}</small>}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="password">Password</label>
+                    <input
+                      id="password"
+                      type="password"
+                      name="password"
+                      value={values.password}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      autoComplete="new-password"
+                      className={touched.password && errors.password ? 'error' : ''}
+                    />
+                    {touched.password && errors.password && <small className="error">{errors.password}</small>}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="password_confirmation">Confirm Password</label>
+                    <input
+                      id="password_confirmation"
+                      type="password"
+                      name="password_confirmation"
+                      value={values.password_confirmation}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      autoComplete="new-password"
+                      className={touched.password_confirmation && errors.password_confirmation ? 'error' : ''}
+                    />
+                    {touched.password_confirmation && errors.password_confirmation && <small className="error">{errors.password_confirmation}</small>}
+                  </div>
+
+                  <div className="auth-switch">
+                    <span>Already have an account?</span>
+                    <Link to="/login">Login</Link>
+                  </div>
+
+                  <div className="form-actions form-actions--single">
+                    <button type="submit" className="btn-primary" disabled={loading}>
+                      {loading ? 'Creating Account...' : 'Register'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </Formik>
           </div>
         </section>
       </div>

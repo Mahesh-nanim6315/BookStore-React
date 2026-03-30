@@ -3,12 +3,13 @@ import { useNavigate, useParams } from 'react-router-dom'
 import Loader from '../../../components/common/Loader'
 import UserForm from '../../../components/UserForm'
 import { getAdminUserEditMeta, updateAdminUser } from '../../../api/adminUsers'
+import { normalizeApiErrors } from '../../../utils/formErrors'
 import { showToast } from '../../../utils/toast'
 
 const AdminUsersEdit = () => {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [values, setValues] = useState(null)
+  const [initialValues, setInitialValues] = useState(null)
   const [roles, setRoles] = useState(['user', 'admin', 'manager', 'staff'])
   const [isSaving, setIsSaving] = useState(false)
 
@@ -18,7 +19,7 @@ const AdminUsersEdit = () => {
         const response = await getAdminUserEditMeta(id)
         if (response.success) {
           const user = response.data.user || {}
-          setValues({
+          setInitialValues({
             name: user.name || '',
             email: user.email || '',
             role: user.role || 'user',
@@ -34,40 +35,43 @@ const AdminUsersEdit = () => {
     loadMeta()
   }, [id])
 
-  const handleChange = (event) => {
-    const { name, value, type, checked } = event.target
-    setValues((current) => ({ ...current, [name]: type === 'checkbox' ? checked : value }))
-  }
-
-  const handleSubmit = async (event) => {
-    event.preventDefault()
+  const handleSubmit = async (values, { setErrors, setStatus }) => {
     setIsSaving(true)
+    setStatus(null)
 
     try {
-      const response = await updateAdminUser(id, values)
+      const response = await updateAdminUser(id, {
+        ...values,
+        name: values.name.trim(),
+        email: values.email.trim(),
+      })
       if (response.success) {
         showToast.success('User updated successfully!')
         navigate('/dashboard/users')
       } else {
-        showToast.error(response.message || 'Failed to update user')
+        const message = response.message || 'Failed to update user'
+        setStatus(message)
+        showToast.error(message)
       }
     } catch (error) {
       console.error('Failed to update user:', error)
-      showToast.error('Failed to update user. Please try again.')
+      const nextErrors = normalizeApiErrors(error, 'Failed to update user. Please try again.')
+      setErrors(nextErrors)
+      setStatus(nextErrors.general || null)
+      showToast.error(nextErrors.general || 'Failed to update user. Please try again.')
     } finally {
       setIsSaving(false)
     }
   }
 
-  if (!values) {
+  if (!initialValues) {
     return <Loader />
   }
 
   return (
     <div className="page">
       <UserForm
-        values={values}
-        onChange={handleChange}
+        initialValues={initialValues}
         onSubmit={handleSubmit}
         submitLabel="Update User"
         isSaving={isSaving}

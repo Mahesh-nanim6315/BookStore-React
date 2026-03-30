@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import UserForm from '../../../components/UserForm'
 import { createAdminUser, getAdminUserCreateMeta } from '../../../api/adminUsers'
+import { normalizeApiErrors } from '../../../utils/formErrors'
 import { showToast } from '../../../utils/toast'
 
 const initialValues = {
@@ -13,7 +14,6 @@ const initialValues = {
 
 const AdminUsersCreate = () => {
   const navigate = useNavigate()
-  const [values, setValues] = useState(initialValues)
   const [roles, setRoles] = useState(['user', 'admin', 'manager', 'staff'])
   const [isSaving, setIsSaving] = useState(false)
 
@@ -32,26 +32,30 @@ const AdminUsersCreate = () => {
     loadMeta()
   }, [])
 
-  const handleChange = (event) => {
-    const { name, value } = event.target
-    setValues((current) => ({ ...current, [name]: value }))
-  }
-
-  const handleSubmit = async (event) => {
-    event.preventDefault()
+  const handleSubmit = async (values, { setErrors, setStatus }) => {
     setIsSaving(true)
+    setStatus(null)
 
     try {
-      const response = await createAdminUser(values)
+      const response = await createAdminUser({
+        ...values,
+        name: values.name.trim(),
+        email: values.email.trim(),
+      })
       if (response.success) {
         showToast.success('User created successfully!')
         navigate('/dashboard/users')
       } else {
-        showToast.error(response.message || 'Failed to create user')
+        const message = response.message || 'Failed to create user'
+        setStatus(message)
+        showToast.error(message)
       }
     } catch (error) {
       console.error('Failed to create user:', error)
-      showToast.error('Failed to create user. Please try again.')
+      const nextErrors = normalizeApiErrors(error, 'Failed to create user. Please try again.')
+      setErrors(nextErrors)
+      setStatus(nextErrors.general || null)
+      showToast.error(nextErrors.general || 'Failed to create user. Please try again.')
     } finally {
       setIsSaving(false)
     }
@@ -60,8 +64,7 @@ const AdminUsersCreate = () => {
   return (
     <div className="page">
       <UserForm
-        values={values}
-        onChange={handleChange}
+        initialValues={initialValues}
         onSubmit={handleSubmit}
         submitLabel="Create User"
         isSaving={isSaving}

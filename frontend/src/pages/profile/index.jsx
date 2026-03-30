@@ -1,10 +1,36 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Formik } from 'formik'
+import * as Yup from 'yup'
 import Loader from '../../components/common/Loader'
 import { useAuth } from '../../contexts/AuthContext'
 import { getProfile, updateAvatar, updateCover, updateProfile } from '../../api/profile'
 import { getImageUrl } from '../../utils/imageUtils'
+import { normalizeApiErrors } from '../../utils/formErrors'
 import { showToast } from '../../utils/toast'
+
+const profileValidationSchema = Yup.object({
+  name: Yup.string()
+    .trim()
+    .max(255, 'Name may not be greater than 255 characters.')
+    .required('Name is required.'),
+  email: Yup.string()
+    .trim()
+    .email('Enter a valid email address.')
+    .max(255, 'Email may not be greater than 255 characters.')
+    .required('Email is required.'),
+  password: Yup.string()
+    .transform((value) => value || '')
+    .test('min-if-present', 'Password must be at least 6 characters.', (value) => !value || value.length >= 6),
+  password_confirmation: Yup.string().when('password', {
+    is: (password) => !!password,
+    then: (schema) =>
+      schema
+        .required('Please confirm your password.')
+        .oneOf([Yup.ref('password')], 'Passwords do not match.'),
+    otherwise: (schema) => schema,
+  }),
+})
 
 const formatPlanLabel = (plan, billingCycle) => {
   const base = plan ? `${plan.charAt(0).toUpperCase()}${plan.slice(1)}` : 'Free'
@@ -26,7 +52,7 @@ const ProfileIndex = () => {
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [profile, setProfile] = useState(null)
-  const [formData, setFormData] = useState({
+  const [profileFormInitialValues, setProfileFormInitialValues] = useState({
     name: '',
     email: '',
     password: '',
@@ -41,11 +67,12 @@ const ProfileIndex = () => {
         const response = await getProfile()
         const data = response.data
         setProfile(data)
-        setFormData((current) => ({
-          ...current,
+        setProfileFormInitialValues({
           name: data.user?.name || '',
           email: data.user?.email || '',
-        }))
+          password: '',
+          password_confirmation: '',
+        })
       } catch (err) {
         setError(err?.response?.data?.message || 'Unable to load profile.')
       } finally {
@@ -79,36 +106,41 @@ const ProfileIndex = () => {
     }
   }
 
-  const handleSubmit = async (event) => {
-    event.preventDefault()
-
+  const handleSubmit = async (values, { setErrors, setStatus, resetForm }) => {
     try {
       setError('')
       setMessage('')
       const payload = {
-        name: formData.name,
-        email: formData.email,
+        name: values.name.trim(),
+        email: values.email.trim(),
       }
 
-      if (formData.password) {
-        payload.password = formData.password
-        payload.password_confirmation = formData.password_confirmation
+      if (values.password) {
+        payload.password = values.password
+        payload.password_confirmation = values.password_confirmation
       }
 
       const response = await updateProfile(payload)
       const nextUser = response.data?.user
       setProfile((current) => ({ ...current, user: nextUser }))
       updateUser(nextUser)
-      setFormData((current) => ({
-        ...current,
+      const nextValues = {
+        name: nextUser?.name || '',
+        email: nextUser?.email || '',
         password: '',
         password_confirmation: '',
-      }))
+      }
+      setProfileFormInitialValues(nextValues)
+      resetForm({ values: nextValues })
+      setStatus(null)
       showToast.success(response.message || 'Profile updated successfully!')
       setIsModalOpen(false)
     } catch (err) {
-      setError(err?.response?.data?.message || 'Unable to update profile.')
-      showToast.error(err?.response?.data?.message || 'Failed to update profile.')
+      const nextErrors = normalizeApiErrors(err, 'Unable to update profile.')
+      setErrors(nextErrors)
+      setStatus(nextErrors.general || null)
+      setError(nextErrors.general || 'Unable to update profile.')
+      showToast.error(nextErrors.general || 'Failed to update profile.')
     }
   }
 
@@ -312,58 +344,88 @@ const ProfileIndex = () => {
                 <h3>Edit Profile</h3>
                 <button type="button" className="close-btn" onClick={() => setIsModalOpen(false)}>x</button>
               </div>
-              <form onSubmit={handleSubmit} className="profile-form">
-                <div className="form-group">
-                  <label>Name</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={(event) => setFormData((current) => ({ ...current, name: event.target.value }))}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Email</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={(event) => setFormData((current) => ({ ...current, email: event.target.value }))}
-                    required
-                  />
-                </div>
-                <hr />
-                <h4>Change Password</h4>
-                <div className="profile-form-split">
-                  <div className="form-group">
-                    <label>New Password</label>
-                    <input
-                      type="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={(event) => setFormData((current) => ({ ...current, password: event.target.value }))}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Confirm Password</label>
-                    <input
-                      type="password"
-                      name="password_confirmation"
-                      value={formData.password_confirmation}
-                      onChange={(event) => setFormData((current) => ({ ...current, password_confirmation: event.target.value }))}
-                    />
-                  </div>
-                </div>
-                <div className="profile-form-actions">
-                  <button type="button" className="profile-secondary-action" onClick={() => setIsModalOpen(false)}>
-                    Cancel
-                  </button>
-                  <button type="submit" className="profile-primary-action profile-primary-action--inline">
-                    Save changes
-                  </button>
-                </div>
-              </form>
+              <Formik
+                initialValues={profileFormInitialValues}
+                validationSchema={profileValidationSchema}
+                onSubmit={handleSubmit}
+                enableReinitialize
+              >
+                {({
+                  values,
+                  errors,
+                  touched,
+                  status,
+                  isSubmitting,
+                  handleChange,
+                  handleBlur,
+                  handleSubmit,
+                }) => (
+                  <form onSubmit={handleSubmit} className="profile-form" noValidate>
+                    {status && <p className="wishlist-message wishlist-message--error">{status}</p>}
+
+                    <div className="form-group">
+                      <label>Name</label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={values.name}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        className={touched.name && errors.name ? 'error' : ''}
+                      />
+                      {touched.name && errors.name && <small className="error">{errors.name}</small>}
+                    </div>
+                    <div className="form-group">
+                      <label>Email</label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={values.email}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        className={touched.email && errors.email ? 'error' : ''}
+                      />
+                      {touched.email && errors.email && <small className="error">{errors.email}</small>}
+                    </div>
+                    <hr />
+                    <h4>Change Password</h4>
+                    <div className="profile-form-split">
+                      <div className="form-group">
+                        <label>New Password</label>
+                        <input
+                          type="password"
+                          name="password"
+                          value={values.password}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          className={touched.password && errors.password ? 'error' : ''}
+                        />
+                        {touched.password && errors.password && <small className="error">{errors.password}</small>}
+                      </div>
+                      <div className="form-group">
+                        <label>Confirm Password</label>
+                        <input
+                          type="password"
+                          name="password_confirmation"
+                          value={values.password_confirmation}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          className={touched.password_confirmation && errors.password_confirmation ? 'error' : ''}
+                        />
+                        {touched.password_confirmation && errors.password_confirmation && <small className="error">{errors.password_confirmation}</small>}
+                      </div>
+                    </div>
+                    <div className="profile-form-actions">
+                      <button type="button" className="profile-secondary-action" onClick={() => setIsModalOpen(false)}>
+                        Cancel
+                      </button>
+                      <button type="submit" className="profile-primary-action profile-primary-action--inline" disabled={isSubmitting}>
+                        {isSubmitting ? 'Saving...' : 'Save changes'}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </Formik>
             </div>
           </div>
         )}
