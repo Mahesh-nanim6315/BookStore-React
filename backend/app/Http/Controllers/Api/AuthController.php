@@ -8,9 +8,10 @@ use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\Rules\Password as PasswordRule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
@@ -20,15 +21,27 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request)
     {
-        $credentials = $request->only('email', 'password');
+        $request->ensureIsNotRateLimited();
+
+        $credentials = $request->validated();
+        $email = Str::lower(trim((string) $credentials['email']));
 
         // API login should be stateless; avoid session-based auth.
-        $user = User::where('email', $credentials['email'])->first();
+        $user = User::where('email', $email)->first();
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid credentials'
-            ], 422);
+            $request->hitRateLimiter();
+
+            throw ValidationException::withMessages([
+                'email' => ['Invalid credentials.'],
+            ]);
+        }
+
+        if (! $user->is_active) {
+            $request->hitRateLimiter();
+
+            throw ValidationException::withMessages([
+                'email' => ['This account has been deactivated. Please contact support.'],
+            ]);
         }
 
         if ((string) Setting::get('maintenance_mode', 0) === '1' && strtolower((string) $user->role) !== 'admin') {
@@ -37,6 +50,8 @@ class AuthController extends Controller
                 'message' => 'The site is currently in maintenance mode. Only admins can sign in.',
             ], 503);
         }
+
+        $request->clearRateLimiter();
 
         // Create token for API
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -63,13 +78,15 @@ class AuthController extends Controller
 
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'confirmed', 'min:8'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'confirmed', PasswordRule::defaults()],
         ]);
+
+        $email = Str::lower(trim((string) $request->email));
 
         $user = User::create([
             'name' => $request->name,
-            'email' => $request->email,
+            'email' => $email,
             'password' => Hash::make($request->password),
             'role' => 'user', // Default role for new registrations
         ]);
@@ -113,8 +130,10 @@ class AuthController extends Controller
 
         $request->validate(['email' => 'required|email']);
 
+        $email = Str::lower(trim((string) $request->email));
+
         $status = Password::sendResetLink(
-            $request->only('email')
+            ['email' => $email]
         );
 
         if ($status !== Password::RESET_LINK_SENT) {
@@ -148,12 +167,19 @@ class AuthController extends Controller
         $request->validate([
             'token' => 'required',
             'email' => 'required|email',
-            'password' => 'required|confirmed|min:8',
+            'password' => ['required', 'confirmed', PasswordRule::defaults()],
             'password_confirmation' => 'required',
         ]);
 
+        $email = Str::lower(trim((string) $request->email));
+
         $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
+            [
+                'email' => $email,
+                'password' => $request->password,
+                'password_confirmation' => $request->password_confirmation,
+                'token' => $request->token,
+            ],
             function (User $user) use ($request) {
                 $user->forceFill([
                     'password' => Hash::make($request->password),

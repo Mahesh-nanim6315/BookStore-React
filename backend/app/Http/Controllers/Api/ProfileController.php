@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class ProfileController extends Controller
 {
@@ -65,13 +67,14 @@ class ProfileController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
-            'password' => 'nullable|min:6|confirmed'
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'current_password' => 'required_with:password|current_password',
+            'password' => ['nullable', 'confirmed', PasswordRule::defaults()],
         ]);
 
         $data = [
-            'name' => $request->name,
-            'email' => $request->email,
+            'name' => trim((string) $request->name),
+            'email' => Str::lower(trim((string) $request->email)),
         ];
 
         if ($request->filled('password')) {

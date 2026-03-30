@@ -4,6 +4,7 @@ import { Formik } from 'formik'
 import * as Yup from 'yup'
 import { useAuth } from '../../contexts/AuthContext'
 import { getDefaultPostLoginPath } from '../../utils/permissions'
+import { strongPassword } from '../../utils/passwordValidation'
 
 const validationSchema = Yup.object({
   name: Yup.string()
@@ -15,9 +16,7 @@ const validationSchema = Yup.object({
     .email('Enter a valid email address.')
     .max(255, 'Email may not be greater than 255 characters.')
     .required('Email is required.'),
-  password: Yup.string()
-    .min(8, 'Password must be at least 8 characters.')
-    .required('Password is required.'),
+  password: strongPassword(),
   password_confirmation: Yup.string()
     .required('Please confirm your password.')
     .oneOf([Yup.ref('password')], 'Passwords do not match.'),
@@ -81,7 +80,7 @@ const AuthRegister = () => {
                   const response = await register({
                     ...values,
                     name: values.name.trim(),
-                    email: values.email.trim(),
+                    email: values.email.trim().toLowerCase(),
                   })
 
                   if (response.success) {

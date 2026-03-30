@@ -51,7 +51,53 @@ const validationSchema = Yup.object({
   has_ebook: Yup.boolean(),
   has_audio: Yup.boolean(),
   has_paperback: Yup.boolean(),
-})
+}).test(
+  'format-requirements',
+  'Complete the required fields for each enabled format.',
+  (values) => {
+    if (!values) return true
+
+    const makeError = (path, message) => new Yup.ValidationError(message, values[path], path)
+
+    if (values.has_ebook) {
+      if (values.ebook_price === '' || values.ebook_price === undefined || values.ebook_price === null) {
+        return makeError('ebook_price', 'eBook price is required when eBook is enabled.')
+      }
+      if (!values.ebook_pdf?.trim()) {
+        return makeError('ebook_pdf', 'eBook PDF URL is required when eBook is enabled.')
+      }
+      if (values.ebook_pages === '' || values.ebook_pages === undefined || values.ebook_pages === null) {
+        return makeError('ebook_pages', 'eBook pages are required when eBook is enabled.')
+      }
+    }
+
+    if (values.has_audio) {
+      if (values.audio_price === '' || values.audio_price === undefined || values.audio_price === null) {
+        return makeError('audio_price', 'Audio price is required when audio is enabled.')
+      }
+      if (!values.audio_file?.trim()) {
+        return makeError('audio_file', 'Audio file URL is required when audio is enabled.')
+      }
+      if (values.audio_minutes === '' || values.audio_minutes === undefined || values.audio_minutes === null) {
+        return makeError('audio_minutes', 'Audio minutes are required when audio is enabled.')
+      }
+    }
+
+    if (values.has_paperback) {
+      if (values.paperback_price === '' || values.paperback_price === undefined || values.paperback_price === null) {
+        return makeError('paperback_price', 'Paperback price is required when paperback is enabled.')
+      }
+      if (values.paperback_pages === '' || values.paperback_pages === undefined || values.paperback_pages === null) {
+        return makeError('paperback_pages', 'Paperback pages are required when paperback is enabled.')
+      }
+      if (values.stock === '' || values.stock === undefined || values.stock === null) {
+        return makeError('stock', 'Paperback stock is required when paperback is enabled.')
+      }
+    }
+
+    return true
+  }
+)
 
 const BookForm = ({
   initialValues,

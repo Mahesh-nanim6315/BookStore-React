@@ -9,6 +9,7 @@ const initialValues = {
   name: '',
   email: '',
   password: '',
+  password_confirmation: '',
   role: 'user',
 }
 
@@ -40,7 +41,7 @@ const AdminUsersCreate = () => {
       const response = await createAdminUser({
         ...values,
         name: values.name.trim(),
-        email: values.email.trim(),
+        email: values.email.trim().toLowerCase(),
       })
       if (response.success) {
         showToast.success('User created successfully!')

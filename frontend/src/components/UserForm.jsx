@@ -2,6 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { Formik } from 'formik'
 import * as Yup from 'yup'
+import { strongPassword } from '../utils/passwordValidation'
 
 const UserForm = ({
   initialValues,
@@ -22,7 +23,13 @@ const UserForm = ({
       .required('Email is required.'),
     password:
       mode === 'create'
-        ? Yup.string().min(6, 'Password must be at least 6 characters.').required('Password is required.')
+        ? strongPassword()
+        : Yup.string(),
+    password_confirmation:
+      mode === 'create'
+        ? Yup.string()
+            .required('Please confirm your password.')
+            .oneOf([Yup.ref('password')], 'Passwords do not match.')
         : Yup.string(),
     role: Yup.string()
       .oneOf(roles.length > 0 ? roles : ['user', 'admin', 'manager', 'staff'], 'Select a valid role.')
@@ -87,18 +94,35 @@ const UserForm = ({
                 </label>
 
                 {mode === 'create' ? (
-                  <label className="book-field">
-                    <span>Password</span>
-                    <input
-                      name="password"
-                      type="password"
-                      value={values.password}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      className={touched.password && errors.password ? 'error' : ''}
-                    />
-                    {touched.password && errors.password && <small className="error">{errors.password}</small>}
-                  </label>
+                  <>
+                    <label className="book-field">
+                      <span>Password</span>
+                      <input
+                        name="password"
+                        type="password"
+                        value={values.password}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        autoComplete="new-password"
+                        className={touched.password && errors.password ? 'error' : ''}
+                      />
+                      {touched.password && errors.password && <small className="error">{errors.password}</small>}
+                    </label>
+
+                    <label className="book-field">
+                      <span>Confirm Password</span>
+                      <input
+                        name="password_confirmation"
+                        type="password"
+                        value={values.password_confirmation}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        autoComplete="new-password"
+                        className={touched.password_confirmation && errors.password_confirmation ? 'error' : ''}
+                      />
+                      {touched.password_confirmation && errors.password_confirmation && <small className="error">{errors.password_confirmation}</small>}
+                    </label>
+                  </>
                 ) : null}
 
                 <label className="book-field">

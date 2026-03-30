@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\Genre;
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class BookControllers extends Controller
 {
@@ -101,6 +102,8 @@ class BookControllers extends Controller
             'has_paperback' => 'nullable|boolean',
         ]);
 
+        $this->validateFormatRequirements($request);
+
         $book = Book::create($this->normalizePayload($validated, $request));
 
         return response()->json([
@@ -161,6 +164,8 @@ class BookControllers extends Controller
             'has_paperback' => 'nullable|boolean',
         ]);
 
+        $this->validateFormatRequirements($request);
+
         $book->update($this->normalizePayload($validated, $request));
 
         return response()->json([
@@ -184,12 +189,72 @@ class BookControllers extends Controller
 
     private function normalizePayload(array $validated, Request $request): array
     {
+        $validated['name'] = trim((string) $validated['name']);
+        $validated['description'] = trim((string) $validated['description']);
+        $validated['language'] = trim((string) $validated['language']);
+        $validated['image'] = trim((string) $validated['image']);
         $validated['is_premium'] = $request->boolean('is_premium');
         $validated['has_ebook'] = $request->boolean('has_ebook');
         $validated['has_audio'] = $request->boolean('has_audio');
         $validated['has_paperback'] = $request->boolean('has_paperback');
         $validated['stock'] = $validated['stock'] ?? 0;
 
+        foreach (['ebook_pdf', 'audio_file'] as $urlField) {
+            if (array_key_exists($urlField, $validated) && $validated[$urlField] !== null) {
+                $validated[$urlField] = trim((string) $validated[$urlField]);
+            }
+        }
+
         return $validated;
+    }
+
+    private function validateFormatRequirements(Request $request): void
+    {
+        $errors = [];
+
+        if ($request->boolean('has_ebook')) {
+            if ($this->isBlank($request->input('ebook_price'))) {
+                $errors['ebook_price'] = ['eBook price is required when eBook is enabled.'];
+            }
+            if ($this->isBlank($request->input('ebook_pdf'))) {
+                $errors['ebook_pdf'] = ['eBook PDF URL is required when eBook is enabled.'];
+            }
+            if ($this->isBlank($request->input('ebook_pages'))) {
+                $errors['ebook_pages'] = ['eBook pages are required when eBook is enabled.'];
+            }
+        }
+
+        if ($request->boolean('has_audio')) {
+            if ($this->isBlank($request->input('audio_price'))) {
+                $errors['audio_price'] = ['Audio price is required when audio is enabled.'];
+            }
+            if ($this->isBlank($request->input('audio_file'))) {
+                $errors['audio_file'] = ['Audio file URL is required when audio is enabled.'];
+            }
+            if ($this->isBlank($request->input('audio_minutes'))) {
+                $errors['audio_minutes'] = ['Audio minutes are required when audio is enabled.'];
+            }
+        }
+
+        if ($request->boolean('has_paperback')) {
+            if ($this->isBlank($request->input('paperback_price'))) {
+                $errors['paperback_price'] = ['Paperback price is required when paperback is enabled.'];
+            }
+            if ($this->isBlank($request->input('paperback_pages'))) {
+                $errors['paperback_pages'] = ['Paperback pages are required when paperback is enabled.'];
+            }
+            if ($this->isBlank($request->input('stock'))) {
+                $errors['stock'] = ['Paperback stock is required when paperback is enabled.'];
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
+    private function isBlank(mixed $value): bool
+    {
+        return $value === null || (is_string($value) && trim($value) === '');
     }
 }

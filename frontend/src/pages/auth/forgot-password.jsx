@@ -31,7 +31,7 @@ const AuthForgotPassword = () => {
                 setStatus(null)
 
                 try {
-                  const response = await forgotPassword(values.email.trim())
+                  const response = await forgotPassword(values.email.trim().toLowerCase())
 
                   if (response.success) {
                     setSuccessMessage(response.message || 'Password reset link sent to your email.')

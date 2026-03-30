@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password as PasswordRule;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -41,14 +43,15 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6',
+            'email' => 'required|email|max:255|unique:users,email',
+            'password' => ['required', 'confirmed', PasswordRule::defaults()],
+            'password_confirmation' => 'required',
             'role' => 'required|in:user,admin,manager,staff',
         ]);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
+            'name' => trim((string) $request->name),
+            'email' => Str::lower(trim((string) $request->email)),
             'password' => Hash::make($request->password),
             'role' => $request->role,
         ]);
@@ -86,15 +89,15 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $request->validate([
-            'name' => 'required',
-            'email' => "required|email|unique:users,email,$user->id",
+            'name' => 'required|string|max:255',
+            'email' => "required|email|max:255|unique:users,email,$user->id",
             'role' => 'required|in:user,admin,manager,staff',
             'is_active' => 'sometimes|boolean',
         ]);
 
         $user->update([
-            'name' => $request->name,
-            'email' => $request->email,
+            'name' => trim((string) $request->name),
+            'email' => Str::lower(trim((string) $request->email)),
             'role' => $request->role,
             'is_active' => $request->has('is_active')
                 ? $request->boolean('is_active')

@@ -1,12 +1,18 @@
 import axiosClient from './axiosClient'
 
 export const login = async (credentials) => {
-  const { data } = await axiosClient.post('/login', credentials)
+  const { data } = await axiosClient.post('/login', {
+    ...credentials,
+    email: credentials.email?.trim().toLowerCase(),
+  })
   return data
 }
 
 export const register = async (userData) => {
-  const { data } = await axiosClient.post('/register', userData)
+  const { data } = await axiosClient.post('/register', {
+    ...userData,
+    email: userData.email?.trim().toLowerCase(),
+  })
   return data
 }
 
@@ -16,14 +22,14 @@ export const logout = async () => {
 }
 
 export const forgotPassword = async (email) => {
-  const { data } = await axiosClient.post('/forgot-password', { email })
+  const { data } = await axiosClient.post('/forgot-password', { email: email?.trim().toLowerCase() })
   return data
 }
 
 export const resetPassword = async ({ token, email, password, password_confirmation }) => {
   const { data } = await axiosClient.post('/reset-password', {
     token,
-    email,
+    email: email?.trim().toLowerCase(),
     password,
     password_confirmation,
   })

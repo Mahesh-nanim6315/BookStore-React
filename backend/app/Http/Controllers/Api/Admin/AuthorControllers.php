@@ -42,13 +42,17 @@ class AuthorControllers extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'image' => 'nullable|url',
             'bio' => 'nullable|string',
         ]);
 
-        $author = Author::create($request->all());
+        $validated['name'] = trim((string) $validated['name']);
+        $validated['image'] = isset($validated['image']) ? trim((string) $validated['image']) : null;
+        $validated['bio'] = isset($validated['bio']) ? trim((string) $validated['bio']) : null;
+
+        $author = Author::create($validated);
 
         return response()->json([
             'success' => true,
@@ -83,13 +87,17 @@ class AuthorControllers extends Controller
 
     public function update(Request $request, Author $author)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'image' => 'nullable|url',
             'bio' => 'nullable|string',
         ]);
 
-        $author->update($request->all());
+        $validated['name'] = trim((string) $validated['name']);
+        $validated['image'] = isset($validated['image']) ? trim((string) $validated['image']) : null;
+        $validated['bio'] = isset($validated['bio']) ? trim((string) $validated['bio']) : null;
+
+        $author->update($validated);
 
         return response()->json([
             'success' => true,

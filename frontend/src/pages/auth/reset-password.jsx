@@ -4,15 +4,14 @@ import { Formik } from 'formik'
 import * as Yup from 'yup'
 import { resetPassword } from '../../api/auth'
 import { normalizeApiErrors } from '../../utils/formErrors'
+import { strongPassword } from '../../utils/passwordValidation'
 
 const validationSchema = Yup.object({
   email: Yup.string()
     .trim()
     .email('Enter a valid email address.')
     .required('Email is required.'),
-  password: Yup.string()
-    .min(8, 'Password must be at least 8 characters.')
-    .required('Password is required.'),
+  password: strongPassword(),
   password_confirmation: Yup.string()
     .required('Please confirm your password.')
     .oneOf([Yup.ref('password')], 'Passwords do not match.'),
@@ -49,7 +48,7 @@ const AuthResetPassword = () => {
                 try {
                   const response = await resetPassword({
                     token,
-                    email: values.email.trim(),
+                    email: values.email.trim().toLowerCase(),
                     password: values.password,
                     password_confirmation: values.password_confirmation,
                   })

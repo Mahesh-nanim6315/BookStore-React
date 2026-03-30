@@ -43,7 +43,7 @@ const AdminUsersEdit = () => {
       const response = await updateAdminUser(id, {
         ...values,
         name: values.name.trim(),
-        email: values.email.trim(),
+        email: values.email.trim().toLowerCase(),
       })
       if (response.success) {
         showToast.success('User updated successfully!')

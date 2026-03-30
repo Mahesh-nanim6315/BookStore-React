@@ -8,6 +8,7 @@ import { getProfile, updateAvatar, updateCover, updateProfile } from '../../api/
 import { getImageUrl } from '../../utils/imageUtils'
 import { normalizeApiErrors } from '../../utils/formErrors'
 import { showToast } from '../../utils/toast'
+import { optionalStrongPassword } from '../../utils/passwordValidation'
 
 const profileValidationSchema = Yup.object({
   name: Yup.string()
@@ -19,9 +20,12 @@ const profileValidationSchema = Yup.object({
     .email('Enter a valid email address.')
     .max(255, 'Email may not be greater than 255 characters.')
     .required('Email is required.'),
-  password: Yup.string()
-    .transform((value) => value || '')
-    .test('min-if-present', 'Password must be at least 6 characters.', (value) => !value || value.length >= 6),
+  current_password: Yup.string().when('password', {
+    is: (password) => !!password,
+    then: (schema) => schema.required('Current password is required to change your password.'),
+    otherwise: (schema) => schema,
+  }),
+  password: optionalStrongPassword(),
   password_confirmation: Yup.string().when('password', {
     is: (password) => !!password,
     then: (schema) =>
@@ -55,6 +59,7 @@ const ProfileIndex = () => {
   const [profileFormInitialValues, setProfileFormInitialValues] = useState({
     name: '',
     email: '',
+    current_password: '',
     password: '',
     password_confirmation: '',
   })
@@ -70,6 +75,7 @@ const ProfileIndex = () => {
         setProfileFormInitialValues({
           name: data.user?.name || '',
           email: data.user?.email || '',
+          current_password: '',
           password: '',
           password_confirmation: '',
         })
@@ -86,6 +92,27 @@ const ProfileIndex = () => {
   const handleFileUpload = async (event, type) => {
     const file = event.target.files?.[0]
     if (!file) return
+
+    const maxSize = type === 'avatar' ? 2 * 1024 * 1024 : 4 * 1024 * 1024
+    const allowedTypes = ['image/jpeg', 'image/png']
+
+    if (!allowedTypes.includes(file.type)) {
+      const message = 'Please choose a JPG or PNG image.'
+      setError(message)
+      showToast.error(message)
+      event.target.value = ''
+      return
+    }
+
+    if (file.size > maxSize) {
+      const message = type === 'avatar'
+        ? 'Avatar must be 2 MB or smaller.'
+        : 'Cover image must be 4 MB or smaller.'
+      setError(message)
+      showToast.error(message)
+      event.target.value = ''
+      return
+    }
 
     try {
       setError('')
@@ -112,10 +139,11 @@ const ProfileIndex = () => {
       setMessage('')
       const payload = {
         name: values.name.trim(),
-        email: values.email.trim(),
+        email: values.email.trim().toLowerCase(),
       }
 
       if (values.password) {
+        payload.current_password = values.current_password
         payload.password = values.password
         payload.password_confirmation = values.password_confirmation
       }
@@ -127,6 +155,7 @@ const ProfileIndex = () => {
       const nextValues = {
         name: nextUser?.name || '',
         email: nextUser?.email || '',
+        current_password: '',
         password: '',
         password_confirmation: '',
       }
@@ -171,7 +200,7 @@ const ProfileIndex = () => {
             >
               Update cover
             </button>
-            <input type="file" name="cover" id="coverInput" hidden onChange={(event) => handleFileUpload(event, 'cover')} />
+            <input type="file" name="cover" id="coverInput" accept=".jpg,.jpeg,.png,image/jpeg,image/png" hidden onChange={(event) => handleFileUpload(event, 'cover')} />
           </div>
 
           <div className="profile-hero-content">
@@ -188,7 +217,7 @@ const ProfileIndex = () => {
                 >
                   Change photo
                 </button>
-                <input type="file" name="avatar" id="avatarInput" hidden onChange={(event) => handleFileUpload(event, 'avatar')} />
+                <input type="file" name="avatar" id="avatarInput" accept=".jpg,.jpeg,.png,image/jpeg,image/png" hidden onChange={(event) => handleFileUpload(event, 'avatar')} />
               </div>
 
               <div className="profile-identity-copy">
@@ -391,6 +420,19 @@ const ProfileIndex = () => {
                     <h4>Change Password</h4>
                     <div className="profile-form-split">
                       <div className="form-group">
+                        <label>Current Password</label>
+                        <input
+                          type="password"
+                          name="current_password"
+                          value={values.current_password}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          autoComplete="current-password"
+                          className={touched.current_password && errors.current_password ? 'error' : ''}
+                        />
+                        {touched.current_password && errors.current_password && <small className="error">{errors.current_password}</small>}
+                      </div>
+                      <div className="form-group">
                         <label>New Password</label>
                         <input
                           type="password"
@@ -398,6 +440,7 @@ const ProfileIndex = () => {
                           value={values.password}
                           onChange={handleChange}
                           onBlur={handleBlur}
+                          autoComplete="new-password"
                           className={touched.password && errors.password ? 'error' : ''}
                         />
                         {touched.password && errors.password && <small className="error">{errors.password}</small>}
@@ -410,6 +453,7 @@ const ProfileIndex = () => {
                           value={values.password_confirmation}
                           onChange={handleChange}
                           onBlur={handleBlur}
+                          autoComplete="new-password"
                           className={touched.password_confirmation && errors.password_confirmation ? 'error' : ''}
                         />
                         {touched.password_confirmation && errors.password_confirmation && <small className="error">{errors.password_confirmation}</small>}

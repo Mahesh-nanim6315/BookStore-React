@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { login as loginApi, register as registerApi, logout as logoutApi, getUser } from '../api/auth'
+import { normalizeApiErrors } from '../utils/formErrors'
 
 const AuthContext = createContext()
 
@@ -58,7 +59,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Login failed:', error)
-      return { success: false, errors: { general: 'Network error. Please try again.' } }
+      return { success: false, errors: normalizeApiErrors(error, 'Network error. Please try again.') }
     }
   }
 
@@ -77,7 +78,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Registration failed:', error)
-      return { success: false, errors: { general: 'Network error. Please try again.' } }
+      return { success: false, errors: normalizeApiErrors(error, 'Network error. Please try again.') }
     }
   }
 
