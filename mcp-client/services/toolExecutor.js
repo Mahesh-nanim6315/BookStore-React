@@ -3,6 +3,11 @@ import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { z } from "zod";
+import {
+  invokeLocalTool,
+  listRegisteredTools,
+  runWithRequestContext,
+} from "../../mcp/mcp-server.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,6 +20,7 @@ const MCP_TOOL_TIMEOUT_MS = parseNumber(process.env.MCP_TOOL_TIMEOUT_MS, 30000);
 
 let mcpClientPromise = null;
 let toolCatalogPromise = null;
+let useDirectToolExecution = false;
 
 const toolSchemas = {
   searchBooks: z.object({
@@ -27,67 +33,71 @@ const toolSchemas = {
   addToCart: z.object({
     user_id: z.number().int().positive(),
     book_id: z.number().int().positive(),
+    api_token: z.string().trim().min(1).optional(),
   }),
   getCart: z.object({
     user_id: z.number().int().positive(),
+    api_token: z.string().trim().min(1).optional(),
   }),
   placeOrder: z.object({
     user_id: z.number().int().positive(),
     payment_id: z.string().trim().min(1).optional(),
+    api_token: z.string().trim().min(1).optional(),
   }),
   getOrders: z.object({
     user_id: z.number().int().positive(),
+    api_token: z.string().trim().min(1).optional(),
   }),
   getOrderDetails: z.object({
     user_id: z.number().int().positive(),
     order_id: z.number().int().positive(),
+    api_token: z.string().trim().min(1).optional(),
   }),
   getSubscriptionPlans: z.object({}),
   startSubscriptionCheckout: z.object({
     user_id: z.number().int().positive(),
     plan: z.enum(["free", "premium", "ultimate"]),
     billing_cycle: z.enum(["monthly", "yearly"]),
+    api_token: z.string().trim().min(1).optional(),
   }),
   cancelSubscription: z.object({
     user_id: z.number().int().positive(),
+    api_token: z.string().trim().min(1).optional(),
   }),
   resumeSubscription: z.object({
     user_id: z.number().int().positive(),
+    api_token: z.string().trim().min(1).optional(),
   }),
   getWishlist: z.object({
     user_id: z.number().int().positive(),
+    api_token: z.string().trim().min(1).optional(),
   }),
   toggleWishlist: z.object({
     user_id: z.number().int().positive(),
     book_id: z.number().int().positive(),
+    api_token: z.string().trim().min(1).optional(),
   }),
   getLibrary: z.object({
     user_id: z.number().int().positive(),
+    api_token: z.string().trim().min(1).optional(),
   }),
   addToLibrary: z.object({
     user_id: z.number().int().positive(),
     book_id: z.number().int().positive(),
     format: z.enum(["ebook", "audio", "paperback"]).optional(),
+    api_token: z.string().trim().min(1).optional(),
   }),
   rentBook: z.object({
     user_id: z.number().int().positive(),
     book_id: z.number().int().positive(),
     format: z.enum(["ebook", "audio"]),
+    api_token: z.string().trim().min(1).optional(),
   }),
 };
 
 export async function listAvailableTools() {
   if (!toolCatalogPromise) {
-    toolCatalogPromise = getMcpClient()
-      .then((client) => client.listTools())
-      .then(({ tools }) =>
-        tools.map((tool) => ({
-          name: tool.name,
-          description: tool.description || "",
-          inputSchema: tool.inputSchema || {},
-        })),
-      )
-      .catch((error) => {
+    toolCatalogPromise = loadToolCatalog().catch((error) => {
         toolCatalogPromise = null;
         throw error;
       });
@@ -105,17 +115,7 @@ export async function executeTool(toolName, rawInput, context = {}) {
 
   const hydratedInput = injectContextualDefaults(toolName, rawInput, context);
   const validatedInput = schema.parse(hydratedInput);
-  const client = await getMcpClient();
-  const result = await client.callTool(
-    {
-      name: toolName,
-      arguments: validatedInput,
-    },
-    undefined,
-    {
-      maxTotalTimeout: MCP_TOOL_TIMEOUT_MS,
-    },
-  );
+  const result = await callTool(toolName, validatedInput);
 
   return {
     tool: toolName,
@@ -127,14 +127,58 @@ export async function executeTool(toolName, rawInput, context = {}) {
 }
 
 async function getMcpClient() {
+  if (useDirectToolExecution) {
+    return null;
+  }
+
   if (!mcpClientPromise) {
     mcpClientPromise = connectClient().catch((error) => {
+      if (shouldUseDirectFallback(error)) {
+        useDirectToolExecution = true;
+        return null;
+      }
+
       mcpClientPromise = null;
       throw error;
     });
   }
 
   return mcpClientPromise;
+}
+
+async function loadToolCatalog() {
+  const client = await getMcpClient();
+  if (!client) {
+    return buildDirectToolCatalog();
+  }
+
+  const { tools } = await client.listTools();
+  return tools.map((tool) => ({
+    name: tool.name,
+    description: tool.description || "",
+    inputSchema: tool.inputSchema || {},
+  }));
+}
+
+async function callTool(toolName, validatedInput) {
+  const client = await getMcpClient();
+  if (!client) {
+    return runWithRequestContext(
+      { apiToken: validatedInput.api_token ?? null },
+      () => invokeLocalTool(toolName, validatedInput),
+    );
+  }
+
+  return client.callTool(
+    {
+      name: toolName,
+      arguments: validatedInput,
+    },
+    undefined,
+    {
+      maxTotalTimeout: MCP_TOOL_TIMEOUT_MS,
+    },
+  );
 }
 
 async function connectClient() {
@@ -183,7 +227,68 @@ function injectContextualDefaults(toolName, rawInput, context) {
     input.user_id = context.userId;
   }
 
+  if (userScopedTools.has(toolName) && input.api_token == null && context.accessToken) {
+    input.api_token = context.accessToken;
+  }
+
+  if (
+    toolName === "searchBooks" &&
+    (typeof input.query !== "string" || !input.query.trim())
+  ) {
+    input.query = deriveSearchQuery(context.userMessage);
+  }
+
   return input;
+}
+
+function buildDirectToolCatalog() {
+  return listRegisteredTools().map((tool) => ({
+    name: tool.name,
+    description: tool.description || "",
+    inputSchema: buildInputHint(tool.name),
+  }));
+}
+
+function buildInputHint(toolName) {
+  const schema = toolSchemas[toolName];
+  const shape = schema?.shape;
+  if (!shape) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(shape).map(([key, value]) => [key, describeZodField(value)]),
+  );
+}
+
+function describeZodField(field) {
+  const typeName =
+    field?._def?.type ||
+    field?._zod?.def?.type ||
+    field?.def?.type ||
+    "value";
+  const optional =
+    typeof field?.isOptional === "function" && field.isOptional() ? "?" : "";
+
+  return `${typeName}${optional}`;
+}
+
+function shouldUseDirectFallback(error) {
+  return error instanceof Error && error.message.includes("spawn EPERM");
+}
+
+function deriveSearchQuery(userMessage) {
+  const text = String(userMessage ?? "")
+    .toLowerCase()
+    .replace(/\b(find|search|show|list|recommend|suggest|need|want|get|me|a|an|the|book|books)\b/g, " ")
+    .replace(/\b(under|below|less than|max|maximum)\s+\d+(?:\.\d+)?\b/g, " ")
+    .replace(/\b(rs|inr|\$)\s*\d+(?:\.\d+)?\b/g, " ")
+    .replace(/\d+(?:\.\d+)?/g, " ")
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return text || "books";
 }
 
 function parseNumber(value, fallback) {

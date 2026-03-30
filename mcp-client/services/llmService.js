@@ -3,9 +3,17 @@ import axios from "axios";
 const LLM_PROVIDER = (process.env.LLM_PROVIDER || "ollama").trim().toLowerCase();
 const AUTO_FALLBACK_TO_OLLAMA =
   (process.env.AUTO_FALLBACK_TO_OLLAMA || "true").trim().toLowerCase() !== "false";
+const EFFECTIVE_PROVIDER =
+  LLM_PROVIDER === "gemini" && !process.env.GEMINI_API_KEY?.trim()
+    ? "ollama"
+    : LLM_PROVIDER;
 
 const OLLAMA_URL =
-  process.env.OLLAMA_URL || "http://localhost:11434/api/chat";
+  normalizeOllamaUrl(
+    process.env.OLLAMA_URL ||
+      process.env.OLLAMA_BASE_URL ||
+      "http://localhost:11434/api/chat",
+  );
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3";
 const OLLAMA_TIMEOUT_MS = parseNumber(process.env.OLLAMA_TIMEOUT_MS, 60000);
 
@@ -34,15 +42,16 @@ const geminiClient = axios.create({
 
 export function getLlmStatus() {
   return {
-    provider: LLM_PROVIDER,
+    provider: EFFECTIVE_PROVIDER,
+    configuredProvider: LLM_PROVIDER,
     fallbackToOllama: AUTO_FALLBACK_TO_OLLAMA,
-    model: LLM_PROVIDER === "gemini" ? GEMINI_MODEL : OLLAMA_MODEL,
+    model: EFFECTIVE_PROVIDER === "gemini" ? GEMINI_MODEL : OLLAMA_MODEL,
     fallbackModel: LLM_PROVIDER === "gemini" ? OLLAMA_MODEL : null,
   };
 }
 
 export async function chatWithModel(messages) {
-  if (LLM_PROVIDER === "gemini") {
+  if (EFFECTIVE_PROVIDER === "gemini") {
     try {
       return await chatWithGemini(messages);
     } catch (error) {
@@ -147,7 +156,7 @@ async function chatWithGemini(messages) {
 function shouldFallbackToOllama(error) {
   return (
     AUTO_FALLBACK_TO_OLLAMA &&
-    LLM_PROVIDER === "gemini" &&
+    EFFECTIVE_PROVIDER === "gemini" &&
     error instanceof Error &&
     (error.code === "gemini_quota_exceeded" || error.code === "gemini_unavailable")
   );
@@ -192,4 +201,18 @@ function toGeminiContents(messages) {
 function parseNumber(value, fallback) {
   const parsed = Number.parseInt(value ?? "", 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function normalizeOllamaUrl(value) {
+  const trimmed = String(value ?? "").trim().replace(
+    /^http:\/\/localhost(?=[:/]|$)/i,
+    "http://127.0.0.1",
+  );
+  if (!trimmed) {
+    return "http://localhost:11434/api/chat";
+  }
+
+  return /\/api\/chat\/?$/i.test(trimmed)
+    ? trimmed.replace(/\/+$/, "")
+    : `${trimmed.replace(/\/+$/, "")}/api/chat`;
 }

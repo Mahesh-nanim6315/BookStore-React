@@ -93,6 +93,7 @@ const AssistantPage = () => {
         sessionId,
         message: text,
         userId: user?.id ?? null,
+        accessToken: localStorage.getItem('auth_token') || null,
       })
 
       if (!response.success) {

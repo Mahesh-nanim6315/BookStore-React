@@ -23,6 +23,7 @@ const requestSchema = z.object({
   sessionId: z.string().trim().min(1),
   message: z.string().trim().min(1),
   userId: z.number().int().positive().nullable().optional(),
+  accessToken: z.string().trim().min(1).nullable().optional(),
 });
 
 app.use(
@@ -37,13 +38,23 @@ app.get("/health", (_request, response) => {
   response.json({
     success: true,
     service: "bookstore-agent-client",
+    features: {
+      accessTokenFromBody: true,
+      accessTokenFromAuthorizationHeader: true,
+    },
     llm: getLlmStatus(),
   });
 });
 
 app.post("/api/chat", async (request, response) => {
   try {
-    const payload = requestSchema.parse(request.body);
+    const payload = requestSchema.parse({
+      ...request.body,
+      accessToken:
+        request.body?.accessToken ??
+        extractBearerToken(request.headers.authorization) ??
+        null,
+    });
     const result = await handleChatTurn(payload);
 
     response.json({
@@ -82,4 +93,10 @@ function getErrorMessage(error) {
   }
 
   return "The AI chat request failed before a response could be generated.";
+}
+
+function extractBearerToken(authorizationHeader) {
+  const value = String(authorizationHeader ?? "").trim();
+  const match = value.match(/^Bearer\s+(.+)$/i);
+  return match?.[1]?.trim() || null;
 }

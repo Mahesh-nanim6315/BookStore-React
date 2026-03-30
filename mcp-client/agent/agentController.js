@@ -4,12 +4,13 @@ import { executeTool, listAvailableTools } from "../services/toolExecutor.js";
 import { parseAgentDecision } from "../utils/parser.js";
 
 const MAX_HISTORY_MESSAGES = 16;
-const MAX_TOOL_STEPS = 4;
+const MAX_TOOL_STEPS = 2;
 
 const chatRequestSchema = z.object({
   sessionId: z.string().trim().min(1),
   message: z.string().trim().min(1),
   userId: z.number().int().positive().nullable().optional(),
+  accessToken: z.string().trim().min(1).nullable().optional(),
 });
 
 const sessions = new Map();
@@ -17,6 +18,25 @@ const sessions = new Map();
 export async function handleChatTurn(payload) {
   const request = chatRequestSchema.parse(payload);
   const session = getSession(request.sessionId);
+  const directIntentResult = await tryHandleDirectIntent(request);
+
+  if (directIntentResult) {
+    session.history.push({
+      role: "user",
+      content: request.message,
+    });
+    session.history.push({
+      role: "assistant",
+      content: directIntentResult.answer,
+    });
+    trimHistory(session.history);
+
+    return {
+      answer: directIntentResult.answer,
+      sessionId: request.sessionId,
+      debug: directIntentResult.debug,
+    };
+  }
 
   session.history.push({
     role: "user",
@@ -54,6 +74,8 @@ export async function handleChatTurn(payload) {
     try {
       const toolResult = await executeTool(decision.tool, decision.input, {
         userId: request.userId ?? null,
+        userMessage: request.message,
+        accessToken: request.accessToken ?? null,
       });
 
       debugSteps.push({
@@ -150,48 +172,31 @@ function trimHistory(history) {
 
 function buildSystemPrompt(toolCatalog, userId) {
   const toolLines = toolCatalog
-    .map(
-      (tool) =>
-        `- ${tool.name}: ${tool.description || "No description provided."}
-  inputSchema: ${JSON.stringify(tool.inputSchema || {})}`,
-    )
-    .join("\n");
+    .map((tool) => {
+      const args = Object.keys(tool.inputSchema || {});
+      return `${tool.name}(${args.join(", ")})`;
+    })
+    .join("; ");
 
-  return `You are a helpful AI bookstore assistant.
-
-You help users search books, manage carts, and place orders naturally.
-You may use MCP tools when needed, but never mention internal implementation details, MCP, JSON parsing, or tool protocols to the user.
-
-Available tools:
-${toolLines}
-
-Current user context:
-- user_id: ${userId ?? "not available"}
-
-Rules:
-1. Return ONLY valid JSON.
-2. If you need a tool, respond with:
-{"tool":"toolName","input":{...}}
-3. If no tool is needed, respond with:
-{"tool":"none","response":"your natural answer"}
-4. Do not include markdown fences.
-5. Do not invent tool names.
-6. For user-specific actions, use the current user_id when available.
-7. Ask for clarification only when required information is genuinely missing.
-8. After a tool result is provided, use it to answer naturally and concisely.
-9. When calling a tool, use the exact argument names from that tool's inputSchema.
-10. Never rename fields to camelCase if the schema uses snake_case.
-11. Do not leave required strings empty.`;
+  return `You are a bookstore assistant.
+Return ONLY one JSON object and nothing else.
+For tool use: {"tool":"toolName","input":{...}}
+For normal reply: {"tool":"none","response":"..."}
+Use exact tool names and exact input field names.
+Never use markdown.
+Available tools: ${toolLines}
+Current user_id: ${userId ?? "null"}
+If the user asks to find, search, list, or recommend books, use searchBooks.
+If the user mentions a budget or "under", put that number in max_price.
+After receiving a tool result, answer with tool:"none" and a short helpful response.`;
 }
 
 function buildToolResultMessage(toolResult) {
+  const payload = toolResult.structuredContent ?? toolResult.content;
+
   return `Tool result for ${toolResult.tool}:
 ${JSON.stringify(
-    {
-      isError: toolResult.isError,
-      structuredContent: toolResult.structuredContent,
-      content: toolResult.content,
-    },
+    payload,
     null,
     2,
   )}
@@ -206,4 +211,72 @@ function summarizeToolResult(toolResult) {
 
   const textContent = toolResult.content.find((item) => item.type === "text");
   return textContent?.text?.slice(0, 280) || "Tool executed.";
+}
+
+async function tryHandleDirectIntent(request) {
+  const addToCartMatch = request.message.match(
+    /\badd\b.*?\bbook(?:\s+id)?\s*(\d+)\b.*?\bcart\b|\bcart\b.*?\bbook(?:\s+id)?\s*(\d+)\b|\badd\b.*?\b(\d+)\b.*?\bcart\b/i,
+  );
+  const bookId = Number.parseInt(
+    addToCartMatch?.[1] || addToCartMatch?.[2] || addToCartMatch?.[3] || "",
+    10,
+  );
+
+  if (!Number.isFinite(bookId)) {
+    return null;
+  }
+
+  if (!request.userId) {
+    return {
+      answer: "Please sign in first, then ask me again to add that book to your cart.",
+      debug: [],
+    };
+  }
+
+  const toolResult = await executeTool(
+    "addToCart",
+    { user_id: request.userId, book_id: bookId },
+    {
+      userId: request.userId,
+      userMessage: request.message,
+      accessToken: request.accessToken ?? null,
+    },
+  );
+
+  const debug = [
+    {
+      type: "tool",
+      tool: "addToCart",
+      input: toolResult.input,
+      isError: toolResult.isError,
+      preview: summarizeToolResult(toolResult),
+    },
+  ];
+
+  if (toolResult.isError) {
+    return {
+      answer:
+        extractToolError(toolResult) ||
+        "I couldn't add that book to your cart. Please try again.",
+      debug,
+    };
+  }
+
+  return {
+    answer: `Book ${bookId} has been added to your cart.`,
+    debug,
+  };
+}
+
+function extractToolError(toolResult) {
+  const textContent = toolResult.content.find((item) => item.type === "text")?.text;
+  if (!textContent) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(textContent).error || null;
+  } catch {
+    return textContent;
+  }
 }

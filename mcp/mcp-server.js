@@ -1,11 +1,14 @@
 import axios from "axios";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { pathToFileURL } from "node:url";
 
 const APP_NAME = "bookstore-laravel-mcp";
 const APP_VERSION = "1.0.0";
 const DEFAULT_TIMEOUT_MS = 15000;
+const MAX_SEARCH_RESULTS = 6;
 const API_BASE_URL = normalizeBaseUrl(
   process.env.LARAVEL_API_BASE_URL || "http://127.0.0.1:8000/api/v1",
 );
@@ -15,7 +18,8 @@ const API_TIMEOUT_MS = parsePositiveInteger(
   DEFAULT_TIMEOUT_MS,
 );
 
-let authenticatedUserPromise = null;
+const requestContext = new AsyncLocalStorage();
+const authenticatedUserPromises = new Map();
 
 const http = axios.create({
   baseURL: API_BASE_URL,
@@ -23,7 +27,6 @@ const http = axios.create({
   headers: {
     Accept: "application/json",
     "Content-Type": "application/json",
-    ...(API_TOKEN ? { Authorization: `Bearer ${API_TOKEN}` } : {}),
   },
 });
 
@@ -40,7 +43,41 @@ const server = new McpServer(
   },
 );
 
-server.registerTool(
+const toolRegistry = new Map();
+
+function defineTool(name, config, handler) {
+  toolRegistry.set(name, {
+    name,
+    description: config.description || "",
+    inputSchema: config.inputSchema || {},
+    handler,
+  });
+
+  server.registerTool(name, config, handler);
+}
+
+export function listRegisteredTools() {
+  return Array.from(toolRegistry.values()).map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    inputSchema: tool.inputSchema,
+  }));
+}
+
+export async function invokeLocalTool(name, args = {}) {
+  const tool = toolRegistry.get(name);
+  if (!tool) {
+    throw new Error(`Unknown MCP tool "${name}".`);
+  }
+
+  return tool.handler(args);
+}
+
+export async function runWithRequestContext(context, fn) {
+  return requestContext.run(context ?? {}, fn);
+}
+
+defineTool(
   "searchBooks",
   {
     title: "Search Books",
@@ -61,7 +98,7 @@ server.registerTool(
   },
 );
 
-server.registerTool(
+defineTool(
   "getBookDetails",
   {
     title: "Get Book Details",
@@ -80,7 +117,7 @@ server.registerTool(
   },
 );
 
-server.registerTool(
+defineTool(
   "addToCart",
   {
     title: "Add To Cart",
@@ -89,6 +126,7 @@ server.registerTool(
     inputSchema: {
       user_id: z.number().int().positive(),
       book_id: z.number().int().positive(),
+      api_token: z.string().trim().min(1).optional(),
     },
   },
   async ({ user_id, book_id }) => {
@@ -119,7 +157,7 @@ server.registerTool(
   },
 );
 
-server.registerTool(
+defineTool(
   "getCart",
   {
     title: "Get Cart",
@@ -127,6 +165,7 @@ server.registerTool(
       "Read the authenticated user's cart from Laravel. Requires LARAVEL_API_TOKEN.",
     inputSchema: {
       user_id: z.number().int().positive(),
+      api_token: z.string().trim().min(1).optional(),
     },
   },
   async ({ user_id }) => {
@@ -149,7 +188,7 @@ server.registerTool(
   },
 );
 
-server.registerTool(
+defineTool(
   "getOrders",
   {
     title: "Get Orders",
@@ -157,6 +196,7 @@ server.registerTool(
       "List the authenticated user's orders from Laravel. Requires LARAVEL_API_TOKEN.",
     inputSchema: {
       user_id: z.number().int().positive(),
+      api_token: z.string().trim().min(1).optional(),
     },
   },
   async ({ user_id }) => {
@@ -177,7 +217,7 @@ server.registerTool(
   },
 );
 
-server.registerTool(
+defineTool(
   "getOrderDetails",
   {
     title: "Get Order Details",
@@ -186,6 +226,7 @@ server.registerTool(
     inputSchema: {
       user_id: z.number().int().positive(),
       order_id: z.number().int().positive(),
+      api_token: z.string().trim().min(1).optional(),
     },
   },
   async ({ user_id, order_id }) => {
@@ -207,7 +248,7 @@ server.registerTool(
   },
 );
 
-server.registerTool(
+defineTool(
   "placeOrder",
   {
     title: "Place Order",
@@ -216,6 +257,7 @@ server.registerTool(
     inputSchema: {
       user_id: z.number().int().positive(),
       payment_id: z.string().trim().min(1).optional(),
+      api_token: z.string().trim().min(1).optional(),
     },
   },
   async ({ user_id, payment_id }) => {
@@ -237,7 +279,7 @@ server.registerTool(
   },
 );
 
-server.registerTool(
+defineTool(
   "getSubscriptionPlans",
   {
     title: "Get Subscription Plans",
@@ -260,7 +302,7 @@ server.registerTool(
   },
 );
 
-server.registerTool(
+defineTool(
   "startSubscriptionCheckout",
   {
     title: "Start Subscription Checkout",
@@ -270,6 +312,7 @@ server.registerTool(
       user_id: z.number().int().positive(),
       plan: z.enum(["free", "premium", "ultimate"]),
       billing_cycle: z.enum(["monthly", "yearly"]),
+      api_token: z.string().trim().min(1).optional(),
     },
   },
   async ({ user_id, plan, billing_cycle }) => {
@@ -296,7 +339,7 @@ server.registerTool(
   },
 );
 
-server.registerTool(
+defineTool(
   "cancelSubscription",
   {
     title: "Cancel Subscription",
@@ -304,6 +347,7 @@ server.registerTool(
       "Cancel the authenticated user's active subscription at period end. Requires LARAVEL_API_TOKEN.",
     inputSchema: {
       user_id: z.number().int().positive(),
+      api_token: z.string().trim().min(1).optional(),
     },
   },
   async ({ user_id }) => {
@@ -324,7 +368,7 @@ server.registerTool(
   },
 );
 
-server.registerTool(
+defineTool(
   "resumeSubscription",
   {
     title: "Resume Subscription",
@@ -332,6 +376,7 @@ server.registerTool(
       "Resume a subscription in grace period for the authenticated user. Requires LARAVEL_API_TOKEN.",
     inputSchema: {
       user_id: z.number().int().positive(),
+      api_token: z.string().trim().min(1).optional(),
     },
   },
   async ({ user_id }) => {
@@ -352,7 +397,7 @@ server.registerTool(
   },
 );
 
-server.registerTool(
+defineTool(
   "getWishlist",
   {
     title: "Get Wishlist",
@@ -360,6 +405,7 @@ server.registerTool(
       "Fetch the authenticated user's wishlist. Requires LARAVEL_API_TOKEN.",
     inputSchema: {
       user_id: z.number().int().positive(),
+      api_token: z.string().trim().min(1).optional(),
     },
   },
   async ({ user_id }) => {
@@ -380,7 +426,7 @@ server.registerTool(
   },
 );
 
-server.registerTool(
+defineTool(
   "toggleWishlist",
   {
     title: "Toggle Wishlist",
@@ -389,6 +435,7 @@ server.registerTool(
     inputSchema: {
       user_id: z.number().int().positive(),
       book_id: z.number().int().positive(),
+      api_token: z.string().trim().min(1).optional(),
     },
   },
   async ({ user_id, book_id }) => {
@@ -411,7 +458,7 @@ server.registerTool(
   },
 );
 
-server.registerTool(
+defineTool(
   "getLibrary",
   {
     title: "Get Library",
@@ -419,6 +466,7 @@ server.registerTool(
       "Fetch the authenticated user's library. Requires LARAVEL_API_TOKEN.",
     inputSchema: {
       user_id: z.number().int().positive(),
+      api_token: z.string().trim().min(1).optional(),
     },
   },
   async ({ user_id }) => {
@@ -439,7 +487,7 @@ server.registerTool(
   },
 );
 
-server.registerTool(
+defineTool(
   "addToLibrary",
   {
     title: "Add To Library",
@@ -449,6 +497,7 @@ server.registerTool(
       user_id: z.number().int().positive(),
       book_id: z.number().int().positive(),
       format: z.enum(["ebook", "audio", "paperback"]).optional(),
+      api_token: z.string().trim().min(1).optional(),
     },
   },
   async ({ user_id, book_id, format }) => {
@@ -475,7 +524,7 @@ server.registerTool(
   },
 );
 
-server.registerTool(
+defineTool(
   "rentBook",
   {
     title: "Rent Book",
@@ -485,6 +534,7 @@ server.registerTool(
       user_id: z.number().int().positive(),
       book_id: z.number().int().positive(),
       format: z.enum(["ebook", "audio"]),
+      api_token: z.string().trim().min(1).optional(),
     },
   },
   async ({ user_id, book_id, format }) => {
@@ -523,12 +573,14 @@ async function searchBooks(query, maxPrice) {
   const normalizedBooks = books
     .map(normalizeBookSummary)
     .filter((book) => (maxPrice == null ? true : book.best_price <= maxPrice));
+  const topMatches = normalizedBooks.slice(0, MAX_SEARCH_RESULTS);
 
   return {
     query,
     max_price: maxPrice ?? null,
     total_matches: normalizedBooks.length,
-    books: normalizedBooks,
+    shown_matches: topMatches.length,
+    books: topMatches,
   };
 }
 
@@ -623,21 +675,25 @@ async function resolveDefaultFormat(bookId, allowedFormats) {
 }
 
 async function ensureAuthenticatedUser(expectedUserId) {
-  requireApiToken();
+  const apiToken = requireApiToken();
+  const cacheKey = String(apiToken);
 
-  if (!authenticatedUserPromise) {
-    authenticatedUserPromise = apiRequest({
-      method: "get",
-      url: "/user",
-    })
+  if (!authenticatedUserPromises.has(cacheKey)) {
+    authenticatedUserPromises.set(
+      cacheKey,
+      apiRequest({
+        method: "get",
+        url: "/user",
+      })
       .then((response) => response.data?.user ?? response.data?.data?.user)
       .catch((error) => {
-        authenticatedUserPromise = null;
+        authenticatedUserPromises.delete(cacheKey);
         throw error;
-      });
+      }),
+    );
   }
 
-  const user = await authenticatedUserPromise;
+  const user = await authenticatedUserPromises.get(cacheKey);
   if (!user?.id) {
     throw new Error(
       "Laravel did not return the authenticated user. Check your Sanctum token.",
@@ -672,11 +728,10 @@ function normalizeBookSummary(book) {
   return {
     id: book.id,
     name: book.name,
-    description: book.description,
+    description: truncateText(book.description, 220),
     language: book.language,
-    image: book.image,
-    author: book.author ?? null,
-    category: book.category ?? null,
+    author: book.author?.name ?? null,
+    category: book.category?.name ?? null,
     prices,
     best_price: bestPrice,
     formats: {
@@ -706,7 +761,13 @@ function extractBooksCollection(payload) {
 
 async function apiRequest(config) {
   try {
-    return await http.request(config);
+    return await http.request({
+      ...config,
+      headers: {
+        ...(config.headers || {}),
+        ...buildAuthHeaders(),
+      },
+    });
   } catch (error) {
     throw buildApiError(error);
   }
@@ -777,11 +838,14 @@ function errorResult(error) {
 }
 
 function requireApiToken() {
-  if (!API_TOKEN) {
+  const apiToken = getApiToken();
+  if (!apiToken) {
     throw new Error(
-      "This tool requires LARAVEL_API_TOKEN because the Laravel cart endpoints are protected by Sanctum.",
+      "This action requires a signed-in user token. Sign in to the bookstore in the React app, then try the chat request again.",
     );
   }
+
+  return apiToken;
 }
 
 function normalizeBaseUrl(value) {
@@ -802,6 +866,24 @@ function toNullableNumber(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function truncateText(value, maxLength) {
+  const text = String(value ?? "").trim();
+  if (!text) {
+    return "";
+  }
+
+  return text.length <= maxLength ? text : `${text.slice(0, maxLength - 3)}...`;
+}
+
+function getApiToken() {
+  return requestContext.getStore()?.apiToken?.trim() || API_TOKEN;
+}
+
+function buildAuthHeaders() {
+  const apiToken = getApiToken();
+  return apiToken ? { Authorization: `Bearer ${apiToken}` } : {};
+}
+
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
@@ -810,7 +892,14 @@ async function main() {
   );
 }
 
-main().catch((error) => {
-  console.error("Failed to start MCP server:", error);
-  process.exit(1);
-});
+if (isEntrypoint()) {
+  main().catch((error) => {
+    console.error("Failed to start MCP server:", error);
+    process.exit(1);
+  });
+}
+
+function isEntrypoint() {
+  const entry = process.argv[1];
+  return typeof entry === "string" && import.meta.url === pathToFileURL(entry).href;
+}
