@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Book;
 use App\Models\CartItem;
 use App\Models\Cart;
-use App\Models\Book;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class CartController extends Controller
 {
@@ -17,8 +18,10 @@ class CartController extends Controller
     {
         $request->validate([
             'format' => 'required|in:ebook,audio,paperback',
-            'price'  => 'required|numeric|min:0',
         ]);
+
+        $format = $request->string('format')->toString();
+        $price = $this->resolveBookFormatPrice($book, $format);
 
         $cart = Cart::firstOrCreate([
             'user_id' => Auth::id(),
@@ -26,27 +29,31 @@ class CartController extends Controller
 
         $item = CartItem::where('cart_id', $cart->id)
             ->where('book_id', $book->id)
-            ->where('format', $request->format)
+            ->where('format', $format)
             ->first();
 
         if ($item) {
+            if ((float) $item->price !== $price) {
+                $item->update(['price' => $price]);
+            }
             $item->increment('quantity');
-            $message = ucfirst($request->format) . ' quantity increased in cart';
+            $message = ucfirst($format) . ' quantity increased in cart';
         } else {
             CartItem::create([
                 'cart_id' => $cart->id,
                 'book_id' => $book->id,
-                'format'  => $request->format,
-                'price'   => $request->price,
+                'format'  => $format,
+                'price'   => $price,
                 'quantity'=> 1,
             ]);
-            $message = ucfirst($request->format) . ' added to cart';
+            $message = ucfirst($format) . ' added to cart';
         }
 
         // Get updated cart
         $updatedCart = Cart::with('items.book')
             ->where('user_id', Auth::id())
             ->first();
+        $this->syncCartItemPrices($updatedCart);
 
         return response()->json([
             'success' => true,
@@ -65,6 +72,7 @@ class CartController extends Controller
         $cart = Cart::with('items.book')
             ->where('user_id', Auth::id())
             ->first();
+        $this->syncCartItemPrices($cart);
 
         $subtotal = 0;
         $items_count = 0;
@@ -112,6 +120,7 @@ class CartController extends Controller
         $cart = Cart::with('items.book')
             ->where('user_id', Auth::id())
             ->first();
+        $this->syncCartItemPrices($cart);
 
         return response()->json([
             'success' => true,
@@ -157,6 +166,7 @@ class CartController extends Controller
         $cart = Cart::with('items.book')
             ->where('user_id', Auth::id())
             ->first();
+        $this->syncCartItemPrices($cart);
 
         $subtotal = $cart ? $cart->items->sum(fn($i) => $i->price * $i->quantity) : 0;
         $tax = Setting::calculateTax($subtotal);
@@ -209,6 +219,7 @@ class CartController extends Controller
         }
 
         $cart = Cart::with('items')->where('user_id', Auth::id())->first();
+        $this->syncCartItemPrices($cart);
         
         if (!$cart) {
             return response()->json([
@@ -268,6 +279,7 @@ class CartController extends Controller
         session()->forget('coupon');
 
         $cart = Cart::with('items')->where('user_id', Auth::id())->first();
+        $this->syncCartItemPrices($cart);
         $subtotal = $cart ? $cart->items->sum(fn($i) => $i->price * $i->quantity) : 0;
         $tax = Setting::calculateTax($subtotal);
         $taxRate = Setting::taxRate();
@@ -283,5 +295,65 @@ class CartController extends Controller
                 'total' => $total
             ]
         ]);
+    }
+
+    private function syncCartItemPrices(?Cart $cart): void
+    {
+        if (! $cart) {
+            return;
+        }
+
+        $cart->loadMissing('items.book');
+
+        foreach ($cart->items as $item) {
+            if (! $item->book) {
+                continue;
+            }
+
+            $price = $this->resolveBookFormatPrice($item->book, $item->format);
+
+            if ((float) $item->price !== $price) {
+                $item->update(['price' => $price]);
+            }
+        }
+    }
+
+    private function resolveBookFormatPrice(Book $book, string $format): float
+    {
+        $format = strtolower($format);
+
+        if ($format === 'ebook') {
+            if (! $book->has_ebook || $book->ebook_price === null) {
+                throw ValidationException::withMessages([
+                    'format' => ['This book is not available as an ebook.'],
+                ]);
+            }
+
+            return (float) $book->ebook_price;
+        }
+
+        if ($format === 'audio') {
+            if (! $book->has_audio || $book->audio_price === null) {
+                throw ValidationException::withMessages([
+                    'format' => ['This book is not available as an audio title.'],
+                ]);
+            }
+
+            return (float) $book->audio_price;
+        }
+
+        if (! $book->has_paperback || $book->paperback_price === null) {
+            throw ValidationException::withMessages([
+                'format' => ['This book is not available as a paperback.'],
+            ]);
+        }
+
+        if ((int) ($book->stock ?? 0) < 1) {
+            throw ValidationException::withMessages([
+                'format' => ['This paperback is currently out of stock.'],
+            ]);
+        }
+
+        return (float) $book->paperback_price;
     }
 }

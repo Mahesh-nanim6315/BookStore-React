@@ -202,7 +202,7 @@ const BooksIndex = () => {
             {books.length > 0 ? (
               books.map((book) => (
                 <tr key={book.id}>
-                  <td>
+                  <td data-label="Book">
                     <div className="book-title-cell">
                       <div className="book-mini-cover">
                         {book.image ? <img src={book.image} alt={book.name} /> : <span>No image</span>}
@@ -213,12 +213,12 @@ const BooksIndex = () => {
                       </div>
                     </div>
                   </td>
-                  <td>{book.author?.name || '-'}</td>
-                  <td>
+                  <td data-label="Author">{book.author?.name || '-'}</td>
+                  <td data-label="Category">
                     <div>{book.category?.name || '-'}</div>
                     <div className="book-subline">{book.genre?.name || '-'}</div>
                   </td>
-                  <td>
+                  <td data-label="Formats">
                     <div className="book-tag-row">
                       {book.has_ebook && <span className="book-tag">eBook</span>}
                       {book.has_audio && <span className="book-tag">Audio</span>}
@@ -226,9 +226,9 @@ const BooksIndex = () => {
                       {book.is_premium && <span className="book-tag book-tag-premium">Premium</span>}
                     </div>
                   </td>
-                  <td>{book.has_paperback ? book.stock ?? 0 : '-'}</td>
-                  <td>{formatCurrency(book.price)}</td>
-                  <td>
+                  <td data-label="Stock">{book.has_paperback ? book.stock ?? 0 : '-'}</td>
+                  <td data-label="Price">{formatCurrency(book.price)}</td>
+                  <td data-label="Actions">
                     <div className="book-action-row">
                       <Link
                         to={`/dashboard/books/${book.id}`}

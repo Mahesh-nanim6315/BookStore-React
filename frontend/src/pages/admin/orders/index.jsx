@@ -184,10 +184,10 @@ const AdminOrdersIndex = () => {
             {orders.length > 0 ? (
               orders.map((order) => (
                 <tr key={order.id}>
-                  <td>#{order.id}</td>
-                  <td>{order.user?.name || 'Guest'}</td>
-                  <td>{formatCurrency(order.total_amount)}</td>
-                  <td>
+                  <td data-label="ID">#{order.id}</td>
+                  <td data-label="Customer">{order.user?.name || 'Guest'}</td>
+                  <td data-label="Total">{formatCurrency(order.total_amount)}</td>
+                  <td data-label="Payment">
                     <select
                       value={order.payment_status || 'pending'}
                       onChange={(event) =>
@@ -200,7 +200,7 @@ const AdminOrdersIndex = () => {
                       <option value="failed">Failed</option>
                     </select>
                   </td>
-                  <td>
+                  <td data-label="Status">
                     <select
                       value={order.status || 'pending'}
                       onChange={(event) => handleOrderStatusChange(order.id, event.target.value)}
@@ -213,8 +213,8 @@ const AdminOrdersIndex = () => {
                       <option value="cancelled">Cancelled</option>
                     </select>
                   </td>
-                  <td>{formatDate(order.created_at)}</td>
-                  <td>
+                  <td data-label="Date">{formatDate(order.created_at)}</td>
+                  <td data-label="Action">
                     <Link
                       to={`/dashboard/orders/${order.id}`}
                       className="admin-icon-action admin-icon-action--view"

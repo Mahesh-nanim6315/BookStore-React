@@ -260,11 +260,9 @@ const AdminSettingsIndex = () => {
 
           <div className="settings-actions" id="settings-form-actions">
             <button type="submit" className="settings-btn settings-btn-primary" id="save-settings-btn" disabled={saving}>
-              <span className="btn-icon">Save</span>
               {saving ? 'Saving...' : 'Save Settings'}
             </button>
             <button type="button" className="settings-btn settings-btn-secondary" id="reset-settings-btn" onClick={handleReset}>
-              <span className="btn-icon">Reset</span>
               Reset
             </button>
           </div>

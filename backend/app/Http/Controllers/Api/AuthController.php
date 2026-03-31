@@ -76,13 +76,17 @@ class AuthController extends Controller
             ], 503);
         }
 
+        $request->merge([
+            'email' => Str::lower(trim((string) $request->email)),
+        ]);
+
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', PasswordRule::defaults()],
         ]);
 
-        $email = Str::lower(trim((string) $request->email));
+        $email = $request->string('email')->toString();
 
         $user = User::create([
             'name' => $request->name,
@@ -128,9 +132,13 @@ class AuthController extends Controller
             ], 503);
         }
 
+        $request->merge([
+            'email' => Str::lower(trim((string) $request->email)),
+        ]);
+
         $request->validate(['email' => 'required|email']);
 
-        $email = Str::lower(trim((string) $request->email));
+        $email = $request->string('email')->toString();
 
         $status = Password::sendResetLink(
             ['email' => $email]
@@ -164,6 +172,10 @@ class AuthController extends Controller
             ], 503);
         }
 
+        $request->merge([
+            'email' => Str::lower(trim((string) $request->email)),
+        ]);
+
         $request->validate([
             'token' => 'required',
             'email' => 'required|email',
@@ -171,7 +183,7 @@ class AuthController extends Controller
             'password_confirmation' => 'required',
         ]);
 
-        $email = Str::lower(trim((string) $request->email));
+        $email = $request->string('email')->toString();
 
         $status = Password::reset(
             [

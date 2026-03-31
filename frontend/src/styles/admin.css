@@ -3079,3 +3079,205 @@ body {
         font-size: 12px;
     }
 }
+
+/* ================= RESPONSIVE TABLE AND DASHBOARD FIXES ================= */
+.dashboard,
+.chart-alerts,
+.chart-box,
+.alerts,
+.card-section,
+.card-box,
+.admin-table-wrap,
+.dashboard-table-wrap,
+.main-content,
+.content {
+    min-width: 0;
+}
+
+.dashboard {
+    gap: 20px;
+}
+
+.dashboard-chart {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    height: clamp(240px, 42vw, 320px);
+}
+
+.chart-box {
+    overflow: hidden;
+}
+
+.chart-box canvas {
+    display: block;
+}
+
+.admin-table-wrap,
+.dashboard-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+.admin-table-wrap>.table,
+.admin-table-wrap>.table-custom,
+.dashboard-table-wrap>.table,
+.dashboard-table-wrap>.table-custom {
+    width: max-content;
+    min-width: 100%;
+}
+
+.table th,
+.table td,
+.table-custom th,
+.table-custom td {
+    vertical-align: top;
+}
+
+@media (max-width: 768px) {
+    .dashboard {
+        gap: 16px;
+    }
+
+    .dashboard-chart {
+        height: 260px;
+    }
+
+    .chart-box,
+    .alerts,
+    .card-box,
+    .admin-table-wrap {
+        padding: 12px;
+    }
+
+    .admin-table-wrap>.table,
+    .admin-table-wrap>.table-custom,
+    .dashboard-table-wrap>.table,
+    .dashboard-table-wrap>.table-custom {
+        min-width: 640px;
+    }
+
+    .book-action-row {
+        flex-wrap: nowrap;
+    }
+}
+
+@media (max-width: 640px) {
+    .dashboard-chart {
+        height: 240px;
+    }
+
+    .chart-box,
+    .alerts,
+    .card-box {
+        padding: 14px;
+    }
+}
+
+@media (max-width: 680px) {
+    .admin-table-wrap,
+    .dashboard-table-wrap {
+        overflow-x: visible;
+        padding: 0;
+        border: none;
+        background: transparent;
+    }
+
+    .admin-table-wrap>.table,
+    .admin-table-wrap>.table-custom,
+    .dashboard-table-wrap>.table,
+    .dashboard-table-wrap>.table-custom {
+        width: 100% !important;
+        min-width: 0 !important;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .admin-table-wrap thead,
+    .dashboard-table-wrap thead {
+        display: none;
+    }
+
+    .admin-table-wrap tbody,
+    .dashboard-table-wrap tbody {
+        display: grid;
+        gap: 12px;
+    }
+
+    .admin-table-wrap tbody tr,
+    .dashboard-table-wrap tbody tr {
+        display: block;
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        background: var(--bg-card);
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+
+    .admin-table-wrap td,
+    .dashboard-table-wrap td {
+        display: grid;
+        grid-template-columns: minmax(88px, 104px) minmax(0, 1fr);
+        gap: 12px;
+        width: 100%;
+        padding: 12px 14px;
+        border: none;
+        border-bottom: 1px solid #edf2f7;
+        text-align: left;
+    }
+
+    .admin-table-wrap td:last-child,
+    .dashboard-table-wrap td:last-child {
+        border-bottom: none;
+    }
+
+    .admin-table-wrap td::before,
+    .dashboard-table-wrap td::before {
+        content: attr(data-label);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #64748b;
+    }
+
+    .admin-table-wrap td.empty-data,
+    .dashboard-table-wrap td.empty-data {
+        display: block;
+        text-align: center;
+        padding: 18px 16px;
+        border-bottom: none;
+    }
+
+    .admin-table-wrap td.empty-data::before,
+    .dashboard-table-wrap td.empty-data::before {
+        content: none;
+    }
+
+    .admin-table-wrap .book-title-cell,
+    .dashboard-table-wrap .book-title-cell {
+        align-items: flex-start;
+    }
+
+    .admin-table-wrap .book-action-row,
+    .dashboard-table-wrap .book-action-row {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+
+    .admin-table-wrap .status-dropdown,
+    .dashboard-table-wrap .status-dropdown {
+        width: 100%;
+        max-width: 180px;
+    }
+
+    .admin-table-wrap .admin-btn,
+    .dashboard-table-wrap .admin-btn,
+    .admin-table-wrap .review-action-button,
+    .dashboard-table-wrap .review-action-button {
+        width: fit-content;
+    }
+}

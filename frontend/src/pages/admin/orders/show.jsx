@@ -102,7 +102,7 @@ const AdminOrdersShow = () => {
       </div>
 
       <div className="card-section">
-        <div className="card-box">
+        <div className="card-box admin-table-wrap dashboard-table-wrap">
           <h4>Ordered Items</h4>
           <table className="table-custom">
             <thead>
@@ -117,10 +117,10 @@ const AdminOrdersShow = () => {
               {items.length > 0 ? (
                 items.map((item) => (
                   <tr key={item.id}>
-                    <td>{item.book?.name || 'Removed Book'}</td>
-                    <td>{item.format || '-'}</td>
-                    <td>{item.quantity || 0}</td>
-                    <td>{formatCurrency(item.price)}</td>
+                    <td data-label="Book">{item.book?.name || 'Removed Book'}</td>
+                    <td data-label="Format">{item.format || '-'}</td>
+                    <td data-label="Quantity">{item.quantity || 0}</td>
+                    <td data-label="Price">{formatCurrency(item.price)}</td>
                   </tr>
                 ))
               ) : (

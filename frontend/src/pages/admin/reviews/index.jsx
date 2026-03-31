@@ -168,31 +168,31 @@ const AdminReviewsIndex = () => {
             {reviews.length > 0 ? (
               reviews.map((review) => (
                 <tr key={review.id}>
-                  <td>
+                  <td data-label="User">
                     <div className="review-identity">
                       <strong>{review.user?.name || 'Guest'}</strong>
                       <div className="book-subline">{review.user?.email || 'No email'}</div>
                     </div>
                   </td>
-                  <td>
+                  <td data-label="Book">
                     <div className="review-identity">
                       <strong>{review.book?.name || 'Removed Book'}</strong>
                       <div className="book-subline">Review #{review.id}</div>
                     </div>
                   </td>
-                  <td>
+                  <td data-label="Rating">
                     <div className="review-rating-cell">
                       <ReviewStars rating={review.rating} />
                       <span className="book-subline">{review.rating || 0}/5</span>
                     </div>
                   </td>
-                  <td className="review-comment-cell">{truncateComment(review.comment)}</td>
-                  <td>
+                  <td data-label="Comment" className="review-comment-cell">{truncateComment(review.comment)}</td>
+                  <td data-label="Status">
                     <span className={`review-status-badge ${review.is_approved ? 'approved' : 'pending'}`}>
                       {review.is_approved ? 'Approved' : 'Pending'}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Actions">
                     <div className="book-action-row">
                       <button
                         type="button"

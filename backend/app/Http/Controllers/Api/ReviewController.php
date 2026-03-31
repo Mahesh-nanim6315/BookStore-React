@@ -82,7 +82,7 @@ class ReviewController extends Controller
 
         $request->validate([
             'rating' => 'required|integer|min:1|max:5',
-            'comment' => 'required|string'
+            'comment' => 'required|string|max:1000'
         ]);
 
         $review->update([

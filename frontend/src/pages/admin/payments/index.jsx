@@ -79,14 +79,14 @@ const AdminPaymentsIndex = () => {
             {payments.length > 0 ? (
               payments.map((payment) => (
                 <tr key={payment.id}>
-                  <td>#{payment.id}</td>
-                  <td>{payment.user?.name || 'Guest'}</td>
-                  <td>{payment.payment_id || '-'}</td>
-                  <td>{payment.payment_method || '-'}</td>
-                  <td>{formatCurrency(payment.total_amount)}</td>
-                  <td>{payment.payment_status || '-'}</td>
-                  <td>{formatDate(payment.created_at)}</td>
-                  <td>
+                  <td data-label="Order ID">#{payment.id}</td>
+                  <td data-label="User">{payment.user?.name || 'Guest'}</td>
+                  <td data-label="Payment ID">{payment.payment_id || '-'}</td>
+                  <td data-label="Method">{payment.payment_method || '-'}</td>
+                  <td data-label="Amount">{formatCurrency(payment.total_amount)}</td>
+                  <td data-label="Status">{payment.payment_status || '-'}</td>
+                  <td data-label="Date">{formatDate(payment.created_at)}</td>
+                  <td data-label="Action">
                     <Link to={`/dashboard/orders/${payment.id}`} className="admin-btn admin-btn-primary">
                       View Order
                     </Link>

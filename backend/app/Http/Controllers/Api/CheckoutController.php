@@ -14,6 +14,7 @@ use App\Models\Setting;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class CheckoutController extends Controller
 {
@@ -46,6 +47,8 @@ class CheckoutController extends Controller
             return strtolower($item->format) === 'paperback';
         });
 
+        $this->syncCartItemPrices($cart);
+
         $subtotal = $cart->items->sum(function ($item) {
             return $item->price * $item->quantity;
         });
@@ -74,20 +77,20 @@ class CheckoutController extends Controller
 
     public function process(Request $request)
     {
-        DB::beginTransaction();
+        $user = Auth::user();
+        $cart = Cart::with('items.book')->where('user_id', $user->id)->first();
 
-        try {
-            $user = Auth::user();
-            $cart = Cart::with('items.book')->where('user_id', $user->id)->first();
+        if (!$cart || $cart->items->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your cart is empty',
+                'redirect' => $this->frontendPath('/cart')
+            ], 422);
+        }
 
-            if (!$cart || $cart->items->isEmpty()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Your cart is empty',
-                    'redirect' => $this->frontendPath('/cart')
-                ], 422);
-            }
+        $this->syncCartItemPrices($cart);
 
+        $order = DB::transaction(function () use ($request, $user, $cart) {
             $addressId = null;
 
             if ($cart->items->contains('format', 'paperback')) {
@@ -144,27 +147,21 @@ class CheckoutController extends Controller
                 ]);
             }
 
-            session()->forget('coupon');
             $cart->items()->delete();
 
-            DB::commit();
+            return $order;
+        });
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Order created successfully',
-                'data' => [
-                    'order' => $order,
-                    'redirect' => $this->frontendPath('/checkout/payment')
-                ]
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
+        session()->forget('coupon');
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Checkout failed: ' . $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Order created successfully',
+            'data' => [
+                'order' => $order,
+                'redirect' => $this->frontendPath('/checkout/payment')
+            ]
+        ]);
     }
 
     public function paymentPage(Order $order)
@@ -254,7 +251,7 @@ class CheckoutController extends Controller
     public function buyNow(Book $book)
     {
         $user = Auth::user();
-        $subtotal = $book->price;
+        $subtotal = $this->resolveBookFormatPrice($book, 'paperback');
         $tax = Setting::calculateTax($subtotal);
         $total = $subtotal + $tax;
 
@@ -271,7 +268,7 @@ class CheckoutController extends Controller
             'order_id' => $order->id,
             'book_id' => $book->id,
             'quantity' => 1,
-            'price' => $book->price,
+            'price' => $subtotal,
             'format' => 'paperback',
         ]);
 
@@ -372,5 +369,62 @@ class CheckoutController extends Controller
                 'order' => $order
             ]
         ]);
+    }
+
+    private function syncCartItemPrices(Cart $cart): void
+    {
+        $cart->loadMissing('items.book');
+
+        foreach ($cart->items as $item) {
+            if (! $item->book) {
+                continue;
+            }
+
+            $price = $this->resolveBookFormatPrice($item->book, $item->format);
+
+            if ((float) $item->price !== $price) {
+                $item->update(['price' => $price]);
+                $item->price = $price;
+            }
+        }
+    }
+
+    private function resolveBookFormatPrice(Book $book, string $format): float
+    {
+        $format = strtolower($format);
+
+        if ($format === 'ebook') {
+            if (! $book->has_ebook || $book->ebook_price === null) {
+                throw ValidationException::withMessages([
+                    'format' => ['This book is not available as an ebook.'],
+                ]);
+            }
+
+            return (float) $book->ebook_price;
+        }
+
+        if ($format === 'audio') {
+            if (! $book->has_audio || $book->audio_price === null) {
+                throw ValidationException::withMessages([
+                    'format' => ['This book is not available as an audio title.'],
+                ]);
+            }
+
+            return (float) $book->audio_price;
+        }
+
+        if (! $book->has_paperback || $book->paperback_price === null) {
+            throw ValidationException::withMessages([
+                'format' => ['This book is not available as a paperback.'],
+            ]);
+        }
+
+        if ((int) ($book->stock ?? 0) < 1) {
+            throw ValidationException::withMessages([
+                'format' => ['This paperback is currently out of stock.'],
+            ]);
+        }
+
+        return (float) $book->paperback_price;
     }
 }

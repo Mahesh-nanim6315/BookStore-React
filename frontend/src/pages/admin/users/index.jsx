@@ -129,7 +129,7 @@ const AdminUsersIndex = () => {
             {users.length > 0 ? (
               users.map((user) => (
                 <tr key={user.id}>
-                  <td>
+                  <td data-label="User">
                     <div className="book-title-cell">
                       <div className="author-avatar">
                         {user.name?.[0] || 'U'}
@@ -140,16 +140,16 @@ const AdminUsersIndex = () => {
                       </div>
                     </div>
                   </td>
-                  <td>
+                  <td data-label="Role">
                     <span className="book-tag">{user.role || 'user'}</span>
                   </td>
-                  <td>
+                  <td data-label="Status">
                     <span className={`review-status-badge ${user.is_active ? 'approved' : 'pending'}`}>
                       {user.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td>{formatDate(user.created_at)}</td>
-                  <td>
+                  <td data-label="Created">{formatDate(user.created_at)}</td>
+                  <td data-label="Actions">
                     <div className="book-action-row">
                       <Link
                         to={`/dashboard/users/${user.id}`}

@@ -5,8 +5,8 @@ const SalesChart = ({ months, sales }) => {
 
   useEffect(() => {
     if (!chartRef.current || !months.length || !sales.length) return
+    const canvas = chartRef.current
 
-    // Load Chart.js if not already loaded
     if (!window.Chart) {
       const script = document.createElement('script')
       script.src = 'https://cdn.jsdelivr.net/npm/chart.js'
@@ -20,64 +20,73 @@ const SalesChart = ({ months, sales }) => {
     }
 
     function createChart() {
-      const ctx = chartRef.current.getContext('2d')
-      
-      // Destroy existing chart if it exists
-      if (chartRef.current.chart) {
-        chartRef.current.chart.destroy()
+      const ctx = canvas.getContext('2d')
+      const isMobile = window.matchMedia('(max-width: 640px)').matches
+
+      if (canvas.chart) {
+        canvas.chart.destroy()
       }
 
-      chartRef.current.chart = new window.Chart(ctx, {
+      canvas.chart = new window.Chart(ctx, {
         type: 'bar',
         data: {
           labels: months,
-          datasets: [{
-            label: 'Monthly Sales',
-            data: sales,
-            backgroundColor: 'rgba(59, 130, 246, 0.5)',
-            borderColor: 'rgba(59, 130, 246, 1)',
-            borderWidth: 1
-          }]
+          datasets: [
+            {
+              label: 'Monthly Sales',
+              data: sales,
+              backgroundColor: 'rgba(59, 130, 246, 0.5)',
+              borderColor: 'rgba(59, 130, 246, 1)',
+              borderWidth: 1,
+            },
+          ],
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           scales: {
+            x: {
+              ticks: {
+                maxRotation: 0,
+                autoSkip: true,
+                maxTicksLimit: isMobile ? 4 : 12,
+              },
+            },
             y: {
               beginAtZero: true,
               ticks: {
-                callback: function(value) {
-                  return '₹' + value.toLocaleString()
-                }
-              }
-            }
+                callback(value) {
+                  return `Rs ${value.toLocaleString()}`
+                },
+              },
+            },
           },
           plugins: {
             legend: {
               display: true,
-              position: 'top'
+              position: isMobile ? 'bottom' : 'top',
             },
             tooltip: {
               callbacks: {
-                label: function(context) {
-                  return 'Sales: ₹' + context.parsed.y.toLocaleString()
-                }
-              }
-            }
-          }
-        }
+                label(context) {
+                  return `Sales: Rs ${context.parsed.y.toLocaleString()}`
+                },
+              },
+            },
+          },
+        },
       })
     }
 
     return () => {
-      if (chartRef.current?.chart) {
-        chartRef.current.chart.destroy()
+      if (canvas?.chart) {
+        canvas.chart.destroy()
       }
     }
   }, [months, sales])
 
   return (
-    <div style={{ position: 'relative', height: '300px', width: '100%' }}>
+    <div className="dashboard-chart">
       <canvas ref={chartRef}></canvas>
     </div>
   )

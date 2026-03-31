@@ -144,7 +144,7 @@ const AdminAuthorsIndex = () => {
             {authors.length > 0 ? (
               authors.map((author) => (
                 <tr key={author.id}>
-                  <td>
+                  <td data-label="Author">
                     <div className="book-title-cell">
                       <div className="author-avatar">
                         {author.image ? <img src={author.image} alt={author.name} /> : <span>{author.name?.[0] || 'A'}</span>}
@@ -155,9 +155,9 @@ const AdminAuthorsIndex = () => {
                       </div>
                     </div>
                   </td>
-                  <td>{author.books_count || 0}</td>
-                  <td className="author-bio-cell">{truncateBio(author.bio)}</td>
-                  <td>
+                  <td data-label="Total Books">{author.books_count || 0}</td>
+                  <td data-label="Bio" className="author-bio-cell">{truncateBio(author.bio)}</td>
+                  <td data-label="Actions">
                     <div className="book-action-row">
                       <Link
                         to={`/dashboard/authors/${author.id}`}

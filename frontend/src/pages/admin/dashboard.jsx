@@ -1,6 +1,6 @@
 ﻿import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getDashboardStats, getDashboardInfo } from '../../api/auth'
+import { getDashboardStats } from '../../api/auth'
 import SalesChart from '../../components/admin/SalesChart'
 import Loader from '../../components/common/Loader'
 
@@ -18,17 +18,13 @@ const AdminDashboard = () => {
     lowStockBooks: [],
     topSellingBooks: []
   })
-  const [dashboardInfo, setDashboardInfo] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
         console.log('Loading admin dashboard data...')
-        const [statsResponse, infoResponse] = await Promise.all([
-          getDashboardStats(),
-          getDashboardInfo()
-        ])
+        const statsResponse = await getDashboardStats()
         
         console.log('Dashboard stats response:', statsResponse)
         
@@ -53,10 +49,6 @@ const AdminDashboard = () => {
           setStats(mappedStats)
         } else {
           console.error('Stats API returned failure:', statsResponse)
-        }
-        
-        if (infoResponse.success) {
-          setDashboardInfo(infoResponse.data)
         }
       } catch (error) {
         console.error('Failed to load dashboard data:', error)
@@ -151,7 +143,7 @@ const AdminDashboard = () => {
       <div className="card-section">
         <h3 className="section-title">🏆 Top Selling Books</h3>
 
-        <div className="card-box">
+        <div className="card-box admin-table-wrap dashboard-table-wrap">
           <table className="table-custom">
             <thead>
               <tr>
@@ -164,8 +156,8 @@ const AdminDashboard = () => {
               {stats.topSellingBooks && stats.topSellingBooks.length > 0 ? (
                 stats.topSellingBooks.map((item, index) => (
                   <tr key={index}>
-                    <td>{item.book?.name || 'Book Removed'}</td>
-                    <td>
+                    <td data-label="Book">{item.book?.name || 'Book Removed'}</td>
+                    <td data-label="Total Sold">
                       <span className="badge-sales">
                         {item.total_sold}
                       </span>
@@ -187,7 +179,7 @@ const AdminDashboard = () => {
       <div>
         <h3>🕒 Recent Orders</h3>
 
-        <div className="admin-table-wrap">
+        <div className="admin-table-wrap dashboard-table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -204,16 +196,16 @@ const AdminDashboard = () => {
             {stats.recentOrders && stats.recentOrders.length > 0 ? (
               stats.recentOrders.map((order, index) => (
                 <tr key={index}>
-                  <td>#{order.id}</td>
-                  <td>{order.user?.name || 'Guest'}</td>
-                  <td>₹{order.total_amount}</td>
-                  <td>
+                  <td data-label="#ID">#{order.id}</td>
+                  <td data-label="User">{order.user?.name || 'Guest'}</td>
+                  <td data-label="Total">₹{order.total_amount}</td>
+                  <td data-label="Status">
                     <span className="status-badge">
                       {order.status || 'Pending'}
                     </span>
                   </td>
-                  <td>{new Date(order.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-                  <td>
+                  <td data-label="Date">{new Date(order.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                  <td data-label="Action">
                     <Link
                       to={`/admin/orders/${order.id}`}
                       className="admin-icon-action admin-icon-action--view"

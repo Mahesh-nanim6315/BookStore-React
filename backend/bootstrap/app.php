@@ -1,7 +1,14 @@
 <?php
 
 use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -31,7 +38,56 @@ return Application::configure(basePath: dirname(__DIR__))
             'maintenance' => \App\Http\Middleware\CheckMaintenanceMode::class,
         ]);
     })
-    ->withExceptions(function ($exceptions) {
-        //
+    ->withExceptions(function (Exceptions $exceptions) {
+        $exceptions->dontFlash([
+            'current_password',
+            'password',
+            'password_confirmation',
+        ]);
+
+        $exceptions->shouldRenderJsonWhen(function (Request $request, \Throwable $exception) {
+            return $request->expectsJson() || $request->is('api/*') || $request->is('v1/*');
+        });
+
+        $exceptions->render(function (ModelNotFoundException $exception, Request $request) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Resource not found',
+            ], Response::HTTP_NOT_FOUND);
+        });
+
+        $exceptions->render(function (ValidationException $exception, Request $request) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $exception->errors(),
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        });
+
+        $exceptions->render(function (AuthenticationException $exception, Request $request) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated',
+            ], Response::HTTP_UNAUTHORIZED);
+        });
+
+        $exceptions->render(function (HttpExceptionInterface $exception, Request $request) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage() ?: Response::$statusTexts[$exception->getStatusCode()] ?? 'HTTP Error',
+            ], $exception->getStatusCode());
+        });
+
+        $exceptions->render(function (\Throwable $exception, Request $request) {
+            return response()->json([
+                'success' => false,
+                'message' => config('app.debug')
+                    ? $exception->getMessage()
+                    : 'Something went wrong',
+                'trace' => config('app.debug')
+                    ? $exception->getTrace()
+                    : [],
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        });
     })
     ->create();
