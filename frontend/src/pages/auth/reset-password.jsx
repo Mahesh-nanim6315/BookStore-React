@@ -5,6 +5,7 @@ import * as Yup from 'yup'
 import { resetPassword } from '../../api/auth'
 import { normalizeApiErrors } from '../../utils/formErrors'
 import { strongPassword } from '../../utils/passwordValidation'
+import { showToast } from '../../utils/toast'
 
 const validationSchema = Yup.object({
   email: Yup.string()
@@ -41,7 +42,9 @@ const AuthResetPassword = () => {
                 setStatus(null)
 
                 if (!token) {
-                  setStatus('This password reset link is invalid or incomplete.')
+                  const message = 'This password reset link is invalid or incomplete.'
+                  setStatus(message)
+                  showToast.error(message)
                   return
                 }
 
@@ -54,7 +57,9 @@ const AuthResetPassword = () => {
                   })
 
                   if (response.success) {
-                    setStatus(response.message || 'Password reset successful. You can now sign in.')
+                    const message = response.message || 'Password reset successful. You can now sign in.'
+                    setStatus(message)
+                    showToast.success(message)
                     resetForm({
                       values: {
                         email: values.email.trim(),
@@ -65,11 +70,14 @@ const AuthResetPassword = () => {
                     return
                   }
 
-                  setStatus(response.message || 'Unable to reset password.')
+                  const message = response.message || 'Unable to reset password.'
+                  setStatus(message)
+                  showToast.error(message)
                 } catch (error) {
                   const nextErrors = normalizeApiErrors(error, 'Unable to reset password.')
                   setErrors(nextErrors)
                   setStatus(nextErrors.general || null)
+                  showToast.error(nextErrors.general || 'Unable to reset password.')
                 }
               }}
               enableReinitialize

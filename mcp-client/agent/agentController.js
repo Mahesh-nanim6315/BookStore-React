@@ -214,6 +214,19 @@ function summarizeToolResult(toolResult) {
 }
 
 async function tryHandleDirectIntent(request) {
+  if (detectPlaceOrderIntent(request.message)) {
+    return handlePlaceOrderIntent(request);
+  }
+
+  if (detectCartIntent(request.message)) {
+    return handleCartIntent(request);
+  }
+
+  const ordersIntent = detectOrdersIntent(request.message);
+  if (ordersIntent) {
+    return handleOrdersIntent(request, ordersIntent.limit);
+  }
+
   const addToCartMatch = request.message.match(
     /\badd\b.*?\bbook(?:\s+id)?\s*(\d+)\b.*?\bcart\b|\bcart\b.*?\bbook(?:\s+id)?\s*(\d+)\b|\badd\b.*?\b(\d+)\b.*?\bcart\b/i,
   );
@@ -223,6 +236,11 @@ async function tryHandleDirectIntent(request) {
   );
 
   if (!Number.isFinite(bookId)) {
+    const searchIntent = detectSearchIntent(request.message);
+    if (searchIntent) {
+      return handleSearchIntent(request);
+    }
+
     return null;
   }
 
@@ -263,7 +281,7 @@ async function tryHandleDirectIntent(request) {
   }
 
   return {
-    answer: `Book ${bookId} has been added to your cart.`,
+    answer: formatAddToCartReply(toolResult, bookId),
     debug,
   };
 }
@@ -279,4 +297,369 @@ function extractToolError(toolResult) {
   } catch {
     return textContent;
   }
+}
+
+async function handleOrdersIntent(request, limit) {
+  if (!request.userId) {
+    return {
+      answer: "Please sign in first, then ask me to show your orders.",
+      debug: [],
+    };
+  }
+
+  const toolResult = await executeTool(
+    "getOrders",
+    { user_id: request.userId },
+    {
+      userId: request.userId,
+      userMessage: request.message,
+      accessToken: request.accessToken ?? null,
+    },
+  );
+
+  const debug = [
+    {
+      type: "tool",
+      tool: "getOrders",
+      input: toolResult.input,
+      isError: toolResult.isError,
+      preview: summarizeToolResult(toolResult),
+    },
+  ];
+
+  if (toolResult.isError) {
+    return {
+      answer:
+        extractToolError(toolResult) ||
+        "I couldn't fetch your orders right now. Please try again.",
+      debug,
+    };
+  }
+  return {
+    answer: formatOrdersReply(toolResult, limit),
+    debug,
+  };
+}
+
+async function handleSearchIntent(request) {
+  const rawQuery = deriveSearchQuery(request.message);
+  const maxPrice = deriveBudget(request.message);
+  const toolResult = await executeTool(
+    "searchBooks",
+    {
+      query: rawQuery,
+      ...(maxPrice != null ? { max_price: maxPrice } : {}),
+    },
+    {
+      userId: request.userId ?? null,
+      userMessage: request.message,
+      accessToken: request.accessToken ?? null,
+    },
+  );
+
+  const debug = [
+    {
+      type: "tool",
+      tool: "searchBooks",
+      input: toolResult.input,
+      isError: toolResult.isError,
+      preview: summarizeToolResult(toolResult),
+    },
+  ];
+
+  if (toolResult.isError) {
+    return {
+      answer:
+        extractToolError(toolResult) ||
+        "I couldn't search the catalog right now. Please try again.",
+      debug,
+    };
+  }
+  return {
+    answer: formatSearchReply(toolResult),
+    debug,
+  };
+}
+
+async function handleCartIntent(request) {
+  if (!request.userId) {
+    return {
+      answer: "Please sign in first, then ask me to show your cart.",
+      debug: [],
+    };
+  }
+
+  const toolResult = await executeTool(
+    "getCart",
+    { user_id: request.userId },
+    {
+      userId: request.userId,
+      userMessage: request.message,
+      accessToken: request.accessToken ?? null,
+    },
+  );
+
+  const debug = [
+    {
+      type: "tool",
+      tool: "getCart",
+      input: toolResult.input,
+      isError: toolResult.isError,
+      preview: summarizeToolResult(toolResult),
+    },
+  ];
+
+  if (toolResult.isError) {
+    return {
+      answer:
+        extractToolError(toolResult) ||
+        "I couldn't fetch your cart right now. Please try again.",
+      debug,
+    };
+  }
+
+  return {
+    answer: formatCartReply(toolResult),
+    debug,
+  };
+}
+
+async function handlePlaceOrderIntent(request) {
+  if (!request.userId) {
+    return {
+      answer: "Please sign in first, then ask me to place your order.",
+      debug: [],
+    };
+  }
+
+  const toolResult = await executeTool(
+    "placeOrder",
+    { user_id: request.userId },
+    {
+      userId: request.userId,
+      userMessage: request.message,
+      accessToken: request.accessToken ?? null,
+    },
+  );
+
+  const debug = [
+    {
+      type: "tool",
+      tool: "placeOrder",
+      input: toolResult.input,
+      isError: toolResult.isError,
+      preview: summarizeToolResult(toolResult),
+    },
+  ];
+
+  if (toolResult.isError) {
+    return {
+      answer:
+        extractToolError(toolResult) ||
+        "I couldn't place your order right now. Please try again.",
+      debug,
+    };
+  }
+
+  return {
+    answer: formatPlaceOrderReply(toolResult),
+    debug,
+  };
+}
+
+function detectOrdersIntent(message) {
+  const text = String(message ?? "").toLowerCase();
+  if (!/\border(s)?\b/.test(text)) {
+    return null;
+  }
+
+  const match = text.match(/\b(last|latest|recent)\s+(\d+)\s+orders?\b/);
+  const limit = match ? Number.parseInt(match[2], 10) : 5;
+  return {
+    limit: Number.isFinite(limit) && limit > 0 ? Math.min(limit, 10) : 5,
+  };
+}
+
+function detectCartIntent(message) {
+  const text = String(message ?? "").toLowerCase();
+  return /\b(cart)\b/.test(text) && /\b(show|get|view|what(?:'s| is)|see|check)\b/.test(text);
+}
+
+function detectPlaceOrderIntent(message) {
+  const text = String(message ?? "").toLowerCase();
+  return /\b(place|checkout|complete|submit)\b/.test(text) && /\b(order|cart)\b/.test(text);
+}
+
+function detectSearchIntent(message) {
+  const text = String(message ?? "").toLowerCase();
+  return (
+    /\b(book|books)\b/.test(text) &&
+    (/\b(find|search|show|list|recommend|suggest)\b/.test(text) ||
+      /\bunder\b/.test(text) ||
+      /\brupees\b|\binr\b|\brs\b/.test(text) ||
+      /\b(drama|fantasy|thriller|romance|horror|historical|science fiction|sci fi|sci-fi|mystery|technology|novel)\b/.test(text))
+  );
+}
+
+function deriveSearchQuery(message) {
+  return String(message ?? "")
+    .toLowerCase()
+    .replace(/\b(find|search|show|list|recommend|suggest|need|want|get|me|please|for|a|an|the|book|books|rupees|rs|inr)\b/g, " ")
+    .replace(/\b(under|below|less than|max|maximum)\s+\d+(?:\.\d+)?\b/g, " ")
+    .replace(/\b(rs|inr|rupees|\$)\s*\d+(?:\.\d+)?\b/g, " ")
+    .replace(/\b(all formats|all format|out of all formats|cheapest format|format|formats)\b/g, " ")
+    .replace(/[^\w\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim() || "books";
+}
+
+function deriveBudget(message) {
+  const match = String(message ?? "").match(
+    /\b(?:under|below|less than|max|maximum)\s*(?:rs\.?|inr|rupees)?\s*(\d+(?:\.\d+)?)/i,
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const value = Number.parseFloat(match[1]);
+  return Number.isFinite(value) ? value : null;
+}
+
+function describeCheapestFormat(prices) {
+  if (!prices || typeof prices !== "object") {
+    return null;
+  }
+
+  const formats = ["ebook", "audio", "paperback"]
+    .map((format) => ({
+      format,
+      price: Number(prices[format]),
+    }))
+    .filter((entry) => Number.isFinite(entry.price) && entry.price > 0)
+    .sort((left, right) => left.price - right.price);
+
+  if (!formats.length) {
+    const fallback = Number(prices.fallback);
+    return Number.isFinite(fallback) && fallback > 0 ? `paperback at INR ${fallback}` : null;
+  }
+
+  return `${formats[0].format} at INR ${formats[0].price}`;
+}
+
+function dedupeBooks(books) {
+  const seen = new Set();
+  return books.filter((book) => {
+    const key = String(book.name ?? book.id ?? "").toLowerCase();
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+}
+
+function formatAddToCartReply(toolResult, bookId) {
+  const data = toolResult.structuredContent ?? {};
+  const format = data.selected_format || "selected format";
+  const price = data.selected_price != null ? ` for INR ${data.selected_price}` : "";
+  return `Done. I added book #${bookId} to your cart as ${format}${price}.\n\nWould you like me to show your cart or place the order next?`;
+}
+
+function formatOrdersReply(toolResult, limit) {
+  const orders =
+    toolResult.structuredContent?.backend_response?.data?.orders ??
+    toolResult.structuredContent?.backend_response?.orders ??
+    [];
+  const recentOrders = orders.slice(0, limit);
+
+  if (!recentOrders.length) {
+    return "You don't have any orders yet.\n\nWould you like me to help you find a book to order?";
+  }
+
+  const lines = [
+    `Here are your latest ${recentOrders.length} orders:`,
+    "",
+    "| Order ID | Status | Payment | Items | Total |",
+    "| --- | --- | --- | --- | --- |",
+    ...recentOrders.map((order) => {
+      const total = order.total_amount ?? order.total ?? "n/a";
+      const items = order.items_count ?? order.items?.length ?? 0;
+      return `| #${order.id} | ${order.status ?? "unknown"} | ${order.payment_status ?? "unknown"} | ${items} | INR ${total} |`;
+    }),
+    "",
+    "Would you like the details for any specific order?",
+  ];
+
+  return lines.join("\n");
+}
+
+function formatSearchReply(toolResult) {
+  const data = toolResult.structuredContent ?? {};
+  const books = dedupeBooks(data.books ?? []);
+  if (!books.length) {
+    const genre = data.matched_category ? ` in ${data.matched_category}` : "";
+    const budget = data.max_price != null ? ` under INR ${data.max_price}` : "";
+    return `I couldn't find any matching books${genre}${budget}.\n\nWould you like me to try a broader genre or a slightly higher budget?`;
+  }
+
+  const lines = [
+    `I found ${books.length} good option${books.length === 1 ? "" : "s"} for you:`,
+    "",
+    "| Title | Author | Category | Cheapest Format |",
+    "| --- | --- | --- | --- |",
+    ...books.slice(0, 5).map((book) => {
+      return `| ${book.name} | ${book.author || "Unknown author"} | ${book.category || "Uncategorized"} | ${describeCheapestFormat(book.prices) || "n/a"} |`;
+    }),
+    "",
+    "Would you like me to add one of these to your cart or refine the search further?",
+  ];
+
+  return lines.join("\n");
+}
+
+function formatCartReply(toolResult) {
+  const cart =
+    toolResult.structuredContent?.backend_response?.data?.cart ??
+    toolResult.structuredContent?.backend_response?.cart ??
+    toolResult.structuredContent?.backend_response?.data ??
+    null;
+  const items = cart?.items ?? [];
+
+  if (!items.length) {
+    return "Your cart is empty right now.\n\nWould you like me to help you find a book to add?";
+  }
+
+  const total = cart?.total ?? cart?.total_amount ?? cart?.grand_total ?? null;
+  const lines = [
+    "Here’s what’s currently in your cart:",
+    "",
+    "| Title | Format | Quantity | Price |",
+    "| --- | --- | --- | --- |",
+    ...items.map((item) => {
+      const title = item.book?.name || item.name || `Book #${item.book_id ?? "n/a"}`;
+      return `| ${title} | ${item.format || "n/a"} | ${item.quantity ?? 1} | INR ${item.price ?? "n/a"} |`;
+    }),
+  ];
+
+  if (total != null) {
+    lines.push("", `Estimated total: INR ${total}`);
+  }
+
+  lines.push("", "Would you like me to place this order for you?");
+  return lines.join("\n");
+}
+
+function formatPlaceOrderReply(toolResult) {
+  const payload =
+    toolResult.structuredContent?.backend_response?.data?.order ??
+    toolResult.structuredContent?.backend_response?.order ??
+    null;
+  const orderId = payload?.id ?? "your";
+  const total = payload?.total_amount ?? payload?.total ?? null;
+  const status = payload?.status ?? "completed";
+  const totalLine = total != null ? ` The total is INR ${total}.` : "";
+
+  return `Your order ${orderId === "your" ? "has been placed" : `#${orderId} has been placed`} successfully. Current status: ${status}.${totalLine}\n\nWould you like me to show your latest orders too?`;
 }

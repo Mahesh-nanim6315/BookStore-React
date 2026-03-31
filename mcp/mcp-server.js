@@ -20,6 +20,7 @@ const API_TIMEOUT_MS = parsePositiveInteger(
 
 const requestContext = new AsyncLocalStorage();
 const authenticatedUserPromises = new Map();
+let categoryCatalogPromise = null;
 
 const http = axios.create({
   baseURL: API_BASE_URL,
@@ -560,13 +561,27 @@ defineTool(
 );
 
 async function searchBooks(query, maxPrice) {
+  const { category, residualQuery } = await resolveCategoryFilter(query);
+  const params = {
+    sort: "price_asc",
+  };
+
+  if (category?.id) {
+    params.category_id = category.id;
+  }
+
+  if (residualQuery) {
+    params.search = residualQuery;
+  }
+
+  if (!params.search && !params.category_id) {
+    params.search = query;
+  }
+
   const response = await apiRequest({
     method: "get",
     url: "/products",
-    params: {
-      search: query,
-      sort: "price_asc",
-    },
+    params,
   });
 
   const books = extractBooksCollection(response.data);
@@ -577,6 +592,7 @@ async function searchBooks(query, maxPrice) {
 
   return {
     query,
+    matched_category: category?.name ?? null,
     max_price: maxPrice ?? null,
     total_matches: normalizedBooks.length,
     shown_matches: topMatches.length,
@@ -873,6 +889,81 @@ function truncateText(value, maxLength) {
   }
 
   return text.length <= maxLength ? text : `${text.slice(0, maxLength - 3)}...`;
+}
+
+async function resolveCategoryFilter(query) {
+  const normalizedQuery = String(query ?? "").trim().toLowerCase();
+  if (!normalizedQuery) {
+    return { category: null, residualQuery: "" };
+  }
+
+  const categories = await getCategoryCatalog();
+  const aliases = [
+    ["science fiction", "sci-fi"],
+    ["sci fi", "sci-fi"],
+    ["scifi", "sci-fi"],
+    ["sci-fi", "sci-fi"],
+    ["drama", "drama"],
+    ["fantasy", "fantasy"],
+    ["thriller", "thriller"],
+    ["romance", "romance"],
+    ["horror", "horror"],
+    ["historical", "historical"],
+    ["family", "family"],
+    ["humor", "humor"],
+    ["social", "social"],
+    ["novel", "novel"],
+    ["technology", "technology"],
+    ["science", "science"],
+    ["biography", "biography"],
+    ["business", "business"],
+    ["mystery", "mystery"],
+  ];
+
+  for (const [phrase, slug] of aliases) {
+    if (!normalizedQuery.includes(phrase)) {
+      continue;
+    }
+
+    const category = categories.find(
+      (item) =>
+        item.slug?.toLowerCase() === slug || item.name?.toLowerCase() === phrase,
+    );
+
+    if (!category) {
+      continue;
+    }
+
+    const residualQuery = normalizedQuery
+      .replace(phrase, " ")
+      .replace(/\b(book|books|title|titles|format|formats|cheapest|cheap|under|below|less|than|rupees|rs|inr|all|of|out)\b/g, " ")
+      .replace(/\d+(?:\.\d+)?/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    return { category, residualQuery };
+  }
+
+  return { category: null, residualQuery: normalizedQuery };
+}
+
+async function getCategoryCatalog() {
+  if (!categoryCatalogPromise) {
+    categoryCatalogPromise = apiRequest({
+      method: "get",
+      url: "/products",
+      params: {
+        sort: "price_asc",
+      },
+    })
+      .then((response) => response.data?.data?.filters?.categories ?? [])
+      .catch((error) => {
+        categoryCatalogPromise = null;
+        throw error;
+      });
+  }
+
+  return categoryCatalogPromise;
 }
 
 function getApiToken(apiTokenOverride = null) {

@@ -162,9 +162,15 @@
   line-height: 1.65;
 }
 
-.assistant-message__bubble p {
+.assistant-message__content {
   margin: 0;
   white-space: pre-wrap;
+  word-break: break-word;
+  color: white;
+}
+
+.assistant-message__content--user {
+  color: rgb(33, 8, 8);
 }
 
 .assistant-message--user .assistant-message__bubble {
@@ -320,9 +326,4 @@
   .assistant-shell {
     padding-top: 2rem;
   }
-}
-
-
-#back{
-  color: white;
 }

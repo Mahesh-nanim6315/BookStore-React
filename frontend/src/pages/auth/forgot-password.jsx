@@ -4,6 +4,7 @@ import { Formik } from 'formik'
 import * as Yup from 'yup'
 import { forgotPassword } from '../../api/auth'
 import { normalizeApiErrors } from '../../utils/formErrors'
+import { showToast } from '../../utils/toast'
 
 const validationSchema = Yup.object({
   email: Yup.string()
@@ -34,16 +35,21 @@ const AuthForgotPassword = () => {
                   const response = await forgotPassword(values.email.trim().toLowerCase())
 
                   if (response.success) {
-                    setSuccessMessage(response.message || 'Password reset link sent to your email.')
+                    const message = response.message || 'Password reset link sent to your email.'
+                    setSuccessMessage(message)
+                    showToast.success(message)
                     resetForm()
                     return
                   }
 
-                  setStatus(response.message || 'Unable to send reset link.')
+                  const message = response.message || 'Unable to send reset link.'
+                  setStatus(message)
+                  showToast.error(message)
                 } catch (error) {
                   const nextErrors = normalizeApiErrors(error, 'Unable to send reset link.')
                   setErrors(nextErrors)
                   setStatus(nextErrors.general || null)
+                  showToast.error(nextErrors.general || 'Unable to send reset link.')
                 }
               }}
             >
