@@ -3,6 +3,7 @@ import { getAssistantHealth, sendAssistantMessage } from '../../api/assistant'
 import { useAuth } from '../../contexts/AuthContext'
 import ChatMessage from '../../components/chat/ChatMessage'
 import DebugPanel from '../../components/chat/DebugPanel'
+import { getStoredToken } from '../../utils/authStorage'
 
 const createSessionId = () => {
   if (window.crypto?.randomUUID) {
@@ -93,7 +94,7 @@ const AssistantPage = () => {
         sessionId,
         message: text,
         userId: user?.id ?? null,
-        accessToken: localStorage.getItem('auth_token') || null,
+        accessToken: getStoredToken() || null,
       })
 
       if (!response.success) {

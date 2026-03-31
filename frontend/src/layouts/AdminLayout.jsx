@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify'
 import AdminNavbar from '../components/admin/AdminNavbar'
 import AdminSidebar from '../components/admin/AdminSidebar'
 import { getDashboardInfo } from '../api/auth'
+import { getStoredUser, updateStoredUser } from '../utils/authStorage'
 import '../styles/admin.css'
 
 const AdminLayout = () => {
@@ -16,15 +17,15 @@ const AdminLayout = () => {
         const response = await getDashboardInfo()
         if (response.success) {
           setUser(response.data.user)
-          localStorage.setItem('user', JSON.stringify(response.data.user))
+          updateStoredUser(response.data.user)
         }
       } catch (error) {
         console.error('Failed to load user info:', error)
       }
     }
 
-    // Try to get user from localStorage first
-    const userData = localStorage.getItem('user')
+    // Try to get user from auth storage first
+    const userData = getStoredUser()
     if (userData) {
       setUser(JSON.parse(userData))
     }

@@ -5108,6 +5108,32 @@ hr {
     background-color: #fff;
 }
 
+.password-field {
+    position: relative;
+}
+
+.password-field input {
+    padding-right: 4.75rem;
+}
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 0.75rem;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    color: #2563eb;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+}
+
+.password-toggle:hover {
+    color: #1d4ed8;
+}
+
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group select:focus {

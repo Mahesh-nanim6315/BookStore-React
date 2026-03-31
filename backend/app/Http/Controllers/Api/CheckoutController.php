@@ -94,25 +94,17 @@ class CheckoutController extends Controller
             $addressId = null;
 
             if ($cart->items->contains('format', 'paperback')) {
-                $request->validate([
-                    'full_name' => 'required|string|max:255',
-                    'phone' => 'required|string|max:20',
-                    'address_line' => 'required|string',
-                    'city' => 'required|string|max:100',
-                    'state' => 'required|string|max:100',
-                    'pincode' => 'required|string|max:10',
-                    'country' => 'sometimes|string|max:100'
-                ]);
+                $validatedAddress = $this->validateAddress($request);
 
                 $address = Address::create([
                     'user_id' => $user->id,
-                    'full_name' => $request->full_name,
-                    'phone' => $request->phone,
-                    'address_line' => $request->address_line,
-                    'city' => $request->city,
-                    'state' => $request->state,
-                    'pincode' => $request->pincode,
-                    'country' => $request->country ?? 'India',
+                    'full_name' => $validatedAddress['full_name'],
+                    'phone' => $validatedAddress['phone'],
+                    'address_line' => $validatedAddress['address_line'],
+                    'city' => $validatedAddress['city'],
+                    'state' => $validatedAddress['state'],
+                    'pincode' => $validatedAddress['pincode'],
+                    'country' => $validatedAddress['country'],
                 ]);
 
                 $addressId = $address->id;
@@ -316,25 +308,17 @@ class CheckoutController extends Controller
             ], 403);
         }
 
-        $request->validate([
-            'full_name' => 'required|string|max:255',
-            'phone' => 'required|string|max:20',
-            'address_line' => 'required|string',
-            'city' => 'required|string|max:100',
-            'state' => 'required|string|max:100',
-            'pincode' => 'required|string|max:10',
-            'country' => 'sometimes|string|max:100'
-        ]);
+        $validatedAddress = $this->validateAddress($request);
 
         $address = Address::create([
             'user_id' => Auth::id(),
-            'full_name' => $request->full_name,
-            'phone' => $request->phone,
-            'address_line' => $request->address_line,
-            'city' => $request->city,
-            'state' => $request->state,
-            'pincode' => $request->pincode,
-            'country' => $request->country ?? 'India',
+            'full_name' => $validatedAddress['full_name'],
+            'phone' => $validatedAddress['phone'],
+            'address_line' => $validatedAddress['address_line'],
+            'city' => $validatedAddress['city'],
+            'state' => $validatedAddress['state'],
+            'pincode' => $validatedAddress['pincode'],
+            'country' => $validatedAddress['country'],
         ]);
 
         $order->update([
@@ -426,5 +410,34 @@ class CheckoutController extends Controller
         }
 
         return (float) $book->paperback_price;
+    }
+
+    private function validateAddress(Request $request): array
+    {
+        $request->merge([
+            'full_name' => trim((string) $request->input('full_name')),
+            'phone' => trim((string) $request->input('phone')),
+            'address_line' => trim((string) $request->input('address_line')),
+            'city' => trim((string) $request->input('city')),
+            'state' => trim((string) $request->input('state')),
+            'pincode' => trim((string) $request->input('pincode')),
+            'country' => trim((string) ($request->input('country') ?: 'India')),
+        ]);
+
+        return $request->validate([
+            'full_name' => ['required', 'string', 'min:2', 'max:255'],
+            'phone' => ['required', 'string', 'regex:/^[6-9][0-9]{9}$/'],
+            'address_line' => ['required', 'string', 'min:8', 'max:500'],
+            'city' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[\pL\s.\'-]+$/u'],
+            'state' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[\pL\s.\'-]+$/u'],
+            'pincode' => ['required', 'string', 'regex:/^[1-9][0-9]{5}$/'],
+            'country' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[\pL\s.\'-]+$/u'],
+        ], [
+            'phone.regex' => 'Phone number must be a valid 10-digit Indian mobile number.',
+            'city.regex' => 'City may contain only letters, spaces, apostrophes, periods, and hyphens.',
+            'state.regex' => 'State may contain only letters, spaces, apostrophes, periods, and hyphens.',
+            'pincode.regex' => 'Pincode must be a valid 6-digit Indian PIN code.',
+            'country.regex' => 'Country may contain only letters, spaces, apostrophes, periods, and hyphens.',
+        ]);
     }
 }

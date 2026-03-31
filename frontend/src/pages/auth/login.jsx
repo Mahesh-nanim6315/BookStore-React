@@ -15,6 +15,7 @@ const validationSchema = Yup.object({
 
 const AuthLogin = () => {
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
   const { login, isAuthenticated, loading: authLoading, user } = useAuth()
 
@@ -104,16 +105,27 @@ const AuthLogin = () => {
 
                   <div className="form-group">
                     <label htmlFor="password">Password</label>
-                    <input
-                      id="password"
-                      type="password"
-                      name="password"
-                      value={values.password}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      autoComplete="current-password"
-                      className={touched.password && errors.password ? 'error' : ''}
-                    />
+                    <div className="password-field">
+                      <input
+                        id="password"
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        value={values.password}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        autoComplete="current-password"
+                        className={touched.password && errors.password ? 'error' : ''}
+                      />
+                      <button
+                        type="button"
+                        className="password-toggle"
+                        onClick={() => setShowPassword((current) => !current)}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        aria-pressed={showPassword}
+                      >
+                        {showPassword ? 'Hide' : 'Show'}
+                      </button>
+                    </div>
                     {touched.password && errors.password && <small className="error">{errors.password}</small>}
                   </div>
 

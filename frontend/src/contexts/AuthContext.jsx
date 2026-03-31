@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { login as loginApi, register as registerApi, logout as logoutApi, getUser } from '../api/auth'
 import { normalizeApiErrors } from '../utils/formErrors'
+import { clearAuthSession, getStoredToken, setAuthSession, updateStoredUser } from '../utils/authStorage'
 
 const AuthContext = createContext()
 
@@ -18,7 +19,7 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token')
+    const token = getStoredToken()
     if (token) {
       loadUser()
     } else {
@@ -33,12 +34,11 @@ export const AuthProvider = ({ children }) => {
         const currentUser = response.user || response.data
         setUser(currentUser)
         setIsAuthenticated(true)
-        localStorage.setItem('user', JSON.stringify(currentUser))
+        updateStoredUser(currentUser)
       }
     } catch (error) {
         console.error('Failed to load user:', error)
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('user')
+      clearAuthSession()
     } finally {
       setLoading(false)
     }
@@ -49,8 +49,11 @@ export const AuthProvider = ({ children }) => {
       const response = await loginApi(credentials)
       
       if (response.success) {
-        localStorage.setItem('auth_token', response.token)
-        localStorage.setItem('user', JSON.stringify(response.user))
+        setAuthSession({
+          token: response.token,
+          user: response.user,
+          persist: Boolean(credentials.remember),
+        })
         setUser(response.user)
         setIsAuthenticated(true)
         return { success: true, user: response.user }
@@ -68,8 +71,11 @@ export const AuthProvider = ({ children }) => {
       const response = await registerApi(userData)
 
       if (response.success) {
-        localStorage.setItem('auth_token', response.token)
-        localStorage.setItem('user', JSON.stringify(response.user))
+        setAuthSession({
+          token: response.token,
+          user: response.user,
+          persist: true,
+        })
         setUser(response.user)
         setIsAuthenticated(true)
         return { success: true, user: response.user }
@@ -88,8 +94,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout API failed:', error)
     } finally {
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('user')
+      clearAuthSession()
       setUser(null)
       setIsAuthenticated(false)
     }
@@ -97,7 +102,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateUser = (userData) => {
     setUser(userData)
-    localStorage.setItem('user', JSON.stringify(userData))
+    updateStoredUser(userData)
   }
 
   const value = {

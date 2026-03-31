@@ -212,6 +212,14 @@ class BookControllers extends Controller
     {
         $errors = [];
 
+        if (
+            ! $request->boolean('has_ebook')
+            && ! $request->boolean('has_audio')
+            && ! $request->boolean('has_paperback')
+        ) {
+            $errors['formats'] = ['Enable at least one format before saving a book.'];
+        }
+
         if ($request->boolean('has_ebook')) {
             if ($this->isBlank($request->input('ebook_price'))) {
                 $errors['ebook_price'] = ['eBook price is required when eBook is enabled.'];

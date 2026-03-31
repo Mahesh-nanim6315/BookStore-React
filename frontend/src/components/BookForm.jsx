@@ -59,6 +59,10 @@ const validationSchema = Yup.object({
 
     const makeError = (path, message) => new Yup.ValidationError(message, values[path], path)
 
+    if (!values.has_ebook && !values.has_audio && !values.has_paperback) {
+      return makeError('formats', 'Enable at least one format before saving a book.')
+    }
+
     if (values.has_ebook) {
       if (values.ebook_price === '' || values.ebook_price === undefined || values.ebook_price === null) {
         return makeError('ebook_price', 'eBook price is required when eBook is enabled.')
@@ -239,6 +243,7 @@ const BookForm = ({
                     <span>Paperback</span>
                   </label>
                 </div>
+                {errors.formats && <small className="error">{errors.formats}</small>}
               </section>
 
               <section className="book-form-card">
