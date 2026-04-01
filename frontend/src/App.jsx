@@ -61,6 +61,7 @@ import AdminReviewsIndex from './pages/admin/reviews/index.jsx'
 import AdminNotificationsIndex from './pages/admin/notifications/index.jsx'
 import AdminRolesIndex from './pages/admin/roles_permissions/index.jsx'
 import AdminSettingsIndex from './pages/admin/settings/index.jsx'
+import AdminSubscriptionsIndex from './pages/admin/subscriptions/index.jsx'
 
 import BooksIndex from './pages/admin/books/BooksIndex.jsx'
 import BookCreate from './pages/admin/books/BookCreate.jsx'
@@ -178,6 +179,7 @@ const App = () => {
             <Route path="authors/:id" element={<ProtectedRoute requiredPermission="authors.view"><AdminAuthorsShow /></ProtectedRoute>} />
             <Route path="authors/:id/edit" element={<ProtectedRoute requiredPermission="authors.edit"><AdminAuthorsEdit /></ProtectedRoute>} />
             <Route path="reviews" element={<ProtectedRoute requiredPermission="manage_reviews"><AdminReviewsIndex /></ProtectedRoute>} />
+            <Route path="subscription" element={<ProtectedRoute requiredPermission="access_dashboard"><AdminSubscriptionsIndex /></ProtectedRoute>} />
             <Route path="users" element={<ProtectedRoute requiredPermission="users.view"><AdminUsersIndex /></ProtectedRoute>} />
             <Route path="users/create" element={<ProtectedRoute requiredPermission="users.create"><AdminUsersCreate /></ProtectedRoute>} />
             <Route path="users/:id" element={<ProtectedRoute requiredPermission="users.view"><AdminUsersShow /></ProtectedRoute>} />

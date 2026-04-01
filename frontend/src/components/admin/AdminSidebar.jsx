@@ -99,6 +99,16 @@ const AdminSidebar = ({ user, mobileOpen, setMobileOpen }) => {
                 </Link>
               </li>
             )}
+            {canAccessDashboard && (
+              <li className={isActive('/dashboard/subscription') ? 'active' : ''}>
+                <Link to="/dashboard/subscription">
+                  <span className="icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M12 2l7 4v6c0 5-3.2 8.6-7 10-3.8-1.4-7-5-7-10V6l7-4zm0 4.3L8 8.6V12c0 3.4 1.9 6 4 7.2 2.1-1.2 4-3.8 4-7.2V8.6l-4-2.3zM11 9h2v3h3v2h-3v3h-2v-3H8v-2h3V9z"></path></svg>
+                  </span>
+                  <span className="text">Subscriptions</span>
+                </Link>
+              </li>
+            )}
             {canManageOrders && (
               <li className={isActive('/dashboard/orders') ? 'active' : ''}>
                 <Link to="/dashboard/orders">

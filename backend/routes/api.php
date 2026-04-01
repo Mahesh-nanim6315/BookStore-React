@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Admin\OrderControllers as AdminOrderController;
 use App\Http\Controllers\Api\Admin\ReviewControllers as AdminReviewController;
 use App\Http\Controllers\Api\Admin\RolePermissionController;
 use App\Http\Controllers\Api\Admin\SettingsController as AdminSettingsController;
+use App\Http\Controllers\Api\Admin\SubscriptionController as AdminSubscriptionController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\AuthorController;
 use App\Http\Controllers\Api\AuthController;
@@ -253,6 +254,14 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'maintenance'])->group(fu
         Route::delete('/{review}', [AdminReviewController::class, 'destroy'])->middleware('permission:manage_reviews');
         Route::patch('/{review}/approve', [AdminReviewController::class, 'approve'])
             ->middleware('permission:manage_reviews');
+    });
+
+    // Subscriptions
+    Route::prefix('subscriptions')->group(function () {
+        Route::get('/', [AdminSubscriptionController::class, 'index'])->middleware('permission:access_dashboard');
+        Route::post('/{user}/cancel', [AdminSubscriptionController::class, 'cancel'])->middleware('permission:access_dashboard');
+        Route::post('/{user}/resume', [AdminSubscriptionController::class, 'resume'])->middleware('permission:access_dashboard');
+        Route::delete('/{user}', [AdminSubscriptionController::class, 'destroy'])->middleware('permission:access_dashboard');
     });
 
     // Roles and permissions

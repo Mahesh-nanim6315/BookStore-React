@@ -25,6 +25,39 @@ class SubscriptionController extends Controller
         return '/' . ltrim($path, '/');
     }
 
+    private function resolveRedirectPath(?string $path, string $fallback = '/plans'): string
+    {
+        if (! is_string($path) || $path === '') {
+            return $this->frontendPath($fallback);
+        }
+
+        $normalized = '/' . ltrim($path, '/');
+
+        if (
+            str_starts_with($normalized, '//') ||
+            str_contains($normalized, '://') ||
+            ! str_starts_with($normalized, '/')
+        ) {
+            return $this->frontendPath($fallback);
+        }
+
+        return $normalized;
+    }
+
+    private function appendQueryToPath(string $path, array $query): string
+    {
+        $separator = str_contains($path, '?') ? '&' : '?';
+
+        $queryString = http_build_query($query);
+        $queryString = str_replace(
+            rawurlencode('{CHECKOUT_SESSION_ID}'),
+            '{CHECKOUT_SESSION_ID}',
+            $queryString
+        );
+
+        return $path . $separator . $queryString;
+    }
+
     public function index()
     {
         $plans = [
@@ -82,11 +115,13 @@ class SubscriptionController extends Controller
         $data = $request->validate([
             'plan' => 'required|in:free,premium,ultimate',
             'billing_cycle' => 'required|in:monthly,yearly',
+            'redirect_path' => 'nullable|string|max:255',
         ]);
 
         $user = Auth::user();
         $plan = $data['plan'];
         $billing = $data['billing_cycle'];
+        $redirectPath = $this->resolveRedirectPath($data['redirect_path'] ?? '/plans');
 
         // If subscriptions are disabled, block any non-free plan changes.
         if (! (bool) Setting::get('subscriptions_enabled', 1) && $plan !== 'free') {
@@ -114,7 +149,7 @@ class SubscriptionController extends Controller
                 'success' => true,
                 'message' => 'Downgraded to Free plan successfully.',
                 'data' => [
-                    'redirect' => $this->frontendPath('/profile')
+                    'redirect' => $redirectPath
                 ]
             ]);
         }
@@ -142,7 +177,7 @@ class SubscriptionController extends Controller
                 'success' => true,
                 'message' => 'Subscription updated successfully.',
                 'data' => [
-                    'redirect' => $this->frontendPath('/profile')
+                    'redirect' => $redirectPath
                 ]
             ]);
         }
@@ -150,8 +185,15 @@ class SubscriptionController extends Controller
         $checkout = $user->newSubscription('default', $priceId)
             ->trialDays($trialDays)
             ->checkout([
-                'success_url' => $this->frontendUrl("/plans?subscription=success&plan={$plan}&billing={$billing}&session_id={CHECKOUT_SESSION_ID}"),
-                'cancel_url' => $this->frontendUrl('/plans?subscription=cancelled'),
+                'success_url' => $this->frontendUrl($this->appendQueryToPath($redirectPath, [
+                    'subscription' => 'success',
+                    'plan' => $plan,
+                    'billing' => $billing,
+                    'session_id' => '{CHECKOUT_SESSION_ID}',
+                ])),
+                'cancel_url' => $this->frontendUrl($this->appendQueryToPath($redirectPath, [
+                    'subscription' => 'cancelled',
+                ])),
             ]);
 
         return response()->json([

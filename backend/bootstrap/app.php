@@ -6,6 +6,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -28,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->api(append: [
+            \App\Http\Middleware\ApiRequestLogger::class,
             // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
 
@@ -44,6 +46,23 @@ return Application::configure(basePath: dirname(__DIR__))
             'password',
             'password_confirmation',
         ]);
+
+        $exceptions->reportable(function (\Throwable $exception) {
+            $request = request();
+
+            if (! $request || ! ($request->expectsJson() || $request->is('api/*') || $request->is('v1/*'))) {
+                return;
+            }
+
+            Log::channel('api')->error('Unhandled API exception', [
+                'method' => $request->method(),
+                'path' => $request->path(),
+                'ip' => $request->ip(),
+                'user_id' => $request->user()?->id,
+                'message' => $exception->getMessage(),
+                'exception' => $exception::class,
+            ]);
+        });
 
         $exceptions->shouldRenderJsonWhen(function (Request $request, \Throwable $exception) {
             return $request->expectsJson() || $request->is('api/*') || $request->is('v1/*');

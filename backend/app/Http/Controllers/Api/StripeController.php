@@ -60,31 +60,23 @@ class StripeController extends Controller
             'quantity' => 1,
         ]];
 
-        try {
-            $session = Session::create([
-                'payment_method_types' => ['card'],
-                'line_items' => $lineItems,
-                'mode' => 'payment',
-                'success_url' => $this->frontendUrl('/checkout/success?provider=stripe&order=' . $order->id . '&session_id={CHECKOUT_SESSION_ID}'),
-                'cancel_url' => $this->frontendUrl('/checkout/payment?order=' . $order->id . '&cancelled=1'),
-            ]);
+        $session = Session::create([
+            'payment_method_types' => ['card'],
+            'line_items' => $lineItems,
+            'mode' => 'payment',
+            'success_url' => $this->frontendUrl('/checkout/success?provider=stripe&order=' . $order->id . '&session_id={CHECKOUT_SESSION_ID}'),
+            'cancel_url' => $this->frontendUrl('/checkout/payment?order=' . $order->id . '&cancelled=1'),
+        ]);
 
-            Log::info('Stripe session created: ' . $session->id);
+        Log::info('Stripe session created: ' . $session->id);
 
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'checkout_url' => $session->url,
-                    'session_id' => $session->id
-                ]
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Stripe session creation failed: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create Stripe session: ' . $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'checkout_url' => $session->url,
+                'session_id' => $session->id
+            ]
+        ]);
     }
 
     public function success(Request $request, Order $order)
