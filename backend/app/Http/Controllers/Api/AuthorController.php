@@ -17,9 +17,10 @@ class AuthorController extends Controller
                 'success' => true,
                 'data' => $authors
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('AuthorController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading authors.'
             ], 500);
@@ -35,9 +36,10 @@ class AuthorController extends Controller
                 'success' => true,
                 'data' => $author
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('AuthorController.show: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading author details.'
             ], 500);

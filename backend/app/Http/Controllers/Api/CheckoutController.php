@@ -74,9 +74,10 @@ class CheckoutController extends Controller
                     'coupon_code' => $couponCode
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('CheckoutController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading checkout.'
             ], 500);
@@ -163,9 +164,10 @@ class CheckoutController extends Controller
                     'redirect' => $this->frontendPath('/checkout/payment')
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('CheckoutController.process: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while processing checkout.'
             ], 500);
@@ -196,9 +198,10 @@ class CheckoutController extends Controller
                     'order' => $order
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('CheckoutController.paymentPage: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading payment page.'
             ], 500);
@@ -263,9 +266,10 @@ class CheckoutController extends Controller
             Log::info('Payment response: ' . json_encode($response));
 
             return response()->json($response);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('CheckoutController.processPayment: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while processing payment.'
             ], 500);
@@ -305,9 +309,10 @@ class CheckoutController extends Controller
                         'redirect' => $this->frontendPath('/checkout')
                     ]
                 ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('CheckoutController.buyNow: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while creating buy now order.'
             ], 500);
@@ -338,9 +343,10 @@ class CheckoutController extends Controller
                     'order' => $order
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('CheckoutController.addressBuyNow: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading buy now address page.'
             ], 500);
@@ -383,9 +389,10 @@ class CheckoutController extends Controller
                     'redirect' => $this->frontendPath('/checkout/payment')
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('CheckoutController.storeBuyNowAddress: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while saving address.'
             ], 500);
@@ -410,9 +417,10 @@ class CheckoutController extends Controller
                     'order' => $order
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('CheckoutController.success: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading success page.'
             ], 500);

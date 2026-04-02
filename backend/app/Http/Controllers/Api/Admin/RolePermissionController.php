@@ -56,9 +56,10 @@ class RolePermissionController extends Controller
                     'default_permissions' => $defaultPermissions
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('RolePermissionController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading roles and permissions.'
             ], 500);
@@ -125,9 +126,10 @@ class RolePermissionController extends Controller
                     'role_permissions' => $updatedRolePermissions
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('RolePermissionController.update: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while updating roles and permissions.'
             ], 500);

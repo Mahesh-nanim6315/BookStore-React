@@ -18,9 +18,10 @@ class NotificationController extends Controller
                 'success' => true,
                 'data' => $notifications,
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('NotificationController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading notifications.'
             ], 500);
@@ -42,9 +43,10 @@ class NotificationController extends Controller
                 'success' => true,
                 'message' => 'Notification marked as read.',
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('NotificationController.markAsRead: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while marking notification as read.'
             ], 500);

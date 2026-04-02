@@ -35,9 +35,10 @@ class ReviewControllers extends Controller
                 'success' => true,
                 'data' => $reviews
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('ReviewControllers.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading reviews.'
             ], 500);
@@ -58,9 +59,10 @@ class ReviewControllers extends Controller
                     'review' => $review->fresh(['user', 'book'])
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('ReviewControllers.approve: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while updating review status.'
             ], 500);
@@ -76,9 +78,10 @@ class ReviewControllers extends Controller
                 'success' => true,
                 'message' => 'Review deleted'
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('ReviewControllers.destroy: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while deleting the review.'
             ], 500);

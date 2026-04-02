@@ -24,8 +24,8 @@ class VerifyEmailController extends Controller
             }
 
             return redirect()->intended(route('dashboard', absolute: false).'?verified=1');
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('VerifyEmailController.__invoke: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
             return redirect()->route('dashboard')->withErrors(['error' => 'An error occurred while verifying your email.']);
         }
     }

@@ -36,9 +36,8 @@ class StripeController extends Controller
             // Debug: Log the order status
             Log::info('Stripe checkout called for order: ' . $order->id . ' with status: ' . $order->status);
 
-            // Validate that the order exists and is pending
+            // Validate that the order is pending before checkout.
             if ($order->status !== 'pending') {
-                Log::error('Order not pending: ' . $order->status);
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid order or order already processed. Status: ' . $order->status
@@ -79,12 +78,8 @@ class StripeController extends Controller
                 ]
             ]);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('StripeController.checkout failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-            
+            $this->logRequestErrorAuto($e);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
@@ -165,12 +160,8 @@ class StripeController extends Controller
                 ]
             ]);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('StripeController.success failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-            
+            $this->logRequestErrorAuto($e);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
@@ -186,12 +177,8 @@ class StripeController extends Controller
                 'message' => 'Payment cancelled',
             ], 422);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('StripeController.cancel failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-            
+            $this->logRequestErrorAuto($e);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',

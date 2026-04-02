@@ -27,9 +27,10 @@ class UserController extends Controller
                 'success' => true,
                 'data' => $users
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('UserController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading users.'
             ], 500);
@@ -46,9 +47,10 @@ class UserController extends Controller
                     'available_roles' => ['user', 'admin', 'manager', 'staff']
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('UserController.create: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading create form.'
             ], 500);
@@ -57,31 +59,58 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
+        $this->logRequestStart($request, 'store');
+
+        $user = null;
+
         try {
-            $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|max:255|unique:users,email',
-                'password' => ['required', 'confirmed', PasswordRule::defaults()],
-                'password_confirmation' => 'required',
-                'role' => 'required|in:user,admin,manager,staff',
+            [$result, $executionTime] = $this->measureExecutionTime(function () use ($request, &$user) {
+                $request->validate([
+                    'name' => 'required|string|max:255',
+                    'email' => 'required|email|max:255|unique:users,email',
+                    'password' => ['required', 'confirmed', PasswordRule::defaults()],
+                    'password_confirmation' => 'required',
+                    'role' => 'required|in:user,admin,manager,staff',
+                ]);
+
+                $user = User::create([
+                    'name' => trim((string) $request->name),
+                    'email' => Str::lower(trim((string) $request->email)),
+                    'password' => Hash::make($request->password),
+                    'role' => $request->role,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'User created successfully',
+                    'data' => [
+                        'user' => $user
+                    ]
+                ]);
+            });
+
+            $this->logRequestSuccess('store', [
+                'user_id' => $user?->id,
+                'user_email' => $user?->email,
+                'user_role' => $user?->role,
+                'created_by' => auth()->id()
+            ], $executionTime);
+
+            $this->logBusinessOperation('Admin user created', [
+                'user_id' => $user?->id,
+                'user_email' => $user?->email,
+                'user_role' => $user?->role,
+                'created_by' => auth()->id()
             ]);
 
-            $user = User::create([
-                'name' => trim((string) $request->name),
-                'email' => Str::lower(trim((string) $request->email)),
-                'password' => Hash::make($request->password),
-                'role' => $request->role,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'User created successfully',
-                'data' => [
-                    'user' => $user
-                ]
-            ]);
+            return $result;
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('UserController.store: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            $this->logRequestError('store', $e, [
+                'email_attempted' => $request->email ?? null,
+                'role_attempted' => $request->role ?? null,
+                'created_by' => auth()->id()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while creating the user.'
@@ -99,9 +128,10 @@ class UserController extends Controller
                     'available_roles' => ['user', 'admin', 'manager', 'staff']
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('UserController.edit: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading edit form.'
             ], 500);
@@ -117,9 +147,10 @@ class UserController extends Controller
                     'user' => $user
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('UserController.show: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading the user.'
             ], 500);
@@ -152,9 +183,10 @@ class UserController extends Controller
                     'user' => $user->fresh()
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('UserController.update: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while updating the user.'
             ], 500);
@@ -170,9 +202,10 @@ class UserController extends Controller
                 'success' => true,
                 'message' => 'User deleted successfully'
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('UserController.destroy: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while deleting the user.'
             ], 500);

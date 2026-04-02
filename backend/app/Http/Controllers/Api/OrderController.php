@@ -23,89 +23,113 @@ class OrderController extends Controller
 
     public function store(Request $request)
     {
+        $this->logRequestStart($request, 'store');
+
+        $user = null;
+        $cart = null;
+        $order = null;
+        $total = null;
+
         try {
-            $user = Auth::user();
+            [$result, $executionTime] = $this->measureExecutionTime(function () use ($request, &$user, &$cart, &$order, &$total) {
+                $user = Auth::user();
 
-            $cart = Cart::with('items')->where('user_id', $user->id)->first();
+                $cart = Cart::with('items')->where('user_id', $user->id)->first();
 
-            if (!$cart || $cart->items->isEmpty()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cart is empty',
-                    'redirect' => $this->frontendPath('/cart')
-                ], 422);
-            }
+                if (!$cart || $cart->items->isEmpty()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Cart is empty',
+                        'redirect' => $this->frontendPath('/cart')
+                    ], 422);
+                }
 
-            $subtotal = $cart->items->sum(function ($item) {
-                return $item->price * $item->quantity;
-            });
-            $taxAmount = Setting::calculateTax($subtotal);
-            $coupon = session()->get('coupon');
-            $discountAmount = (float) ($coupon['discount'] ?? 0);
-            $total = max(0, $subtotal + $taxAmount - $discountAmount);
+                $subtotal = $cart->items->sum(function ($item) {
+                    return $item->price * $item->quantity;
+                });
+                $taxAmount = Setting::calculateTax($subtotal);
+                $coupon = session()->get('coupon');
+                $discountAmount = (float) ($coupon['discount'] ?? 0);
+                $total = max(0, $subtotal + $taxAmount - $discountAmount);
 
-            // CREATE ORDER
-            $order = Order::create([
-                'user_id'        => $user->id,
-                'subtotal'       => $subtotal,
-                'tax_amount'     => $taxAmount,
-                'discount_amount'=> $discountAmount,
-                'coupon_code'    => $coupon['code'] ?? null,
-                'total_amount'   => $total,
-                'status'         => 'completed',
-                'payment_status' => 'paid',
-                'payment_method' => 'online',
-                'payment_id'     => $request->payment_id ?? null,
-            ]);
-
-            event(new OrderPlaced($order));
-
-            /* ================= ORDER ITEMS ================= */
-            foreach ($cart->items as $item) {
-
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'book_id'  => $item->book_id,
-                    'format'   => $item->format,
-                    'price'    => $item->price,
-                    'quantity' => $item->quantity,
+                // CREATE ORDER
+                $order = Order::create([
+                    'user_id'        => $user->id,
+                    'subtotal'       => $subtotal,
+                    'tax_amount'     => $taxAmount,
+                    'discount_amount'=> $discountAmount,
+                    'coupon_code'    => $coupon['code'] ?? null,
+                    'total_amount'   => $total,
+                    'status'         => 'completed',
+                    'payment_status' => 'paid',
+                    'payment_method' => 'online',
+                    'payment_id'     => $request->payment_id ?? null,
                 ]);
 
-                /* ================= USER LIBRARY ================= */
-                UserLibrary::firstOrCreate(
-                    [
-                        'user_id' => $user->id,
-                        'book_id' => $item->book_id,
-                        'format'  => $item->format,
-                    ],
-                    [
-                        'expires_at' => in_array($item->format, ['ebook','audio'])
-                            ? now()->addDays(30)
-                            : null,
+                event(new OrderPlaced($order));
+
+                /* ================= ORDER ITEMS ================= */
+                foreach ($cart->items as $item) {
+
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'book_id'  => $item->book_id,
+                        'format'   => $item->format,
+                        'price'    => $item->price,
+                        'quantity' => $item->quantity,
+                    ]);
+
+                    /* ================= USER LIBRARY ================= */
+                    UserLibrary::firstOrCreate(
+                        [
+                            'user_id' => $user->id,
+                            'book_id' => $item->book_id,
+                            'format'  => $item->format,
+                        ],
+                        [
+                            'expires_at' => in_array($item->format, ['ebook','audio'])
+                                ? now()->addDays(30)
+                                : null,
+                        ]
+                    );
+                }
+
+                // CLEAR CART
+                $cart->items()->delete();
+                $cart->delete();
+                session()->forget('coupon');
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Order placed successfully',
+                    'data' => [
+                        'order' => $order,
+                        'redirect' => $this->frontendPath("/orders/{$order->id}")
                     ]
-                );
-            }
+                ]);
+            });
 
-            // CLEAR CART
-            $cart->items()->delete();
-            $cart->delete();
-            session()->forget('coupon');
+            $this->logRequestSuccess('store', [
+                'order_id' => $order?->id,
+                'user_id' => $user?->id,
+                'total_amount' => $total,
+                'item_count' => $cart?->items?->count() ?? 0
+            ], $executionTime);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Order placed successfully',
-                'data' => [
-                    'order' => $order,
-                    'redirect' => $this->frontendPath("/orders/{$order->id}")
-                ]
+            $this->logBusinessOperation('Order placed successfully', [
+                'order_id' => $order?->id,
+                'user_id' => $user?->id,
+                'total_amount' => $total,
+                'payment_method' => 'online'
             ]);
+
+            return $result;
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('OrderController.store failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
+            $this->logRequestError('store', $e, [
+                'user_id' => Auth::id(),
+                'cart_items_count' => $cart?->items?->count() ?? 0
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
@@ -131,14 +155,10 @@ class OrderController extends Controller
                     'order' => $order
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('OrderController.success failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-            
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
             ], 500);
@@ -159,14 +179,10 @@ class OrderController extends Controller
                     'orders' => $orders
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('OrderController.index failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-            
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
             ], 500);
@@ -197,14 +213,10 @@ class OrderController extends Controller
                     'filename' => 'invoice-order-' . $order->id . '.pdf'
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('OrderController.downloadInvoice failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-            
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
             ], 500);
@@ -221,14 +233,10 @@ class OrderController extends Controller
                     'needs_address' => true
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('OrderController.address failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-            
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
             ], 500);
@@ -253,14 +261,10 @@ class OrderController extends Controller
                     'order' => $order
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('OrderController.show failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-            
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
             ], 500);

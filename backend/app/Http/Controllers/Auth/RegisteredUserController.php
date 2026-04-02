@@ -21,8 +21,8 @@ class RegisteredUserController extends Controller
     {
         try {
             return view('auth.register');
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('RegisteredUserController.create: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
             abort(500, 'An error occurred while loading the registration page.');
         }
     }
@@ -52,8 +52,8 @@ class RegisteredUserController extends Controller
             Auth::login($user);
 
             return redirect(route('dashboard', absolute: false));
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('RegisteredUserController.store: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
             return redirect()->back()->withInput($request->only('name', 'email'))->withErrors(['error' => 'An error occurred during registration. Please try again.']);
         }
     }

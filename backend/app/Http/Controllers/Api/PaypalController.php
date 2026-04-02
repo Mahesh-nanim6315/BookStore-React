@@ -75,9 +75,10 @@ class PayPalController extends Controller
                 'success' => false,
                 'message' => 'Unable to initiate PayPal payment'
             ], 422);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('PaypalController.pay: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while initiating PayPal payment.'
             ], 500);
@@ -155,9 +156,10 @@ class PayPalController extends Controller
                     'redirect' => '/checkout/payment'
                 ]
             ], 422);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('PaypalController.success: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while processing PayPal payment.'
             ], 500);
@@ -174,9 +176,10 @@ class PayPalController extends Controller
                     'redirect' => '/checkout/payment'
                 ]
             ], 422);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('PaypalController.cancel: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while cancelling payment.'
             ], 500);

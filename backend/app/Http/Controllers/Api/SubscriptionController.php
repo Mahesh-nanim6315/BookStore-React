@@ -109,14 +109,10 @@ class SubscriptionController extends Controller
                     'free_trial_days' => $freeTrialDays
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('SubscriptionController.index failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-            
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
             ], 500);
@@ -218,14 +214,10 @@ class SubscriptionController extends Controller
                     'billing_cycle' => $billing
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('SubscriptionController.checkout failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-            
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
             ], 500);
@@ -310,14 +302,10 @@ class SubscriptionController extends Controller
                     'redirect' => $this->frontendPath('/profile')
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('SubscriptionController.success failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-            
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
             ], 500);
@@ -358,14 +346,10 @@ class SubscriptionController extends Controller
                     'plan_expires_at' => $subscription->fresh()->ends_at
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('SubscriptionController.cancel failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-            
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
             ], 500);
@@ -405,14 +389,10 @@ class SubscriptionController extends Controller
                     'plan_expires_at' => $user->plan_expires_at
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('SubscriptionController.resume failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-            
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
             ], 500);

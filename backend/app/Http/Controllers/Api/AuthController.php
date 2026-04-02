@@ -21,55 +21,81 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request)
     {
+        $this->logRequestStart($request, 'login');
+        $email = null;
+        $user = null;
+
         try {
-            $request->ensureIsNotRateLimited();
+            [$result, $executionTime] = $this->measureExecutionTime(function () use ($request, &$email, &$user) {
+                $request->ensureIsNotRateLimited();
 
-            $credentials = $request->validated();
-            $email = Str::lower(trim((string) $credentials['email']));
+                $credentials = $request->validated();
+                $email = Str::lower(trim((string) $credentials['email']));
 
-            // API login should be stateless; avoid session-based auth.
-            $user = User::where('email', $email)->first();
-            if (! $user || ! Hash::check($credentials['password'], $user->password)) {
-                $request->hitRateLimiter();
+                // API login should be stateless; avoid session-based auth.
+                $user = User::where('email', $email)->first();
+                if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+                    $request->hitRateLimiter();
 
-                throw ValidationException::withMessages([
-                    'email' => ['Invalid credentials.'],
-                ]);
-            }
+                    throw ValidationException::withMessages([
+                        'email' => ['Invalid credentials.'],
+                    ]);
+                }
 
-            if (! $user->is_active) {
-                $request->hitRateLimiter();
+                if (! $user->is_active) {
+                    $request->hitRateLimiter();
 
-                throw ValidationException::withMessages([
-                    'email' => ['This account has been deactivated. Please contact support.'],
-                ]);
-            }
+                    throw ValidationException::withMessages([
+                        'email' => ['This account has been deactivated. Please contact support.'],
+                    ]);
+                }
 
-            if ((string) Setting::get('maintenance_mode', 0) === '1' && strtolower((string) $user->role) !== 'admin') {
+                if ((string) Setting::get('maintenance_mode', 0) === '1' && strtolower((string) $user->role) !== 'admin') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'The site is currently in maintenance mode. Only admins can sign in.',
+                    ], 503);
+                }
+
+                $request->clearRateLimiter();
+
+                // Create token for API
+                $token = $user->createToken('auth_token')->plainTextToken;
+
                 return response()->json([
-                    'success' => false,
-                    'message' => 'The site is currently in maintenance mode. Only admins can sign in.',
-                ], 503);
-            }
+                    'success' => true,
+                    'token' => $token,
+                    'user' => $this->formatUser($user),
+                    'message' => 'Login successful'
+                ]);
+            });
 
-            $request->clearRateLimiter();
+            $this->logRequestSuccess('login', [
+                'user_email' => $email,
+                'user_role' => $user->role ?? null
+            ], $executionTime);
 
-            // Create token for API
-            $token = $user->createToken('auth_token')->plainTextToken;
+            $this->logBusinessOperation('User login successful', [
+                'user_id' => $user->id ?? null,
+                'user_email' => $email
+            ]);
+
+            return $result;
+        } catch (ValidationException $e) {
+            $this->logRequestError('login', $e, [
+                'email_attempted' => $request->email ?? null
+            ]);
 
             return response()->json([
-                'success' => true,
-                'token' => $token,
-                'user' => $this->formatUser($user),
-                'message' => 'Login successful'
-            ]);
+                'success' => false,
+                'errors' => $e->errors(),
+                'message' => 'Invalid credentials.',
+            ], 422);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('AuthController.login failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
+            $this->logRequestError('login', $e, [
+                'email_attempted' => $request->email ?? null
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
@@ -82,49 +108,75 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
+        $this->logRequestStart($request, 'register');
+        $email = null;
+        $user = null;
+
         try {
-            if ((string) Setting::get('maintenance_mode', 0) === '1') {
+            [$result, $executionTime] = $this->measureExecutionTime(function () use ($request, &$email, &$user) {
+                if ((string) Setting::get('maintenance_mode', 0) === '1') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Registration is unavailable while maintenance mode is enabled.',
+                    ], 503);
+                }
+
+                $request->merge([
+                    'email' => Str::lower(trim((string) $request->email)),
+                ]);
+
+                $request->validate([
+                    'name' => ['required', 'string', 'max:255'],
+                    'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+                    'password' => ['required', 'confirmed', PasswordRule::defaults()],
+                ]);
+
+                $email = $request->string('email')->toString();
+
+                $user = User::create([
+                    'name' => $request->name,
+                    'email' => $email,
+                    'password' => Hash::make($request->password),
+                    'role' => 'user', // Default role for new registrations
+                ]);
+
+                // Create token for API
+                $token = $user->createToken('auth_token')->plainTextToken;
+
                 return response()->json([
-                    'success' => false,
-                    'message' => 'Registration is unavailable while maintenance mode is enabled.',
-                ], 503);
-            }
+                    'success' => true,
+                    'token' => $token,
+                    'user' => $this->formatUser($user),
+                    'message' => 'Registration successful'
+                ]);
+            });
 
-            $request->merge([
-                'email' => Str::lower(trim((string) $request->email)),
+            $this->logRequestSuccess('register', [
+                'user_email' => $email,
+                'user_id' => $user->id ?? null
+            ], $executionTime);
+
+            $this->logBusinessOperation('User registration successful', [
+                'user_id' => $user->id,
+                'user_email' => $email
             ]);
 
-            $request->validate([
-                'name' => ['required', 'string', 'max:255'],
-                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-                'password' => ['required', 'confirmed', PasswordRule::defaults()],
+            return $result;
+        } catch (ValidationException $e) {
+            $this->logRequestError('register', $e, [
+                'email_attempted' => $request->email ?? null
             ]);
-
-            $email = $request->string('email')->toString();
-
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $email,
-                'password' => Hash::make($request->password),
-                'role' => 'user', // Default role for new registrations
-            ]);
-
-            // Create token for API
-            $token = $user->createToken('auth_token')->plainTextToken;
 
             return response()->json([
-                'success' => true,
-                'token' => $token,
-                'user' => $this->formatUser($user),
-                'message' => 'Registration successful'
-            ]);
+                'success' => false,
+                'errors' => $e->errors(),
+                'message' => 'Validation failed.',
+            ], 422);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('AuthController.register failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
+            $this->logRequestError('register', $e, [
+                'email_attempted' => $request->email ?? null
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
@@ -145,14 +197,10 @@ class AuthController extends Controller
                 'success' => true,
                 'message' => 'Logout successful'
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('AuthController.logout failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-            
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
             ], 500);
@@ -198,14 +246,10 @@ class AuthController extends Controller
                 'success' => true,
                 'message' => __($status),
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('AuthController.forgotPassword failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-            
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
             ], 500);
@@ -269,14 +313,10 @@ class AuthController extends Controller
                 'success' => true,
                 'message' => __($status),
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('AuthController.resetPassword failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-            
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
             ], 500);
@@ -293,14 +333,10 @@ class AuthController extends Controller
                 'success' => true,
                 'user' => $this->formatUser($request->user())
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('AuthController.user failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-            
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'Operation failed',
             ], 500);

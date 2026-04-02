@@ -21,8 +21,8 @@ class EmailVerificationNotificationController extends Controller
             $request->user()->sendEmailVerificationNotification();
 
             return back()->with('status', 'verification-link-sent');
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('EmailVerificationNotificationController.store: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
             return back()->withErrors(['error' => 'An error occurred while sending the verification email.']);
         }
     }

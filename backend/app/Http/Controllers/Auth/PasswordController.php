@@ -26,8 +26,8 @@ class PasswordController extends Controller
             ]);
 
             return back()->with('status', 'password-updated');
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('PasswordController.update: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
             return back()->withErrors(['error' => 'An error occurred while updating your password.']);
         }
     }

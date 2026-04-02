@@ -18,8 +18,8 @@ class AuthenticatedSessionController extends Controller
     {
         try {
             return view('auth.login');
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('AuthenticatedSessionController.create: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
             abort(500, 'An error occurred while loading the login page.');
         }
     }
@@ -38,8 +38,8 @@ class AuthenticatedSessionController extends Controller
             }
 
             return redirect()->route('home');
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('AuthenticatedSessionController.store: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
             return redirect()->back()->withErrors(['error' => 'An error occurred during login. Please try again.']);
         }
     }
@@ -57,8 +57,8 @@ class AuthenticatedSessionController extends Controller
             $request->session()->regenerateToken();
 
             return redirect('/');
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('AuthenticatedSessionController.destroy: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
             return redirect('/')->withErrors(['error' => 'An error occurred during logout.']);
         }
     }

@@ -14,9 +14,10 @@ class FaqController extends Controller
                 'success' => true,
                 'data' => []
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('FaqController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading FAQs.'
             ], 500);

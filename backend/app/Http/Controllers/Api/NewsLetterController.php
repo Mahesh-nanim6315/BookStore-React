@@ -17,9 +17,10 @@ class NewsletterController extends Controller
                     'message' => 'Newsletter subscription page'
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('NewsletterController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading newsletter page.'
             ], 500);
@@ -44,9 +45,10 @@ class NewsletterController extends Controller
                     'subscriber' => $newsletter
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('NewsletterController.subscribe: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while subscribing to newsletter.'
             ], 500);

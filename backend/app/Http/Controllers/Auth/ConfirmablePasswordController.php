@@ -18,8 +18,8 @@ class ConfirmablePasswordController extends Controller
     {
         try {
             return view('auth.confirm-password');
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('ConfirmablePasswordController.show: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
             abort(500, 'An error occurred while loading the confirm password page.');
         }
     }
@@ -42,8 +42,8 @@ class ConfirmablePasswordController extends Controller
             $request->session()->put('auth.password_confirmed_at', time());
 
             return redirect()->intended(route('dashboard', absolute: false));
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('ConfirmablePasswordController.store: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
             return redirect()->back()->withErrors(['error' => 'An error occurred while confirming your password.']);
         }
     }

@@ -14,9 +14,10 @@ class PublicSettingsController extends Controller
                 'success' => true,
                 'data' => AdminSettingsController::publicSettingsPayload(),
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('PublicSettingsController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading public settings.'
             ], 500);

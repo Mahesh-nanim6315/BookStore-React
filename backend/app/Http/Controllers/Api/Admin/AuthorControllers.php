@@ -29,9 +29,10 @@ class AuthorControllers extends Controller
                 'success' => true,
                 'data' => $authors
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('AuthorControllers.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading authors.'
             ], 500);
@@ -47,9 +48,10 @@ class AuthorControllers extends Controller
                     'message' => 'Author creation form data'
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('AuthorControllers.create: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading create form.'
             ], 500);
@@ -78,9 +80,10 @@ class AuthorControllers extends Controller
                     'author' => $author
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('AuthorControllers.store: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while creating the author.'
             ], 500);
@@ -98,9 +101,10 @@ class AuthorControllers extends Controller
                     'author' => $author
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('AuthorControllers.show: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading the author.'
             ], 500);
@@ -116,9 +120,10 @@ class AuthorControllers extends Controller
                     'author' => $author
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('AuthorControllers.edit: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading edit form.'
             ], 500);
@@ -147,9 +152,10 @@ class AuthorControllers extends Controller
                     'author' => $author->fresh()
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('AuthorControllers.update: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while updating the author.'
             ], 500);
@@ -165,9 +171,10 @@ class AuthorControllers extends Controller
                 'success' => true,
                 'message' => 'Author deleted successfully'
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('AuthorControllers.destroy: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while deleting the author.'
             ], 500);

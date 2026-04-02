@@ -22,9 +22,10 @@ class WishlistController extends Controller
                 'success' => true,
                 'data' => $wishlist,
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('WishlistController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading wishlist.'
             ], 500);
@@ -64,9 +65,10 @@ class WishlistController extends Controller
                 'message' => 'Book added to wishlist.',
                 'data' => $wishlist,
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('WishlistController.toggle: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while toggling wishlist.'
             ], 500);
@@ -89,9 +91,10 @@ class WishlistController extends Controller
                 'success' => true,
                 'message' => 'Wishlist item removed.',
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('WishlistController.destroy: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while removing wishlist item.'
             ], 500);

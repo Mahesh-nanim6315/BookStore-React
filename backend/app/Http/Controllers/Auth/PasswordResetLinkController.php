@@ -17,8 +17,8 @@ class PasswordResetLinkController extends Controller
     {
         try {
             return view('auth.forgot-password');
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('PasswordResetLinkController.create: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
             abort(500, 'An error occurred while loading the forgot password page.');
         }
     }
@@ -46,8 +46,8 @@ class PasswordResetLinkController extends Controller
                         ? back()->with('status', __($status))
                         : back()->withInput($request->only('email'))
                             ->withErrors(['email' => __($status)]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('PasswordResetLinkController.store: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
             return back()->withInput($request->only('email'))->withErrors(['error' => 'An error occurred while sending the password reset link.']);
         }
     }

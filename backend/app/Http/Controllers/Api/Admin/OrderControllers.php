@@ -25,9 +25,10 @@ class OrderControllers extends Controller
                 'success' => true,
                 'data' => $orders,
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('OrderControllers.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading orders.'
             ], 500);
@@ -45,9 +46,10 @@ class OrderControllers extends Controller
                     'order' => $order,
                 ],
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('OrderControllers.show: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading the order.'
             ], 500);
@@ -74,9 +76,10 @@ class OrderControllers extends Controller
                     'order' => $order->fresh(['user', 'items.book', 'address']),
                 ],
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('OrderControllers.update: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while updating the order.'
             ], 500);
@@ -95,9 +98,10 @@ class OrderControllers extends Controller
                 'success' => true,
                 'data' => $payments,
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('OrderControllers.payments: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading payments.'
             ], 500);
@@ -141,9 +145,10 @@ class OrderControllers extends Controller
                     'download_url' => '',
                 ],
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('OrderControllers.exportCsv: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while exporting orders.'
             ], 500);
@@ -168,9 +173,10 @@ class OrderControllers extends Controller
                     'order' => $order->fresh('user'),
                 ],
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('OrderControllers.updateStatus: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while updating order status.'
             ], 500);
@@ -195,9 +201,10 @@ class OrderControllers extends Controller
                     'order' => $order->fresh('user'),
                 ],
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('OrderControllers.updatePaymentStatus: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while updating payment status.'
             ], 500);

@@ -35,9 +35,10 @@ class BookController extends Controller
                 'success' => true,
                 'data' => $categories
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('BookController.categoriesIndex: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while fetching categories.'
             ], 500);
@@ -78,9 +79,10 @@ class BookController extends Controller
                     'recently_viewed_books' => $recentlyViewedBooks
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('BookController.home: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while fetching homepage data.'
             ], 500);
@@ -169,9 +171,10 @@ class BookController extends Controller
                     'recently_viewed' => $recentlyViewed
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('BookController.show: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while fetching the book details.'
             ], 500);
@@ -191,9 +194,10 @@ class BookController extends Controller
                     'books' => $books
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('BookController.categoryBooks: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while fetching category books.'
             ], 500);

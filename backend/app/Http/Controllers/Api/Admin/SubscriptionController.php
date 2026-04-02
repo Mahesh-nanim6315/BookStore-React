@@ -141,9 +141,10 @@ class SubscriptionController extends Controller
                     ],
                 ],
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('SubscriptionController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading subscriptions.'
             ], 500);
@@ -183,9 +184,10 @@ class SubscriptionController extends Controller
                     'plan_expires_at' => $freshSubscription->ends_at,
                 ],
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('SubscriptionController.cancel: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while cancelling the subscription.'
             ], 500);
@@ -224,9 +226,10 @@ class SubscriptionController extends Controller
                     'plan_expires_at' => $user->plan_expires_at,
                 ],
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('SubscriptionController.resume: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while resuming the subscription.'
             ], 500);
@@ -275,9 +278,10 @@ class SubscriptionController extends Controller
                 'success' => true,
                 'message' => 'Subscription deleted successfully.',
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('SubscriptionController.destroy: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while deleting the subscription.'
             ], 500);

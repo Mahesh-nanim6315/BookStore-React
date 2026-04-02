@@ -77,9 +77,10 @@ class DashboardController extends Controller
                     'top_selling_books' => $topSellingBooks,
                 ],
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('DashboardController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading dashboard data.'
             ], 500);
@@ -120,9 +121,10 @@ class DashboardController extends Controller
                     ],
                 ],
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('DashboardController.dashboard: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading dashboard.'
             ], 500);

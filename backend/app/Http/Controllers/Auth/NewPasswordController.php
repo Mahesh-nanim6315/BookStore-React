@@ -22,8 +22,8 @@ class NewPasswordController extends Controller
     {
         try {
             return view('auth.reset-password', ['request' => $request]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('NewPasswordController.create: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
             abort(500, 'An error occurred while loading the password reset page.');
         }
     }
@@ -64,8 +64,8 @@ class NewPasswordController extends Controller
                         ? redirect()->route('login')->with('status', __($status))
                         : back()->withInput($request->only('email'))
                             ->withErrors(['email' => __($status)]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('NewPasswordController.store: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
             return back()->withInput($request->only('email'))->withErrors(['error' => 'An error occurred while resetting your password.']);
         }
     }

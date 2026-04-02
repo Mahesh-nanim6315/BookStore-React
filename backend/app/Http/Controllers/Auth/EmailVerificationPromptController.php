@@ -18,8 +18,8 @@ class EmailVerificationPromptController extends Controller
             return $request->user()->hasVerifiedEmail()
                         ? redirect()->intended(route('dashboard', absolute: false))
                         : view('auth.verify-email');
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('EmailVerificationPromptController.__invoke: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
             return redirect()->route('dashboard')->withErrors(['error' => 'An error occurred while loading the email verification page.']);
         }
     }

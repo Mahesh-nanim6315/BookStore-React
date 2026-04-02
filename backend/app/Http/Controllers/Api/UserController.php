@@ -18,9 +18,10 @@ class UserController extends Controller
                     'user' => auth()->user() ?? null
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('UserController.getUser: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while retrieving user data.'
             ], 500);
@@ -36,9 +37,10 @@ class UserController extends Controller
                     'message' => 'Home page data'
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('UserController.homeComman: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading home page data.'
             ], 500);
@@ -54,9 +56,10 @@ class UserController extends Controller
                     'message' => 'This is James from USA'
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('UserController.aboutUser: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading about user data.'
             ], 500);
@@ -73,9 +76,10 @@ class UserController extends Controller
                     'message' => "User name retrieved successfully"
                 ]
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('UserController.getUserName: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while retrieving user name.'
             ], 500);
@@ -99,9 +103,10 @@ class UserController extends Controller
                     'message' => 'View not found'
                 ], 404);
             }
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('UserController.adminLogin: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading admin login.'
             ], 500);

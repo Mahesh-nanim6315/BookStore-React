@@ -63,9 +63,10 @@ class BookControllers extends Controller
                     ],
                 ],
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('BookControllers.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading books.'
             ], 500);
@@ -83,9 +84,10 @@ class BookControllers extends Controller
                     'genres' => Genre::orderBy('name')->get(),
                 ],
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('BookControllers.create: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading create form.'
             ], 500);
@@ -130,9 +132,10 @@ class BookControllers extends Controller
                     'book' => $book->load(['author', 'category', 'genre']),
                 ],
             ], 201);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('BookControllers.store: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while creating the book.'
             ], 500);
@@ -148,9 +151,10 @@ class BookControllers extends Controller
                     'book' => $book->load(['author', 'category', 'genre']),
                 ],
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('BookControllers.show: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading the book.'
             ], 500);
@@ -169,9 +173,10 @@ class BookControllers extends Controller
                     'genres' => Genre::orderBy('name')->get(),
                 ],
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('BookControllers.edit: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while loading edit form.'
             ], 500);
@@ -216,9 +221,10 @@ class BookControllers extends Controller
                     'book' => $book->fresh(['author', 'category', 'genre']),
                 ],
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('BookControllers.update: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while updating the book.'
             ], 500);
@@ -234,9 +240,10 @@ class BookControllers extends Controller
                 'success' => true,
                 'message' => 'Book deleted successfully',
             ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('BookControllers.destroy: ' . $e->getMessage() . ' on line ' . $e->getLine());
-            return response()->json([
+            } catch (\Throwable $e) {
+                $this->logRequestErrorAuto($e);
+
+                return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while deleting the book.'
             ], 500);
