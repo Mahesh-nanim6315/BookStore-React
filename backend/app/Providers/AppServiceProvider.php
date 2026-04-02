@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Services\Contracts\LLMServiceInterface;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Pagination\Paginator;
@@ -17,16 +16,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(LLMServiceInterface::class, function () {
-            $provider = config('ai.provider', 'ollama');
-            $providers = config('ai.providers', []);
-
-            if (! isset($providers[$provider])) {
-                throw new \RuntimeException("Invalid AI provider: {$provider}");
-            }
-
-            return app($providers[$provider]);
-        });
     }
 
     /**

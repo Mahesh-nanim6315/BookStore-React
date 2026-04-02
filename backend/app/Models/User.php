@@ -186,11 +186,6 @@ public function canAccessBook(Book $book): bool
     return $this->hasActiveSubscription();
 }
 
-public function chatSessions()
-{
-    return $this->hasMany(ChatSession::class);
-}
-
 public function getAvatarUrlAttribute(): string
 {
     return $this->resolveImageUrl($this->avatar, 'images/default-avatar.png');
