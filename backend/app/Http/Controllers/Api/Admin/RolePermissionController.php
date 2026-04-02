@@ -34,88 +34,104 @@ class RolePermissionController extends Controller
 
     public function index()
     {
-        $roles = $this->roles();
-        $savedPermissions = [];
-        foreach (RolePermission::query()->pluck('permissions', 'role')->toArray() as $role => $permissions) {
-            $savedPermissions[strtolower((string) $role)] = is_array($permissions) ? $permissions : [];
-        }
-        $defaultPermissions = $this->defaultPermissions();
+        try {
+            $roles = $this->roles();
+            $savedPermissions = [];
+            foreach (RolePermission::query()->pluck('permissions', 'role')->toArray() as $role => $permissions) {
+                $savedPermissions[strtolower((string) $role)] = is_array($permissions) ? $permissions : [];
+            }
+            $defaultPermissions = $this->defaultPermissions();
 
-        $rolePermissions = [];
-        foreach ($roles as $role) {
-            $rolePermissions[$role] = $savedPermissions[$role] ?? ($defaultPermissions[$role] ?? []);
-        }
+            $rolePermissions = [];
+            foreach ($roles as $role) {
+                $rolePermissions[$role] = $savedPermissions[$role] ?? ($defaultPermissions[$role] ?? []);
+            }
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'roles' => $roles,
-                'permission_labels' => $this->permissionLabels,
-                'role_permissions' => $rolePermissions,
-                'default_permissions' => $defaultPermissions
-            ]
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'roles' => $roles,
+                    'permission_labels' => $this->permissionLabels,
+                    'role_permissions' => $rolePermissions,
+                    'default_permissions' => $defaultPermissions
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('RolePermissionController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while loading roles and permissions.'
+            ], 500);
+        }
     }
 
     public function update(Request $request)
     {
-        $allowedPermissions = array_keys($this->permissionLabels);
-        $roles = $this->roles();
-        $permissionsInput = $request->input('permissions', []);
+        try {
+            $allowedPermissions = array_keys($this->permissionLabels);
+            $roles = $this->roles();
+            $permissionsInput = $request->input('permissions', []);
 
-        foreach ($roles as $role) {
-            $selectedPermissions = $permissionsInput[$role] ?? [];
+            foreach ($roles as $role) {
+                $selectedPermissions = $permissionsInput[$role] ?? [];
 
-            if (!is_array($selectedPermissions)) {
-                $selectedPermissions = [];
+                if (!is_array($selectedPermissions)) {
+                    $selectedPermissions = [];
+                }
+
+                $filteredPermissions = array_values(array_unique(array_intersect(
+                    $allowedPermissions,
+                    $selectedPermissions
+                )));
+
+                // Keep admin immutable: full access remains guaranteed by middleware.
+                if ($role === 'admin') {
+                    continue;
+                }
+
+                $rolePermission = RolePermission::query()
+                    ->whereRaw('LOWER(role) = ?', [$role])
+                    ->first();
+
+                if ($rolePermission) {
+                    $rolePermission->update([
+                        'role' => $role,
+                        'permissions' => $filteredPermissions,
+                    ]);
+                } else {
+                    RolePermission::create([
+                        'role' => $role,
+                        'permissions' => $filteredPermissions,
+                    ]);
+                }
             }
 
-            $filteredPermissions = array_values(array_unique(array_intersect(
-                $allowedPermissions,
-                $selectedPermissions
-            )));
-
-            // Keep admin immutable: full access remains guaranteed by middleware.
-            if ($role === 'admin') {
-                continue;
+            // Get updated data for response
+            $updatedRoles = $this->roles();
+            $updatedSavedPermissions = [];
+            foreach (RolePermission::query()->pluck('permissions', 'role')->toArray() as $role => $permissions) {
+                $updatedSavedPermissions[strtolower((string) $role)] = is_array($permissions) ? $permissions : [];
             }
 
-            $rolePermission = RolePermission::query()
-                ->whereRaw('LOWER(role) = ?', [$role])
-                ->first();
-
-            if ($rolePermission) {
-                $rolePermission->update([
-                    'role' => $role,
-                    'permissions' => $filteredPermissions,
-                ]);
-            } else {
-                RolePermission::create([
-                    'role' => $role,
-                    'permissions' => $filteredPermissions,
-                ]);
+            $updatedRolePermissions = [];
+            foreach ($updatedRoles as $role) {
+                $updatedRolePermissions[$role] = $updatedSavedPermissions[$role] ?? ($this->defaultPermissions()[$role] ?? []);
             }
-        }
 
-        // Get updated data for response
-        $updatedRoles = $this->roles();
-        $updatedSavedPermissions = [];
-        foreach (RolePermission::query()->pluck('permissions', 'role')->toArray() as $role => $permissions) {
-            $updatedSavedPermissions[strtolower((string) $role)] = is_array($permissions) ? $permissions : [];
+            return response()->json([
+                'success' => true,
+                'message' => 'Roles and permissions updated successfully.',
+                'data' => [
+                    'role_permissions' => $updatedRolePermissions
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('RolePermissionController.update: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating roles and permissions.'
+            ], 500);
         }
-
-        $updatedRolePermissions = [];
-        foreach ($updatedRoles as $role) {
-            $updatedRolePermissions[$role] = $updatedSavedPermissions[$role] ?? ($this->defaultPermissions()[$role] ?? []);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Roles and permissions updated successfully.',
-            'data' => [
-                'role_permissions' => $updatedRolePermissions
-            ]
-        ]);
     }
 
     private function roles(): array

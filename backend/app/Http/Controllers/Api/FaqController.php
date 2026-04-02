@@ -9,9 +9,17 @@ class FaqController extends Controller
 {
     public function index()
     {
-        return response()->json([
-            'success' => true,
-            'data' => []
-        ]);
+        try {
+            return response()->json([
+                'success' => true,
+                'data' => []
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('FaqController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while loading FAQs.'
+            ], 500);
+        }
     }
 }

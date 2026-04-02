@@ -16,134 +16,174 @@ class ProfileController extends Controller
 {
     public function index()
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        $totalOrders = $user->orders()->count();
-        $wishlistCount = $user->wishlist()->count();
-        $reviewCount = $user->reviews()->count();
+            $totalOrders = $user->orders()->count();
+            $wishlistCount = $user->wishlist()->count();
+            $reviewCount = $user->reviews()->count();
 
-        $completion = 0;
+            $completion = 0;
 
-        if ($user->name) $completion += 25;
-        if ($user->email) $completion += 25;
-        if ($user->avatar) $completion += 25;
-        if ($user->cover) $completion += 25;
+            if ($user->name) $completion += 25;
+            if ($user->email) $completion += 25;
+            if ($user->avatar) $completion += 25;
+            if ($user->cover) $completion += 25;
 
-        // Get recent purchased books
-        $recentBooks = \App\Models\OrderItem::whereHas('order', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            })
-            ->with('book')
-            ->latest()
-            ->take(7)
-            ->get();
+            // Get recent purchased books
+            $recentBooks = \App\Models\OrderItem::whereHas('order', function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                })
+                ->with('book')
+                ->latest()
+                ->take(7)
+                ->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'user' => $user,
-                'total_orders' => $totalOrders,
-                'wishlist_count' => $wishlistCount,
-                'review_count' => $reviewCount,
-                'profile_completion' => $completion,
-                'recent_books' => $recentBooks
-            ]
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'user' => $user,
+                    'total_orders' => $totalOrders,
+                    'wishlist_count' => $wishlistCount,
+                    'review_count' => $reviewCount,
+                    'profile_completion' => $completion,
+                    'recent_books' => $recentBooks
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('ProfileController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while loading profile.'
+            ], 500);
+        }
     }
 
     public function edit(Request $request)
     {
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'user' => $request->user()
-            ]
-        ]);
+        try {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'user' => $request->user()
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('ProfileController.edit: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while loading profile edit form.'
+            ], 500);
+        }
     }
 
     public function update(Request $request)
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            'current_password' => 'required_with:password|current_password',
-            'password' => ['nullable', 'confirmed', PasswordRule::defaults()],
-        ]);
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+                'current_password' => 'required_with:password|current_password',
+                'password' => ['nullable', 'confirmed', PasswordRule::defaults()],
+            ]);
 
-        $data = [
-            'name' => trim((string) $request->name),
-            'email' => Str::lower(trim((string) $request->email)),
-        ];
+            $data = [
+                'name' => trim((string) $request->name),
+                'email' => Str::lower(trim((string) $request->email)),
+            ];
 
-        if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->password);
+            if ($request->filled('password')) {
+                $data['password'] = Hash::make($request->password);
+            }
+
+            $user->update($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile updated successfully.',
+                'data' => [
+                    'user' => $user->fresh()
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('ProfileController.update: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating profile.'
+            ], 500);
         }
-
-        $user->update($data);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Profile updated successfully.',
-            'data' => [
-                'user' => $user->fresh()
-            ]
-        ]);
     }
 
     public function updateAvatar(Request $request)
     {
-        $request->validate([
-            'avatar' => 'required|image|mimes:jpg,jpeg,png|max:2048',
-        ]);
+        try {
+            $request->validate([
+                'avatar' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            ]);
 
-        $user = Auth::user();
+            $user = Auth::user();
 
-        // Delete old avatar if exists
-        $this->deleteProfileImage($user->avatar);
+            // Delete old avatar if exists
+            $this->deleteProfileImage($user->avatar);
 
-        // Store new avatar
-        $path = $this->storePublicImage($request->file('avatar'), 'avatars');
+            // Store new avatar
+            $path = $this->storePublicImage($request->file('avatar'), 'avatars');
 
-        $user->update([
-            'avatar' => $path
-        ]);
+            $user->update([
+                'avatar' => $path
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Avatar updated successfully.',
-            'data' => [
-                'avatar_url' => asset($path)
-            ]
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Avatar updated successfully.',
+                'data' => [
+                    'avatar_url' => asset($path)
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('ProfileController.updateAvatar: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating avatar.'
+            ], 500);
+        }
     }
 
     public function updateCover(Request $request)
     {
-        $request->validate([
-            'cover' => 'required|image|mimes:jpg,jpeg,png|max:4096',
-        ]);
+        try {
+            $request->validate([
+                'cover' => 'required|image|mimes:jpg,jpeg,png|max:4096',
+            ]);
 
-        $user = Auth::user();
+            $user = Auth::user();
 
-        // Delete old cover
-        $this->deleteProfileImage($user->cover);
+            // Delete old cover
+            $this->deleteProfileImage($user->cover);
 
-        // Store new cover
-        $path = $this->storePublicImage($request->file('cover'), 'covers');
+            // Store new cover
+            $path = $this->storePublicImage($request->file('cover'), 'covers');
 
-        $user->update([
-            'cover' => $path
-        ]);
+            $user->update([
+                'cover' => $path
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Cover updated successfully.',
-            'data' => [
-                'cover_url' => asset($path)
-            ]
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Cover updated successfully.',
+                'data' => [
+                    'cover_url' => asset($path)
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('ProfileController.updateCover: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating cover.'
+            ], 500);
+        }
     }
 
     private function storePublicImage($file, string $folder): string
@@ -185,25 +225,33 @@ class ProfileController extends Controller
 
     public function destroy(Request $request)
     {
-        $request->validate([
-            'password' => ['required', 'current_password'],
-        ]);
+        try {
+            $request->validate([
+                'password' => ['required', 'current_password'],
+            ]);
 
-        $user = $request->user();
+            $user = $request->user();
 
-        Auth::logout();
+            Auth::logout();
 
-        $user->delete();
+            $user->delete();
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Account deleted successfully.',
-            'data' => [
-                'redirect' => '/'
-            ]
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Account deleted successfully.',
+                'data' => [
+                    'redirect' => '/'
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('ProfileController.destroy: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while deleting account.'
+            ], 500);
+        }
     }
 }

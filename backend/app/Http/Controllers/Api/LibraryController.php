@@ -14,63 +14,79 @@ class LibraryController extends Controller
 {
     public function add(Request $request, Book $book)
     {
-        $request->validate([
-            'format' => 'nullable|in:ebook,audio,paperback'
-        ]);
+        try {
+            $request->validate([
+                'format' => 'nullable|in:ebook,audio,paperback'
+            ]);
 
-        $user = $request->user();
-        $userId = $user->id;
-        $format = $request->input('format') ?: $this->resolveDefaultLibraryFormat($book, $userId);
+            $user = $request->user();
+            $userId = $user->id;
+            $format = $request->input('format') ?: $this->resolveDefaultLibraryFormat($book, $userId);
 
-        $this->ensureLibraryAccess($book, $format, $user);
+            $this->ensureLibraryAccess($book, $format, $user);
 
-        // Prevent duplicate per format
-        $alreadyAdded = UserLibrary::where('user_id', $userId)
-            ->where('book_id', $book->id)
-            ->where('format', $format)
-            ->exists();
+            // Prevent duplicate per format
+            $alreadyAdded = UserLibrary::where('user_id', $userId)
+                ->where('book_id', $book->id)
+                ->where('format', $format)
+                ->exists();
 
-        if ($alreadyAdded) {
+            if ($alreadyAdded) {
+                return response()->json([
+                    'success' => false,
+                    'message' => ucfirst($format) . ' already in your library'
+                ], 422);
+            }
+
+            $library = UserLibrary::create([
+                'user_id'    => $userId,
+                'book_id'    => $book->id,
+                'format'     => $format,
+                'expires_at' => in_array($format, ['ebook', 'audio'])
+                                ? now()->addDays(30)
+                                : null
+            ]);
+
+            // Load the book relationship for response
+            $library->load('book');
+
+            return response()->json([
+                'success' => true,
+                'message' => ucfirst($format) . ' added to your library',
+                'data' => [
+                    'library_item' => $library
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('LibraryController.add: ' . $e->getMessage() . ' on line ' . $e->getLine());
             return response()->json([
                 'success' => false,
-                'message' => ucfirst($format) . ' already in your library'
-            ], 422);
+                'message' => 'An error occurred while adding to library.'
+            ], 500);
         }
-
-        $library = UserLibrary::create([
-            'user_id'    => $userId,
-            'book_id'    => $book->id,
-            'format'     => $format,
-            'expires_at' => in_array($format, ['ebook', 'audio'])
-                            ? now()->addDays(30)
-                            : null
-        ]);
-
-        // Load the book relationship for response
-        $library->load('book');
-
-        return response()->json([
-            'success' => true,
-            'message' => ucfirst($format) . ' added to your library',
-            'data' => [
-                'library_item' => $library
-            ]
-        ]);
     }
 
     public function index()
     {
-        $libraries = UserLibrary::with(['book.author', 'book.category'])
-            ->where('user_id', Auth::id())
-            ->orderBy('created_at', 'desc')
-            ->get();
+        try {
+            $libraries = UserLibrary::with(['book.author', 'book.category'])
+                ->where('user_id', Auth::id())
+                ->orderBy('created_at', 'desc')
+                ->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'libraries' => $libraries
-            ]
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'libraries' => $libraries
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('LibraryController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while loading library.'
+            ], 500);
+        }
     }
 
     private function ensureLibraryAccess(Book $book, string $format, $user): void

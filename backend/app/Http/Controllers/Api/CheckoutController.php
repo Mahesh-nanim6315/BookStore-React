@@ -31,328 +31,392 @@ class CheckoutController extends Controller
     // Show checkout address form
     public function index()
     {
-        $cart = Cart::where('user_id', Auth::id())
-            ->with('items.book')
-            ->first();
+        try {
+            $cart = Cart::where('user_id', Auth::id())
+                ->with('items.book')
+                ->first();
 
-        if (!$cart || $cart->items->isEmpty()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Your cart is empty',
-                'redirect' => $this->frontendPath('/cart')
-            ], 422);
-        }
-
-        $needsAddress = $cart->items->contains(function ($item) {
-            return strtolower($item->format) === 'paperback';
-        });
-
-        $this->syncCartItemPrices($cart);
-
-        $subtotal = $cart->items->sum(function ($item) {
-            return $item->price * $item->quantity;
-        });
-
-        $tax = Setting::calculateTax($subtotal);
-        $taxRate = Setting::taxRate();
-        $coupon = session('coupon');
-        $discount = $coupon['discount'] ?? 0;
-        $couponCode = $coupon['code'] ?? null;
-        $total = max(0, $subtotal + $tax - $discount);
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'cart' => $cart,
-                'subtotal' => $subtotal,
-                'tax' => $tax,
-                'tax_rate' => $taxRate,
-                'total' => $total,
-                'needs_address' => $needsAddress,
-                'discount' => $discount,
-                'coupon_code' => $couponCode
-            ]
-        ]);
-    }
-
-    public function process(Request $request)
-    {
-        $user = Auth::user();
-        $cart = Cart::with('items.book')->where('user_id', $user->id)->first();
-
-        if (!$cart || $cart->items->isEmpty()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Your cart is empty',
-                'redirect' => $this->frontendPath('/cart')
-            ], 422);
-        }
-
-        $this->syncCartItemPrices($cart);
-
-        $order = DB::transaction(function () use ($request, $user, $cart) {
-            $addressId = null;
-
-            if ($cart->items->contains('format', 'paperback')) {
-                $validatedAddress = $this->validateAddress($request);
-
-                $address = Address::create([
-                    'user_id' => $user->id,
-                    'full_name' => $validatedAddress['full_name'],
-                    'phone' => $validatedAddress['phone'],
-                    'address_line' => $validatedAddress['address_line'],
-                    'city' => $validatedAddress['city'],
-                    'state' => $validatedAddress['state'],
-                    'pincode' => $validatedAddress['pincode'],
-                    'country' => $validatedAddress['country'],
-                ]);
-
-                $addressId = $address->id;
+            if (!$cart || $cart->items->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your cart is empty',
+                    'redirect' => $this->frontendPath('/cart')
+                ], 422);
             }
 
-            $subtotal = $cart->items->sum(fn($item) => $item->price * $item->quantity);
+            $needsAddress = $cart->items->contains(function ($item) {
+                return strtolower($item->format) === 'paperback';
+            });
+
+            $this->syncCartItemPrices($cart);
+
+            $subtotal = $cart->items->sum(function ($item) {
+                return $item->price * $item->quantity;
+            });
+
             $tax = Setting::calculateTax($subtotal);
+            $taxRate = Setting::taxRate();
             $coupon = session('coupon');
             $discount = $coupon['discount'] ?? 0;
             $couponCode = $coupon['code'] ?? null;
             $total = max(0, $subtotal + $tax - $discount);
 
-            $order = Order::create([
-                'user_id' => $user->id,
-                'subtotal' => $subtotal,
-                'tax_amount' => $tax,
-                'discount_amount' => $discount,
-                'coupon_code' => $couponCode,
-                'total_amount' => $total,
-                'address_id' => $addressId,
-                'status' => 'pending',
-                'payment_status' => 'pending',
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'cart' => $cart,
+                    'subtotal' => $subtotal,
+                    'tax' => $tax,
+                    'tax_rate' => $taxRate,
+                    'total' => $total,
+                    'needs_address' => $needsAddress,
+                    'discount' => $discount,
+                    'coupon_code' => $couponCode
+                ]
             ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('CheckoutController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while loading checkout.'
+            ], 500);
+        }
+    }
 
-            foreach ($cart->items as $item) {
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'book_id' => $item->book_id,
-                    'format' => $item->format,
-                    'quantity' => $item->quantity,
-                    'price' => $item->price,
-                ]);
+    public function process(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $cart = Cart::with('items.book')->where('user_id', $user->id)->first();
+
+            if (!$cart || $cart->items->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your cart is empty',
+                    'redirect' => $this->frontendPath('/cart')
+                ], 422);
             }
 
-            $cart->items()->delete();
+            $this->syncCartItemPrices($cart);
 
-            return $order;
-        });
+            $order = DB::transaction(function () use ($request, $user, $cart) {
+                $addressId = null;
 
-        session()->forget('coupon');
+                if ($cart->items->contains('format', 'paperback')) {
+                    $validatedAddress = $this->validateAddress($request);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Order created successfully',
-            'data' => [
-                'order' => $order,
-                'redirect' => $this->frontendPath('/checkout/payment')
-            ]
-        ]);
-    }
+                    $address = Address::create([
+                        'user_id' => $user->id,
+                        'full_name' => $validatedAddress['full_name'],
+                        'phone' => $validatedAddress['phone'],
+                        'address_line' => $validatedAddress['address_line'],
+                        'city' => $validatedAddress['city'],
+                        'state' => $validatedAddress['state'],
+                        'pincode' => $validatedAddress['pincode'],
+                        'country' => $validatedAddress['country'],
+                    ]);
 
-    public function paymentPage(Order $order)
-    {
-        if ($order->user_id !== Auth::id()) {
+                    $addressId = $address->id;
+                }
+
+                $subtotal = $cart->items->sum(fn($item) => $item->price * $item->quantity);
+                $tax = Setting::calculateTax($subtotal);
+                $coupon = session('coupon');
+                $discount = $coupon['discount'] ?? 0;
+                $couponCode = $coupon['code'] ?? null;
+                $total = max(0, $subtotal + $tax - $discount);
+
+                $order = Order::create([
+                    'user_id' => $user->id,
+                    'subtotal' => $subtotal,
+                    'tax_amount' => $tax,
+                    'discount_amount' => $discount,
+                    'coupon_code' => $couponCode,
+                    'total_amount' => $total,
+                    'address_id' => $addressId,
+                    'status' => 'pending',
+                    'payment_status' => 'pending',
+                ]);
+
+                foreach ($cart->items as $item) {
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'book_id' => $item->book_id,
+                        'format' => $item->format,
+                        'quantity' => $item->quantity,
+                        'price' => $item->price,
+                    ]);
+                }
+
+                $cart->items()->delete();
+
+                return $order;
+            });
+
+            session()->forget('coupon');
+
             return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized access to this order'
-            ], 403);
-        }
-
-        if ($order->status !== 'pending') {
-            return response()->json([
-                'success' => false,
-                'message' => 'This order has already been processed.',
-                'redirect' => $this->frontendPath("/orders/{$order->id}")
-            ], 422);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'order' => $order
-            ]
-        ]);
-    }
-
-    public function processPayment(Request $request, Order $order)
-    {
-        Log::info('Process payment called for order: ' . $order->id . ' with status: ' . $order->status);
-
-        if ($order->user_id !== Auth::id()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized access to this order'
-            ], 403);
-        }
-
-        $request->validate([
-            'payment_method' => 'required|in:stripe,paypal,cod',
-        ]);
-
-        $method = $request->payment_method;
-
-        if ($order->status !== 'pending') {
-            return response()->json([
-                'success' => false,
-                'message' => 'This order has already been processed.'
-            ], 422);
-        }
-
-        Log::info('Payment method: ' . $method);
-
-        $order->update([
-            'payment_method' => $method,
-        ]);
-
-        Log::info('Order updated with payment method: ' . $method);
-
-        $response = [
-            'success' => true,
-            'data' => [
-                'order' => $order,
-                'payment_method' => $method
-            ]
-        ];
-
-        if ($method === 'stripe') {
-            $response['data']['provider'] = 'stripe';
-        } elseif ($method === 'paypal') {
-            $response['data']['provider'] = 'paypal';
-        } elseif ($method === 'cod') {
-            $order->update([
-                'payment_status' => 'pending',
-                'status' => 'placed'
-            ]);
-
-            event(new OrderPlaced($order->fresh('user')));
-            $response['data']['redirect'] = $this->frontendPath('/checkout/success?order=' . $order->id);
-        }
-
-        Log::info('Payment response: ' . json_encode($response));
-
-        return response()->json($response);
-    }
-
-    public function buyNow(Book $book)
-    {
-        $user = Auth::user();
-        $subtotal = $this->resolveBookFormatPrice($book, 'paperback');
-        $tax = Setting::calculateTax($subtotal);
-        $total = $subtotal + $tax;
-
-        $order = Order::create([
-            'user_id' => $user->id,
-            'subtotal' => $subtotal,
-            'tax_amount' => $tax,
-            'total_amount' => $total,
-            'status' => 'pending',
-            'payment_status' => 'pending',
-        ]);
-
-        OrderItem::create([
-            'order_id' => $order->id,
-            'book_id' => $book->id,
-            'quantity' => 1,
-            'price' => $subtotal,
-            'format' => 'paperback',
-        ]);
-
-        return response()->json([
                 'success' => true,
                 'message' => 'Order created successfully',
                 'data' => [
                     'order' => $order,
-                    'redirect' => $this->frontendPath('/checkout')
+                    'redirect' => $this->frontendPath('/checkout/payment')
                 ]
             ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('CheckoutController.process: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while processing checkout.'
+            ], 500);
+        }
+    }
+
+    public function paymentPage(Order $order)
+    {
+        try {
+            if ($order->user_id !== Auth::id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access to this order'
+                ], 403);
+            }
+
+            if ($order->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This order has already been processed.',
+                    'redirect' => $this->frontendPath("/orders/{$order->id}")
+                ], 422);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'order' => $order
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('CheckoutController.paymentPage: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while loading payment page.'
+            ], 500);
+        }
+    }
+
+    public function processPayment(Request $request, Order $order)
+    {
+        try {
+            Log::info('Process payment called for order: ' . $order->id . ' with status: ' . $order->status);
+
+            if ($order->user_id !== Auth::id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access to this order'
+                ], 403);
+            }
+
+            $request->validate([
+                'payment_method' => 'required|in:stripe,paypal,cod',
+            ]);
+
+            $method = $request->payment_method;
+
+            if ($order->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This order has already been processed.'
+                ], 422);
+            }
+
+            Log::info('Payment method: ' . $method);
+
+            $order->update([
+                'payment_method' => $method,
+            ]);
+
+            Log::info('Order updated with payment method: ' . $method);
+
+            $response = [
+                'success' => true,
+                'data' => [
+                    'order' => $order,
+                    'payment_method' => $method
+                ]
+            ];
+
+            if ($method === 'stripe') {
+                $response['data']['provider'] = 'stripe';
+            } elseif ($method === 'paypal') {
+                $response['data']['provider'] = 'paypal';
+            } elseif ($method === 'cod') {
+                $order->update([
+                    'payment_status' => 'pending',
+                    'status' => 'placed'
+                ]);
+
+                event(new OrderPlaced($order->fresh('user')));
+                $response['data']['redirect'] = $this->frontendPath('/checkout/success?order=' . $order->id);
+            }
+
+            Log::info('Payment response: ' . json_encode($response));
+
+            return response()->json($response);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('CheckoutController.processPayment: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while processing payment.'
+            ], 500);
+        }
+    }
+
+    public function buyNow(Book $book)
+    {
+        try {
+            $user = Auth::user();
+            $subtotal = $this->resolveBookFormatPrice($book, 'paperback');
+            $tax = Setting::calculateTax($subtotal);
+            $total = $subtotal + $tax;
+
+            $order = Order::create([
+                'user_id' => $user->id,
+                'subtotal' => $subtotal,
+                'tax_amount' => $tax,
+                'total_amount' => $total,
+                'status' => 'pending',
+                'payment_status' => 'pending',
+            ]);
+
+            OrderItem::create([
+                'order_id' => $order->id,
+                'book_id' => $book->id,
+                'quantity' => 1,
+                'price' => $subtotal,
+                'format' => 'paperback',
+            ]);
+
+            return response()->json([
+                    'success' => true,
+                    'message' => 'Order created successfully',
+                    'data' => [
+                        'order' => $order,
+                        'redirect' => $this->frontendPath('/checkout')
+                    ]
+                ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('CheckoutController.buyNow: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while creating buy now order.'
+            ], 500);
+        }
     }
 
     public function addressBuyNow(Order $order)
     {
-        if ($order->user_id !== Auth::id()) {
+        try {
+            if ($order->user_id !== Auth::id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access'
+                ], 403);
+            }
+
+            if ($order->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order cannot be modified',
+                    'redirect' => $this->frontendPath("/orders/{$order->id}")
+                ], 422);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'order' => $order
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('CheckoutController.addressBuyNow: ' . $e->getMessage() . ' on line ' . $e->getLine());
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized access'
-            ], 403);
+                'message' => 'An error occurred while loading buy now address page.'
+            ], 500);
         }
-
-        if ($order->status !== 'pending') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Order cannot be modified',
-                'redirect' => $this->frontendPath("/orders/{$order->id}")
-            ], 422);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'order' => $order
-            ]
-        ]);
     }
 
     public function storeBuyNowAddress(Request $request, Order $order)
     {
-        if ($order->user_id !== Auth::id()) {
+        try {
+            if ($order->user_id !== Auth::id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access'
+                ], 403);
+            }
+
+            $validatedAddress = $this->validateAddress($request);
+
+            $address = Address::create([
+                'user_id' => Auth::id(),
+                'full_name' => $validatedAddress['full_name'],
+                'phone' => $validatedAddress['phone'],
+                'address_line' => $validatedAddress['address_line'],
+                'city' => $validatedAddress['city'],
+                'state' => $validatedAddress['state'],
+                'pincode' => $validatedAddress['pincode'],
+                'country' => $validatedAddress['country'],
+            ]);
+
+            $order->update([
+                'address_id' => $address->id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Address saved successfully',
+                'data' => [
+                    'order' => $order,
+                    'address' => $address,
+                    'redirect' => $this->frontendPath('/checkout/payment')
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('CheckoutController.storeBuyNowAddress: ' . $e->getMessage() . ' on line ' . $e->getLine());
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized access'
-            ], 403);
+                'message' => 'An error occurred while saving address.'
+            ], 500);
         }
-
-        $validatedAddress = $this->validateAddress($request);
-
-        $address = Address::create([
-            'user_id' => Auth::id(),
-            'full_name' => $validatedAddress['full_name'],
-            'phone' => $validatedAddress['phone'],
-            'address_line' => $validatedAddress['address_line'],
-            'city' => $validatedAddress['city'],
-            'state' => $validatedAddress['state'],
-            'pincode' => $validatedAddress['pincode'],
-            'country' => $validatedAddress['country'],
-        ]);
-
-        $order->update([
-            'address_id' => $address->id,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Address saved successfully',
-            'data' => [
-                'order' => $order,
-                'address' => $address,
-                'redirect' => $this->frontendPath('/checkout/payment')
-            ]
-        ]);
     }
 
     public function success(Order $order)
     {
-        if ($order->user_id !== Auth::id()) {
+        try {
+            if ($order->user_id !== Auth::id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access'
+                ], 403);
+            }
+
+            $order->load('items.book');
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'order' => $order
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('CheckoutController.success: ' . $e->getMessage() . ' on line ' . $e->getLine());
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized access'
-            ], 403);
+                'message' => 'An error occurred while loading success page.'
+            ], 500);
         }
-
-        $order->load('items.book');
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'order' => $order
-            ]
-        ]);
     }
 
     private function syncCartItemPrices(Cart $cart): void

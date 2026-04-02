@@ -9,29 +9,45 @@ class NotificationController extends Controller
 {
     public function index(Request $request)
     {
-        $notifications = $request->user()
-            ? $request->user()->notifications()->latest()->paginate(10)
-            : collect();
+        try {
+            $notifications = $request->user()
+                ? $request->user()->notifications()->latest()->paginate(10)
+                : collect();
 
-        return response()->json([
-            'success' => true,
-            'data' => $notifications,
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $notifications,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('NotificationController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while loading notifications.'
+            ], 500);
+        }
     }
 
     public function markAsRead(Request $request, string $id)
     {
-        $notification = $request->user()
-            ? $request->user()->notifications()->where('id', $id)->firstOrFail()
-            : null;
+        try {
+            $notification = $request->user()
+                ? $request->user()->notifications()->where('id', $id)->firstOrFail()
+                : null;
 
-        if ($notification) {
-            $notification->markAsRead();
+            if ($notification) {
+                $notification->markAsRead();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Notification marked as read.',
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('NotificationController.markAsRead: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while marking notification as read.'
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Notification marked as read.',
-        ]);
     }
 }

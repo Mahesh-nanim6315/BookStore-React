@@ -16,7 +16,12 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): View
     {
-        return view('auth.login');
+        try {
+            return view('auth.login');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('AuthenticatedSessionController.create: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            abort(500, 'An error occurred while loading the login page.');
+        }
     }
 
     /**
@@ -24,14 +29,19 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request)
     {
-        $request->authenticate();
-        $request->session()->regenerate();
+        try {
+            $request->authenticate();
+            $request->session()->regenerate();
 
-      if (Auth::check() && in_array(Auth::user()->role, ['user', 'admin', 'manager', 'staff'])) {
-            return redirect()->route('admin.dashboard');
+            if (Auth::check() && in_array(Auth::user()->role, ['user', 'admin', 'manager', 'staff'])) {
+                return redirect()->route('admin.dashboard');
+            }
+
+            return redirect()->route('home');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('AuthenticatedSessionController.store: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return redirect()->back()->withErrors(['error' => 'An error occurred during login. Please try again.']);
         }
-
-        return redirect()->route('home'); 
     }
 
     /**
@@ -39,12 +49,17 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        Auth::guard('web')->logout();
+        try {
+            Auth::guard('web')->logout();
 
-        $request->session()->invalidate();
+            $request->session()->invalidate();
 
-        $request->session()->regenerateToken();
+            $request->session()->regenerateToken();
 
-        return redirect('/');
+            return redirect('/');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('AuthenticatedSessionController.destroy: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return redirect('/')->withErrors(['error' => 'An error occurred during logout.']);
+        }
     }
 }

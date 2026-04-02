@@ -10,54 +10,78 @@ class ReviewControllers extends Controller
 {
     public function index(Request $request)
     {
-        $query = Review::with(['user', 'book']);
+        try {
+            $query = Review::with(['user', 'book']);
 
-        // Filter by approval
-        if ($request->filled('status')) {
-            $query->where('is_approved', $request->status);
-        }
+            // Filter by approval
+            if ($request->filled('status')) {
+                $query->where('is_approved', $request->status);
+            }
 
-        // Search by book or user
-        if ($request->filled('search')) {
-            $query->where(function($q) use ($request) {
-                $q->whereHas('book', function($q) use ($request) {
-                    $q->where('name', 'like', '%' . $request->search . '%');
-                })->orWhereHas('user', function($q) use ($request) {
-                    $q->where('name', 'like', '%' . $request->search . '%');
+            // Search by book or user
+            if ($request->filled('search')) {
+                $query->where(function($q) use ($request) {
+                    $q->whereHas('book', function($q) use ($request) {
+                        $q->where('name', 'like', '%' . $request->search . '%');
+                    })->orWhereHas('user', function($q) use ($request) {
+                        $q->where('name', 'like', '%' . $request->search . '%');
+                    });
                 });
-            });
+            }
+
+            $reviews = $query->latest()->paginate(10);
+
+            return response()->json([
+                'success' => true,
+                'data' => $reviews
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('ReviewControllers.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while loading reviews.'
+            ], 500);
         }
-
-        $reviews = $query->latest()->paginate(10);
-
-        return response()->json([
-            'success' => true,
-            'data' => $reviews
-        ]);
     }
 
     public function approve(Review $review)
     {
-        $review->update([
-            'is_approved' => !$review->is_approved
-        ]);
+        try {
+            $review->update([
+                'is_approved' => !$review->is_approved
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Review status updated',
-            'data' => [
-                'review' => $review->fresh(['user', 'book'])
-            ]
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Review status updated',
+                'data' => [
+                    'review' => $review->fresh(['user', 'book'])
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('ReviewControllers.approve: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating review status.'
+            ], 500);
+        }
     }
 
     public function destroy(Review $review)
     {
-        $review->delete();
+        try {
+            $review->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Review deleted'
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Review deleted'
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('ReviewControllers.destroy: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while deleting the review.'
+            ], 500);
+        }
     }
 }

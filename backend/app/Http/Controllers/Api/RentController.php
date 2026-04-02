@@ -12,32 +12,48 @@ class RentController extends Controller
 {
     public function rentEbook(Book $book)
     {
-        $libraryItem = $this->rentFormat($book, 'ebook');
+        try {
+            $libraryItem = $this->rentFormat($book, 'ebook');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'E-Book rented successfully!',
-            'data' => [
-                'book' => $book,
-                'format' => 'ebook',
-                'library_item' => $libraryItem,
-            ]
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'E-Book rented successfully!',
+                'data' => [
+                    'book' => $book,
+                    'format' => 'ebook',
+                    'library_item' => $libraryItem,
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('RentController.rentEbook: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while renting ebook.'
+            ], 500);
+        }
     }
 
     public function rentAudio(Book $book)
     {
-        $libraryItem = $this->rentFormat($book, 'audio');
+        try {
+            $libraryItem = $this->rentFormat($book, 'audio');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Audio book rented successfully!',
-            'data' => [
-                'book' => $book,
-                'format' => 'audio',
-                'library_item' => $libraryItem,
-            ]
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Audio book rented successfully!',
+                'data' => [
+                    'book' => $book,
+                    'format' => 'audio',
+                    'library_item' => $libraryItem,
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('RentController.rentAudio: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while renting audio book.'
+            ], 500);
+        }
     }
 
     private function rentFormat(Book $book, string $format): UserLibrary

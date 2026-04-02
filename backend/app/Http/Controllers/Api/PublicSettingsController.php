@@ -9,9 +9,17 @@ class PublicSettingsController extends Controller
 {
     public function index()
     {
-        return response()->json([
-            'success' => true,
-            'data' => AdminSettingsController::publicSettingsPayload(),
-        ]);
+        try {
+            return response()->json([
+                'success' => true,
+                'data' => AdminSettingsController::publicSettingsPayload(),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('PublicSettingsController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while loading public settings.'
+            ], 500);
+        }
     }
 }

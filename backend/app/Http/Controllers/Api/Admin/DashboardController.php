@@ -14,102 +14,118 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $totalOrders = Order::count();
+        try {
+            $totalOrders = Order::count();
 
-        $totalRevenue = Order::where('payment_status', 'paid')
-            ->sum('total_amount');
+            $totalRevenue = Order::where('payment_status', 'paid')
+                ->sum('total_amount');
 
-        $totalUsers = User::count();
-        $totalBooks = Book::count();
+            $totalUsers = User::count();
+            $totalBooks = Book::count();
 
-        $recentOrders = Order::with('user')
-            ->latest()
-            ->take(5)
-            ->get();
+            $recentOrders = Order::with('user')
+                ->latest()
+                ->take(5)
+                ->get();
 
-        $lowStockBooks = Book::where('has_paperback', true)
-            ->where('stock', '<', 5)
-            ->orderBy('stock', 'asc')
-            ->take(5)
-            ->get();
+            $lowStockBooks = Book::where('has_paperback', true)
+                ->where('stock', '<', 5)
+                ->orderBy('stock', 'asc')
+                ->take(5)
+                ->get();
 
-        $topSellingBooks = OrderItem::select(
-            'book_id',
-            DB::raw('SUM(quantity) as total_sold')
-        )
-            ->groupBy('book_id')
-            ->orderByDesc('total_sold')
-            ->with('book')
-            ->take(5)
-            ->get();
+            $topSellingBooks = OrderItem::select(
+                'book_id',
+                DB::raw('SUM(quantity) as total_sold')
+            )
+                ->groupBy('book_id')
+                ->orderByDesc('total_sold')
+                ->with('book')
+                ->take(5)
+                ->get();
 
-        $monthlySales = Order::select(
-            DB::raw('MONTH(created_at) as month'),
-            DB::raw('SUM(total_amount) as total')
-        )
-            ->where('payment_status', 'paid')
-            ->groupBy(DB::raw('MONTH(created_at)'))
-            ->orderBy(DB::raw('MONTH(created_at)'))
-            ->get();
+            $monthlySales = Order::select(
+                DB::raw('MONTH(created_at) as month'),
+                DB::raw('SUM(total_amount) as total')
+            )
+                ->where('payment_status', 'paid')
+                ->groupBy(DB::raw('MONTH(created_at)'))
+                ->orderBy(DB::raw('MONTH(created_at)'))
+                ->get();
 
-        $months = [];
-        $sales = [];
+            $months = [];
+            $sales = [];
 
-        foreach ($monthlySales as $data) {
-            $months[] = date('F', mktime(0, 0, 0, $data->month, 1));
-            $sales[] = $data->total;
-        }
+            foreach ($monthlySales as $data) {
+                $months[] = date('F', mktime(0, 0, 0, $data->month, 1));
+                $sales[] = $data->total;
+            }
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'total_orders' => $totalOrders,
-                'total_revenue' => $totalRevenue,
-                'total_users' => $totalUsers,
-                'total_books' => $totalBooks,
-                'chart_data' => [
-                    'months' => $months,
-                    'sales' => $sales,
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total_orders' => $totalOrders,
+                    'total_revenue' => $totalRevenue,
+                    'total_users' => $totalUsers,
+                    'total_books' => $totalBooks,
+                    'chart_data' => [
+                        'months' => $months,
+                        'sales' => $sales,
+                    ],
+                    'recent_orders' => $recentOrders,
+                    'low_stock_books' => $lowStockBooks,
+                    'top_selling_books' => $topSellingBooks,
                 ],
-                'recent_orders' => $recentOrders,
-                'low_stock_books' => $lowStockBooks,
-                'top_selling_books' => $topSellingBooks,
-            ],
-        ]);
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('DashboardController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while loading dashboard data.'
+            ], 500);
+        }
     }
 
     public function dashboard()
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        if (! $user) {
+            if (! $user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthenticated',
+                ], 401);
+            }
+
+            if (! $user->hasPermission('access_dashboard')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access',
+                ], 403);
+            }
+
+            $dashboardType = strtolower((string) $user->role) === 'admin' ? 'admin' : 'dashboard';
+
             return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated',
-            ], 401);
-        }
-
-        if (! $user->hasPermission('access_dashboard')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized access',
-            ], 403);
-        }
-
-        $dashboardType = strtolower((string) $user->role) === 'admin' ? 'admin' : 'dashboard';
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'dashboard_type' => $dashboardType,
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $user->role,
-                    'permissions' => $user->permissions(),
+                'success' => true,
+                'data' => [
+                    'dashboard_type' => $dashboardType,
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'role' => $user->role,
+                        'permissions' => $user->permissions(),
+                    ],
                 ],
-            ],
-        ]);
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('DashboardController.dashboard: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while loading dashboard.'
+            ], 500);
+        }
     }
 }

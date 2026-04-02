@@ -19,7 +19,12 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
-        return view('auth.register');
+        try {
+            return view('auth.register');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('RegisteredUserController.create: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            abort(500, 'An error occurred while loading the registration page.');
+        }
     }
 
     /**
@@ -29,22 +34,27 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+        try {
+            $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+                'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+            ]);
 
-        event(new Registered($user));
+            event(new Registered($user));
 
-        Auth::login($user);
+            Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+            return redirect(route('dashboard', absolute: false));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('RegisteredUserController.store: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return redirect()->back()->withInput($request->only('name', 'email'))->withErrors(['error' => 'An error occurred during registration. Please try again.']);
+        }
     }
 }

@@ -21,47 +21,60 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request)
     {
-        $request->ensureIsNotRateLimited();
+        try {
+            $request->ensureIsNotRateLimited();
 
-        $credentials = $request->validated();
-        $email = Str::lower(trim((string) $credentials['email']));
+            $credentials = $request->validated();
+            $email = Str::lower(trim((string) $credentials['email']));
 
-        // API login should be stateless; avoid session-based auth.
-        $user = User::where('email', $email)->first();
-        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
-            $request->hitRateLimiter();
+            // API login should be stateless; avoid session-based auth.
+            $user = User::where('email', $email)->first();
+            if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+                $request->hitRateLimiter();
 
-            throw ValidationException::withMessages([
-                'email' => ['Invalid credentials.'],
+                throw ValidationException::withMessages([
+                    'email' => ['Invalid credentials.'],
+                ]);
+            }
+
+            if (! $user->is_active) {
+                $request->hitRateLimiter();
+
+                throw ValidationException::withMessages([
+                    'email' => ['This account has been deactivated. Please contact support.'],
+                ]);
+            }
+
+            if ((string) Setting::get('maintenance_mode', 0) === '1' && strtolower((string) $user->role) !== 'admin') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The site is currently in maintenance mode. Only admins can sign in.',
+                ], 503);
+            }
+
+            $request->clearRateLimiter();
+
+            // Create token for API
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'token' => $token,
+                'user' => $this->formatUser($user),
+                'message' => 'Login successful'
             ]);
-        }
-
-        if (! $user->is_active) {
-            $request->hitRateLimiter();
-
-            throw ValidationException::withMessages([
-                'email' => ['This account has been deactivated. Please contact support.'],
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('AuthController.login failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
             ]);
-        }
-
-        if ((string) Setting::get('maintenance_mode', 0) === '1' && strtolower((string) $user->role) !== 'admin') {
+            
             return response()->json([
                 'success' => false,
-                'message' => 'The site is currently in maintenance mode. Only admins can sign in.',
-            ], 503);
+                'message' => 'Operation failed',
+            ], 500);
         }
-
-        $request->clearRateLimiter();
-
-        // Create token for API
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'success' => true,
-            'token' => $token,
-            'user' => $this->formatUser($user),
-            'message' => 'Login successful'
-        ]);
     }
 
     /**
@@ -69,41 +82,54 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
-        if ((string) Setting::get('maintenance_mode', 0) === '1') {
+        try {
+            if ((string) Setting::get('maintenance_mode', 0) === '1') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Registration is unavailable while maintenance mode is enabled.',
+                ], 503);
+            }
+
+            $request->merge([
+                'email' => Str::lower(trim((string) $request->email)),
+            ]);
+
+            $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+                'password' => ['required', 'confirmed', PasswordRule::defaults()],
+            ]);
+
+            $email = $request->string('email')->toString();
+
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $email,
+                'password' => Hash::make($request->password),
+                'role' => 'user', // Default role for new registrations
+            ]);
+
+            // Create token for API
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'token' => $token,
+                'user' => $this->formatUser($user),
+                'message' => 'Registration successful'
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('AuthController.register failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+            ]);
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Registration is unavailable while maintenance mode is enabled.',
-            ], 503);
+                'message' => 'Operation failed',
+            ], 500);
         }
-
-        $request->merge([
-            'email' => Str::lower(trim((string) $request->email)),
-        ]);
-
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'confirmed', PasswordRule::defaults()],
-        ]);
-
-        $email = $request->string('email')->toString();
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $email,
-            'password' => Hash::make($request->password),
-            'role' => 'user', // Default role for new registrations
-        ]);
-
-        // Create token for API
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'success' => true,
-            'token' => $token,
-            'user' => $this->formatUser($user),
-            'message' => 'Registration successful'
-        ]);
     }
 
     /**
@@ -111,13 +137,26 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        // Revoke the token that was used to authenticate the current request
-        $request->user()->currentAccessToken()->delete();
+        try {
+            // Revoke the token that was used to authenticate the current request
+            $request->user()->currentAccessToken()->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Logout successful'
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Logout successful'
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('AuthController.logout failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Operation failed',
+            ], 500);
+        }
     }
 
     /**
@@ -125,39 +164,52 @@ class AuthController extends Controller
      */
     public function forgotPassword(Request $request)
     {
-        if ((string) Setting::get('maintenance_mode', 0) === '1') {
+        try {
+            if ((string) Setting::get('maintenance_mode', 0) === '1') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Password reset is unavailable while maintenance mode is enabled.',
+                ], 503);
+            }
+
+            $request->merge([
+                'email' => Str::lower(trim((string) $request->email)),
+            ]);
+
+            $request->validate(['email' => 'required|email']);
+
+            $email = $request->string('email')->toString();
+
+            $status = Password::sendResetLink(
+                ['email' => $email]
+            );
+
+            if ($status !== Password::RESET_LINK_SENT) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => [
+                        'email' => [__($status)],
+                    ],
+                    'message' => __($status),
+                ], 422);
+            }
+
             return response()->json([
-                'success' => false,
-                'message' => 'Password reset is unavailable while maintenance mode is enabled.',
-            ], 503);
-        }
-
-        $request->merge([
-            'email' => Str::lower(trim((string) $request->email)),
-        ]);
-
-        $request->validate(['email' => 'required|email']);
-
-        $email = $request->string('email')->toString();
-
-        $status = Password::sendResetLink(
-            ['email' => $email]
-        );
-
-        if ($status !== Password::RESET_LINK_SENT) {
-            return response()->json([
-                'success' => false,
-                'errors' => [
-                    'email' => [__($status)],
-                ],
+                'success' => true,
                 'message' => __($status),
-            ], 422);
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('AuthController.forgotPassword failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Operation failed',
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => __($status),
-        ]);
     }
 
     /**
@@ -165,57 +217,70 @@ class AuthController extends Controller
      */
     public function resetPassword(Request $request)
     {
-        if ((string) Setting::get('maintenance_mode', 0) === '1') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Password reset is unavailable while maintenance mode is enabled.',
-            ], 503);
-        }
-
-        $request->merge([
-            'email' => Str::lower(trim((string) $request->email)),
-        ]);
-
-        $request->validate([
-            'token' => 'required',
-            'email' => 'required|email',
-            'password' => ['required', 'confirmed', PasswordRule::defaults()],
-            'password_confirmation' => 'required',
-        ]);
-
-        $email = $request->string('email')->toString();
-
-        $status = Password::reset(
-            [
-                'email' => $email,
-                'password' => $request->password,
-                'password_confirmation' => $request->password_confirmation,
-                'token' => $request->token,
-            ],
-            function (User $user) use ($request) {
-                $user->forceFill([
-                    'password' => Hash::make($request->password),
-                    'remember_token' => Str::random(60),
-                ])->save();
-
-                event(new PasswordReset($user));
+        try {
+            if ((string) Setting::get('maintenance_mode', 0) === '1') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Password reset is unavailable while maintenance mode is enabled.',
+                ], 503);
             }
-        );
 
-        if ($status !== Password::PASSWORD_RESET) {
+            $request->merge([
+                'email' => Str::lower(trim((string) $request->email)),
+            ]);
+
+            $request->validate([
+                'token' => 'required',
+                'email' => 'required|email',
+                'password' => ['required', 'confirmed', PasswordRule::defaults()],
+                'password_confirmation' => 'required',
+            ]);
+
+            $email = $request->string('email')->toString();
+
+            $status = Password::reset(
+                [
+                    'email' => $email,
+                    'password' => $request->password,
+                    'password_confirmation' => $request->password_confirmation,
+                    'token' => $request->token,
+                ],
+                function (User $user) use ($request) {
+                    $user->forceFill([
+                        'password' => Hash::make($request->password),
+                        'remember_token' => Str::random(60),
+                    ])->save();
+
+                    event(new PasswordReset($user));
+                }
+            );
+
+            if ($status !== Password::PASSWORD_RESET) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => [
+                        'email' => [__($status)],
+                    ],
+                    'message' => __($status),
+                ], 422);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => __($status),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('AuthController.resetPassword failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+            ]);
+            
             return response()->json([
                 'success' => false,
-                'errors' => [
-                    'email' => [__($status)],
-                ],
-                'message' => __($status),
-            ], 422);
+                'message' => 'Operation failed',
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => __($status),
-        ]);
     }
 
     /**
@@ -223,10 +288,23 @@ class AuthController extends Controller
      */
     public function user(Request $request)
     {
-        return response()->json([
-            'success' => true,
-            'user' => $this->formatUser($request->user())
-        ]);
+        try {
+            return response()->json([
+                'success' => true,
+                'user' => $this->formatUser($request->user())
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('AuthController.user failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Operation failed',
+            ], 500);
+        }
     }
 
     private function formatUser(User $user): array

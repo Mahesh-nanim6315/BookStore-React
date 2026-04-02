@@ -22,51 +22,67 @@ class SettingsController extends Controller
 
     public function index()
     {
-        $settings = $this->settingsPayload();
+        try {
+            $settings = $this->settingsPayload();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'settings' => $settings
-            ]
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'settings' => $settings
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('SettingsController.index: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while loading settings.'
+            ], 500);
+        }
     }
 
     public function update(Request $request)
     {
-        $validated = $request->validate([
-            'site_name' => ['nullable', 'string', 'max:255'],
-            'support_email' => ['nullable', 'email', 'max:255'],
-            'tax_rate' => ['required', 'numeric', 'min:0', 'max:100'],
-            'maintenance_mode' => ['required', Rule::in(['0', '1', 0, 1, true, false])],
-            'subscriptions_enabled' => ['required', Rule::in(['0', '1', 0, 1, true, false])],
-            'free_trial_days' => ['required', 'integer', 'min:0', 'max:365'],
-            'auto_approve_reviews' => ['required', Rule::in(['0', '1', 0, 1, true, false])],
-            'books_per_page' => ['required', 'integer', 'min:5', 'max:100'],
-        ]);
+        try {
+            $validated = $request->validate([
+                'site_name' => ['nullable', 'string', 'max:255'],
+                'support_email' => ['nullable', 'email', 'max:255'],
+                'tax_rate' => ['required', 'numeric', 'min:0', 'max:100'],
+                'maintenance_mode' => ['required', Rule::in(['0', '1', 0, 1, true, false])],
+                'subscriptions_enabled' => ['required', Rule::in(['0', '1', 0, 1, true, false])],
+                'free_trial_days' => ['required', 'integer', 'min:0', 'max:365'],
+                'auto_approve_reviews' => ['required', Rule::in(['0', '1', 0, 1, true, false])],
+                'books_per_page' => ['required', 'integer', 'min:5', 'max:100'],
+            ]);
 
-        $normalized = [
-            'site_name' => trim((string) ($validated['site_name'] ?? '')),
-            'support_email' => trim((string) ($validated['support_email'] ?? '')),
-            'tax_rate' => $this->normalizeNumericSetting($validated['tax_rate']),
-            'maintenance_mode' => $this->normalizeBooleanSetting($validated['maintenance_mode']),
-            'subscriptions_enabled' => $this->normalizeBooleanSetting($validated['subscriptions_enabled']),
-            'free_trial_days' => (string) (int) $validated['free_trial_days'],
-            'auto_approve_reviews' => $this->normalizeBooleanSetting($validated['auto_approve_reviews']),
-            'books_per_page' => (string) (int) $validated['books_per_page'],
-        ];
+            $normalized = [
+                'site_name' => trim((string) ($validated['site_name'] ?? '')),
+                'support_email' => trim((string) ($validated['support_email'] ?? '')),
+                'tax_rate' => $this->normalizeNumericSetting($validated['tax_rate']),
+                'maintenance_mode' => $this->normalizeBooleanSetting($validated['maintenance_mode']),
+                'subscriptions_enabled' => $this->normalizeBooleanSetting($validated['subscriptions_enabled']),
+                'free_trial_days' => (string) (int) $validated['free_trial_days'],
+                'auto_approve_reviews' => $this->normalizeBooleanSetting($validated['auto_approve_reviews']),
+                'books_per_page' => (string) (int) $validated['books_per_page'],
+            ];
 
-        foreach ($normalized as $key => $value) {
-            Setting::set($key, $value);
+            foreach ($normalized as $key => $value) {
+                Setting::set($key, $value);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Settings updated successfully.',
+                'data' => [
+                    'settings' => $this->settingsPayload()
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('SettingsController.update: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating settings.'
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Settings updated successfully.',
-            'data' => [
-                'settings' => $this->settingsPayload()
-            ]
-        ]);
     }
 
     public static function publicSettingsPayload(): array
