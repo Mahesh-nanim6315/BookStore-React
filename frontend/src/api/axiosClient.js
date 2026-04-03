@@ -32,8 +32,8 @@ axiosClient.interceptors.response.use(
       const message = error.response?.data?.message || ''
       const isMaintenance = /maintenance/i.test(message)
 
-      if (isMaintenance && window.location.pathname !== '/maintenance') {
-        window.location.href = '/maintenance'
+      if (isMaintenance && globalThis.location.pathname !== '/maintenance') {
+        globalThis.location.href = '/maintenance'
       }
     }
 
@@ -44,7 +44,7 @@ axiosClient.interceptors.response.use(
       clearAuthSession()
       // Don't force-login redirect on logout attempts or when already logged out
       if (!url.includes('/logout') && hasToken) {
-        window.location.href = '/login'
+        globalThis.location.href = '/login'
       }
     }
     return Promise.reject(error)

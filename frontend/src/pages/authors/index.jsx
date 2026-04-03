@@ -25,6 +25,15 @@ const AuthorsIndex = () => {
   }, [])
 
   const featuredAuthors = useMemo(() => authors.slice(0, 3), [authors])
+  const getAuthorSummary = (author) => {
+    if (!author.bio) {
+      return 'A featured voice in the bookstore catalog.'
+    }
+
+    const truncatedBio = author.bio.substring(0, 130)
+
+    return author.bio.length > 130 ? `${truncatedBio}...` : truncatedBio
+  }
 
   if (loading) {
     return <Loader />
@@ -82,11 +91,7 @@ const AuthorsIndex = () => {
                 <div className="author-portrait-card__body">
                   <div>
                     <h2>{author.name}</h2>
-                    <p>
-                      {author.bio
-                        ? `${author.bio.substring(0, 130)}${author.bio.length > 130 ? '...' : ''}`
-                        : 'A featured voice in the bookstore catalog.'}
-                    </p>
+                    <p>{getAuthorSummary(author)}</p>
                   </div>
 
                   <Link to={`/authors/${author.id}`} className="author-portrait-card__link">

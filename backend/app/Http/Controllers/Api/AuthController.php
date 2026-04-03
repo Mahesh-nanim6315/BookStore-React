@@ -16,6 +16,8 @@ use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
+    private const OPERATION_FAILED_MESSAGE = 'Operation failed';
+
     /**
      * Handle an incoming authentication request.
      */
@@ -98,7 +100,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Operation failed',
+                'message' => self::OPERATION_FAILED_MESSAGE,
             ], 500);
         }
     }
@@ -179,7 +181,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Operation failed',
+                'message' => self::OPERATION_FAILED_MESSAGE,
             ], 500);
         }
     }
@@ -202,7 +204,7 @@ class AuthController extends Controller
 
                 return response()->json([
                 'success' => false,
-                'message' => 'Operation failed',
+                'message' => self::OPERATION_FAILED_MESSAGE,
             ], 500);
         }
     }
@@ -213,45 +215,48 @@ class AuthController extends Controller
     public function forgotPassword(Request $request)
     {
         try {
+            $statusCode = 200;
+
             if ((string) Setting::get('maintenance_mode', 0) === '1') {
-                return response()->json([
+                $response = [
                     'success' => false,
                     'message' => 'Password reset is unavailable while maintenance mode is enabled.',
-                ], 503);
+                ];
+                $statusCode = 503;
+            } else {
+                $request->merge([
+                    'email' => Str::lower(trim((string) $request->email)),
+                ]);
+
+                $request->validate(['email' => 'required|email']);
+
+                $email = $request->string('email')->toString();
+                $status = Password::sendResetLink(['email' => $email]);
+
+                if ($status !== Password::RESET_LINK_SENT) {
+                    $response = [
+                        'success' => false,
+                        'errors' => [
+                            'email' => [__($status)],
+                        ],
+                        'message' => __($status),
+                    ];
+                    $statusCode = 422;
+                } else {
+                    $response = [
+                        'success' => true,
+                        'message' => __($status),
+                    ];
+                }
             }
 
-            $request->merge([
-                'email' => Str::lower(trim((string) $request->email)),
-            ]);
-
-            $request->validate(['email' => 'required|email']);
-
-            $email = $request->string('email')->toString();
-
-            $status = Password::sendResetLink(
-                ['email' => $email]
-            );
-
-            if ($status !== Password::RESET_LINK_SENT) {
-                return response()->json([
-                    'success' => false,
-                    'errors' => [
-                        'email' => [__($status)],
-                    ],
-                    'message' => __($status),
-                ], 422);
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => __($status),
-            ]);
+            return response()->json($response, $statusCode);
             } catch (\Throwable $e) {
                 $this->logRequestErrorAuto($e);
 
                 return response()->json([
                 'success' => false,
-                'message' => 'Operation failed',
+                'message' => self::OPERATION_FAILED_MESSAGE,
             ], 500);
         }
     }
@@ -262,63 +267,69 @@ class AuthController extends Controller
     public function resetPassword(Request $request)
     {
         try {
+            $statusCode = 200;
+
             if ((string) Setting::get('maintenance_mode', 0) === '1') {
-                return response()->json([
+                $response = [
                     'success' => false,
                     'message' => 'Password reset is unavailable while maintenance mode is enabled.',
-                ], 503);
-            }
+                ];
+                $statusCode = 503;
+            } else {
+                $request->merge([
+                    'email' => Str::lower(trim((string) $request->email)),
+                ]);
 
-            $request->merge([
-                'email' => Str::lower(trim((string) $request->email)),
-            ]);
+                $request->validate([
+                    'token' => 'required',
+                    'email' => 'required|email',
+                    'password' => ['required', 'confirmed', PasswordRule::defaults()],
+                    'password_confirmation' => 'required',
+                ]);
 
-            $request->validate([
-                'token' => 'required',
-                'email' => 'required|email',
-                'password' => ['required', 'confirmed', PasswordRule::defaults()],
-                'password_confirmation' => 'required',
-            ]);
+                $email = $request->string('email')->toString();
 
-            $email = $request->string('email')->toString();
-
-            $status = Password::reset(
-                [
-                    'email' => $email,
-                    'password' => $request->password,
-                    'password_confirmation' => $request->password_confirmation,
-                    'token' => $request->token,
-                ],
-                function (User $user) use ($request) {
-                    $user->forceFill([
-                        'password' => Hash::make($request->password),
-                        'remember_token' => Str::random(60),
-                    ])->save();
-
-                    event(new PasswordReset($user));
-                }
-            );
-
-            if ($status !== Password::PASSWORD_RESET) {
-                return response()->json([
-                    'success' => false,
-                    'errors' => [
-                        'email' => [__($status)],
+                $status = Password::reset(
+                    [
+                        'email' => $email,
+                        'password' => $request->password,
+                        'password_confirmation' => $request->password_confirmation,
+                        'token' => $request->token,
                     ],
-                    'message' => __($status),
-                ], 422);
+                    function (User $user) use ($request) {
+                        $user->forceFill([
+                            'password' => Hash::make($request->password),
+                            'remember_token' => Str::random(60),
+                        ])->save();
+
+                        event(new PasswordReset($user));
+                    }
+                );
+
+                if ($status !== Password::PASSWORD_RESET) {
+                    $response = [
+                        'success' => false,
+                        'errors' => [
+                            'email' => [__($status)],
+                        ],
+                        'message' => __($status),
+                    ];
+                    $statusCode = 422;
+                } else {
+                    $response = [
+                        'success' => true,
+                        'message' => __($status),
+                    ];
+                }
             }
 
-            return response()->json([
-                'success' => true,
-                'message' => __($status),
-            ]);
+            return response()->json($response, $statusCode);
             } catch (\Throwable $e) {
                 $this->logRequestErrorAuto($e);
 
                 return response()->json([
                 'success' => false,
-                'message' => 'Operation failed',
+                'message' => self::OPERATION_FAILED_MESSAGE,
             ], 500);
         }
     }
@@ -338,7 +349,7 @@ class AuthController extends Controller
 
                 return response()->json([
                 'success' => false,
-                'message' => 'Operation failed',
+                'message' => self::OPERATION_FAILED_MESSAGE,
             ], 500);
         }
     }

@@ -60,11 +60,11 @@ const Products = () => {
 
   const updateUrl = (nextFormData) => {
     const params = new URLSearchParams()
-    Object.entries(nextFormData).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(nextFormData)) {
       if (value) {
         params.set(key, value)
       }
-    })
+    }
     setSearchParams(params)
   }
 
@@ -92,7 +92,7 @@ const Products = () => {
     const nextFormData = { ...formData, page: nextPage }
     setFormData(nextFormData)
     updateUrl(nextFormData)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    globalThis.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleWishlistToggle = async (bookId) => {
@@ -321,15 +321,9 @@ const Products = () => {
                     <div className="product-header">
                       <div className="product-title-block">
                         <h3>{book.name}</h3>
-                        {/* {book.author?.name && <p className="product-author">{book.author.name}</p>} */}
                       </div>
                       {book.is_premium && <span className="premium-badge">Premium</span>}
                     </div>
-
-                    {/* <div className="product-meta">
-                      {book.category?.name && <span>{book.category.name}</span>}
-                      {book.language && <span>{book.language}</span>}
-                    </div> */}
 
                     <Link to={`/products/${book.id}`} className="product-view-link">
                       View details

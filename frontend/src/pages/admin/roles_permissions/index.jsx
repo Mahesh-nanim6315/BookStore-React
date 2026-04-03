@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import PropTypes from 'prop-types'
 import Loader from '../../../components/common/Loader'
 import { getAdminRolesPermissions, updateAdminRolesPermissions } from '../../../api/adminRoles'
 import { showToast } from '../../../utils/toast'
@@ -12,32 +13,121 @@ const groupPermissions = (permissionLabels) => {
     System: [],
   }
 
-  Object.entries(permissionLabels || {}).forEach(([key, label]) => {
+  for (const [key, label] of Object.entries(permissionLabels || {})) {
     if (key.startsWith('books.') || key.startsWith('authors.')) {
       groups.Catalog.push([key, label])
-      return
+      continue
     }
 
     if (key.startsWith('users.')) {
       groups.Users.push([key, label])
-      return
+      continue
     }
 
     if (key === 'manage_reviews' || key === 'manage_notifications') {
       groups.Moderation.push([key, label])
-      return
+      continue
     }
 
     if (key === 'manage_roles_permissions') {
       groups.System.push([key, label])
-      return
+      continue
     }
 
     groups.General.push([key, label])
-  })
+  }
 
   return groups
 }
+
+const PermissionChip = ({ role, permissionKey, label, checked, togglePermission }) => (
+  <label
+    className={`roles-permission-chip ${checked ? 'active' : ''} ${role === 'admin' ? 'locked' : ''}`}
+  >
+    <input
+      type="checkbox"
+      checked={checked}
+      disabled={role === 'admin'}
+      onChange={() => togglePermission(role, permissionKey)}
+    />
+    <span>{label}</span>
+  </label>
+)
+
+const PermissionGroup = ({ role, groupName, permissions, selectedPermissions, togglePermission }) => (
+  <div className="roles-group">
+    <h4>{groupName}</h4>
+    <div className="roles-permissions-grid">
+      {permissions.map(([permissionKey, label]) => (
+        <PermissionChip
+          key={permissionKey}
+          role={role}
+          permissionKey={permissionKey}
+          label={label}
+          checked={selectedPermissions.includes(permissionKey)}
+          togglePermission={togglePermission}
+        />
+      ))}
+    </div>
+  </div>
+)
+
+const RoleCard = ({
+  role,
+  selectedPermissions,
+  groupedPermissions,
+  setAllForRole,
+  togglePermission,
+}) => (
+  <section className="roles-card">
+    <div className="roles-card-header">
+      <div>
+        <h3>{role.charAt(0).toUpperCase() + role.slice(1)}</h3>
+        <p className="book-subline">
+          {role === 'admin'
+            ? 'Admin always keeps full access.'
+            : `${selectedPermissions.length} permissions selected`}
+        </p>
+      </div>
+
+      {role === 'admin' ? (
+        <span className="review-status-badge approved">
+          Locked Full Access
+        </span>
+      ) : (
+        <div className="book-action-row">
+          <button
+            type="button"
+            className="admin-button"
+            onClick={() => setAllForRole(role, true)}
+          >
+            Select All
+          </button>
+          <button
+            type="button"
+            className="admin-button"
+            onClick={() => setAllForRole(role, false)}
+          >
+            Clear
+          </button>
+        </div>
+      )}
+    </div>
+
+    <div className="roles-groups">
+      {Object.entries(groupedPermissions).map(([groupName, permissions]) => (
+        <PermissionGroup
+          key={groupName}
+          role={role}
+          groupName={groupName}
+          permissions={permissions}
+          selectedPermissions={selectedPermissions}
+          togglePermission={togglePermission}
+        />
+      ))}
+    </div>
+  </section>
+)
 
 const AdminRolesPermissionsIndex = () => {
   const [loading, setLoading] = useState(true)
@@ -148,73 +238,16 @@ const AdminRolesPermissionsIndex = () => {
       <form onSubmit={handleSubmit} className="roles-shell">
         {roles.map((role) => {
           const selectedPermissions = rolePermissions[role] || []
-          const allPermissionKeys = Object.keys(permissionLabels)
-          const hasAll = allPermissionKeys.length > 0 && selectedPermissions.length === allPermissionKeys.length
 
           return (
-            <section key={role} className="roles-card">
-              <div className="roles-card-header">
-                <div>
-                  <h3>{role.charAt(0).toUpperCase() + role.slice(1)}</h3>
-                  <p className="book-subline">
-                    {role === 'admin'
-                      ? 'Admin always keeps full access.'
-                      : `${selectedPermissions.length} permissions selected`}
-                  </p>
-                </div>
-
-                {role !== 'admin' ? (
-                  <div className="book-action-row">
-                    <button
-                      type="button"
-                      className="admin-button"
-                      onClick={() => setAllForRole(role, true)}
-                    >
-                      Select All
-                    </button>
-                    <button
-                      type="button"
-                      className="admin-button"
-                      onClick={() => setAllForRole(role, false)}
-                    >
-                      Clear
-                    </button>
-                  </div>
-                ) : (
-                  <span className={`review-status-badge ${hasAll ? 'approved' : 'approved'}`}>
-                    Locked Full Access
-                  </span>
-                )}
-              </div>
-
-              <div className="roles-groups">
-                {Object.entries(groupedPermissions).map(([groupName, permissions]) => (
-                  <div key={groupName} className="roles-group">
-                    <h4>{groupName}</h4>
-                    <div className="roles-permissions-grid">
-                      {permissions.map(([permissionKey, label]) => {
-                        const checked = selectedPermissions.includes(permissionKey)
-
-                        return (
-                          <label
-                            key={permissionKey}
-                            className={`roles-permission-chip ${checked ? 'active' : ''} ${role === 'admin' ? 'locked' : ''}`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              disabled={role === 'admin'}
-                              onChange={() => togglePermission(role, permissionKey)}
-                            />
-                            <span>{label}</span>
-                          </label>
-                        )
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
+            <RoleCard
+              key={role}
+              role={role}
+              selectedPermissions={selectedPermissions}
+              groupedPermissions={groupedPermissions}
+              setAllForRole={setAllForRole}
+              togglePermission={togglePermission}
+            />
           )
         })}
 
@@ -226,6 +259,34 @@ const AdminRolesPermissionsIndex = () => {
       </form>
     </div>
   )
+}
+
+PermissionChip.propTypes = {
+  role: PropTypes.string.isRequired,
+  permissionKey: PropTypes.string.isRequired,
+  label: PropTypes.string.isRequired,
+  checked: PropTypes.bool.isRequired,
+  togglePermission: PropTypes.func.isRequired,
+}
+
+PermissionGroup.propTypes = {
+  role: PropTypes.string.isRequired,
+  groupName: PropTypes.string.isRequired,
+  permissions: PropTypes.arrayOf(
+    PropTypes.arrayOf(PropTypes.string).isRequired,
+  ).isRequired,
+  selectedPermissions: PropTypes.arrayOf(PropTypes.string).isRequired,
+  togglePermission: PropTypes.func.isRequired,
+}
+
+RoleCard.propTypes = {
+  role: PropTypes.string.isRequired,
+  selectedPermissions: PropTypes.arrayOf(PropTypes.string).isRequired,
+  groupedPermissions: PropTypes.objectOf(
+    PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.string).isRequired).isRequired,
+  ).isRequired,
+  setAllForRole: PropTypes.func.isRequired,
+  togglePermission: PropTypes.func.isRequired,
 }
 
 export default AdminRolesPermissionsIndex

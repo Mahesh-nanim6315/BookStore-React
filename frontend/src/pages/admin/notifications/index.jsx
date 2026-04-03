@@ -123,7 +123,7 @@ const AdminNotificationsIndex = () => {
                 </div>
               </div>
 
-              {!notification.read_at ? (
+              {notification.read_at ? null : (
                 <button
                   type="button"
                   className="admin-button review-action-button"
@@ -131,7 +131,7 @@ const AdminNotificationsIndex = () => {
                 >
                   Mark as read
                 </button>
-              ) : null}
+              )}
             </article>
           ))
         ) : (

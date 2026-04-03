@@ -88,7 +88,7 @@ const useSubscriptionManager = ({ basePath = '/plans' } = {}) => {
       })
 
       if (response.data?.checkout_url) {
-        window.location.href = response.data.checkout_url
+        globalThis.location.href = response.data.checkout_url
         return
       }
 

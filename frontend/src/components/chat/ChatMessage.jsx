@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
 const ChatMessage = ({ message }) => {
   const isUser = message.role === 'user'
@@ -17,6 +18,13 @@ const ChatMessage = ({ message }) => {
       </div>
     </div>
   )
+}
+
+ChatMessage.propTypes = {
+  message: PropTypes.shape({
+    role: PropTypes.string.isRequired,
+    content: PropTypes.node.isRequired,
+  }).isRequired,
 }
 
 export default ChatMessage

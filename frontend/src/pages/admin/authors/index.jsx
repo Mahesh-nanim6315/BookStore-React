@@ -55,7 +55,7 @@ const AdminAuthorsIndex = () => {
   }
 
   const handleDelete = async (authorId) => {
-    if (!window.confirm('Delete this author?')) {
+    if (!globalThis.confirm('Delete this author?')) {
       return
     }
 

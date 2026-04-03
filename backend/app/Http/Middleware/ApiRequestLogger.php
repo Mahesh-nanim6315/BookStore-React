@@ -15,7 +15,7 @@ class ApiRequestLogger
         $response = $next($request);
 
         try {
-            if (! $this->shouldLog($request, $response)) {
+            if (! $this->shouldLog($request)) {
                 return $response;
             }
 
@@ -46,7 +46,7 @@ class ApiRequestLogger
         return $response;
     }
 
-    private function shouldLog(Request $request, Response $response): bool
+    private function shouldLog(Request $request): bool
     {
         return $request->expectsJson()
             || $request->is('api/*')
@@ -73,23 +73,23 @@ class ApiRequestLogger
 
     private function extractResponseSummary(Response $response): array
     {
-        if (! method_exists($response, 'getContent')) {
-            return [];
+        $summary = [];
+
+        if (method_exists($response, 'getContent')) {
+            $content = $response->getContent();
+
+            if (is_string($content) && $content !== '') {
+                $decoded = json_decode($content, true);
+
+                if (is_array($decoded)) {
+                    $summary = array_filter([
+                        'success' => $decoded['success'] ?? null,
+                        'message' => $decoded['message'] ?? null,
+                    ], static fn ($value) => $value !== null);
+                }
+            }
         }
 
-        $content = $response->getContent();
-        if (! is_string($content) || $content === '') {
-            return [];
-        }
-
-        $decoded = json_decode($content, true);
-        if (! is_array($decoded)) {
-            return [];
-        }
-
-        return array_filter([
-            'success' => $decoded['success'] ?? null,
-            'message' => $decoded['message'] ?? null,
-        ], static fn ($value) => $value !== null);
+        return $summary;
     }
 }

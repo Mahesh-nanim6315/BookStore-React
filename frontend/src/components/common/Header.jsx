@@ -50,10 +50,10 @@ const Header = () => {
       }
     }
 
-    window.addEventListener(CART_UPDATED_EVENT, handleCartUpdated)
+    globalThis.addEventListener(CART_UPDATED_EVENT, handleCartUpdated)
 
     return () => {
-      window.removeEventListener(CART_UPDATED_EVENT, handleCartUpdated)
+      globalThis.removeEventListener(CART_UPDATED_EVENT, handleCartUpdated)
     }
   }, [isAuthenticated])
 

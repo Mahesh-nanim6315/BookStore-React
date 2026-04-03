@@ -38,11 +38,11 @@ const AdminSubscriptionsIndex = () => {
       nextParams.set('page', String(page))
     }
 
-    Object.entries(nextFilters).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(nextFilters)) {
       if (value && value !== 'all') {
         nextParams.set(key, value)
       }
-    })
+    }
 
     setSearchParams(nextParams)
   }
@@ -117,7 +117,7 @@ const AdminSubscriptionsIndex = () => {
   }
 
   const handleCancel = async (subscription) => {
-    if (!window.confirm(`Cancel ${subscription.name}'s subscription at period end?`)) {
+    if (!globalThis.confirm(`Cancel ${subscription.name}'s subscription at period end?`)) {
       return
     }
 
@@ -143,7 +143,7 @@ const AdminSubscriptionsIndex = () => {
   }
 
   const handleDelete = async (subscription) => {
-    if (!window.confirm(`Delete ${subscription.name}'s subscription record and reset the user to the free plan?`)) {
+    if (!globalThis.confirm(`Delete ${subscription.name}'s subscription record and reset the user to the free plan?`)) {
       return
     }
 

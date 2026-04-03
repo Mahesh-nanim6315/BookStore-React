@@ -80,7 +80,7 @@ const BooksIndex = () => {
   }
 
   const handleDelete = async (bookId) => {
-    if (!window.confirm('Delete this book?')) {
+    if (!globalThis.confirm('Delete this book?')) {
       return
     }
 
@@ -285,7 +285,7 @@ const BooksIndex = () => {
               ← Previous
             </button>
 
-            {[...Array(meta.last_page)].map((_, index) => {
+            {new Array(meta.last_page).map((_, index) => {
               const pageNumber = index + 1
 
               if (

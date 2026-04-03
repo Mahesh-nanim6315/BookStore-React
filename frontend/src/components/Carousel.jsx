@@ -1,5 +1,6 @@
 import React, { useRef } from 'react'
 import { Link } from 'react-router-dom'
+import PropTypes from 'prop-types'
 import { getImageUrl } from '../utils/imageUtils'
 
 const Carousel = ({ title, books, category = null }) => {
@@ -68,6 +69,21 @@ const Carousel = ({ title, books, category = null }) => {
       </div>
     </section>
   )
+}
+
+Carousel.propTypes = {
+  title: PropTypes.string.isRequired,
+  books: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      image: PropTypes.string,
+      name: PropTypes.string.isRequired,
+      is_premium: PropTypes.bool,
+    })
+  ).isRequired,
+  category: PropTypes.shape({
+    slug: PropTypes.string.isRequired,
+  }),
 }
 
 export default Carousel

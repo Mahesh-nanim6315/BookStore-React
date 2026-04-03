@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
 import Loader from '../../../components/common/Loader'
 import {
   deleteAdminReview,
@@ -23,6 +24,10 @@ const truncateComment = (comment) => {
 const ReviewStars = ({ rating }) => {
   const total = Number(rating || 0)
   return <span className="review-stars">{'★'.repeat(total)}{'☆'.repeat(Math.max(0, 5 - total))}</span>
+}
+
+ReviewStars.propTypes = {
+  rating: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 }
 
 const AdminReviewsIndex = () => {
@@ -92,7 +97,7 @@ const AdminReviewsIndex = () => {
   }
 
   const handleDelete = async (reviewId) => {
-    if (!window.confirm('Delete this review?')) {
+    if (!globalThis.confirm('Delete this review?')) {
       return
     }
 

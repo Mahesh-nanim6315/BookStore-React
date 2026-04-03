@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react'
+import PropTypes from 'prop-types'
 import { login as loginApi, register as registerApi, logout as logoutApi, getUser } from '../api/auth'
 import { normalizeApiErrors } from '../utils/formErrors'
 import { clearAuthSession, getStoredToken, setAuthSession, updateStoredUser } from '../utils/authStorage'
@@ -105,7 +106,7 @@ export const AuthProvider = ({ children }) => {
     updateStoredUser(userData)
   }
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     loading,
     isAuthenticated,
@@ -113,12 +114,16 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateUser,
-    loadUser
-  }
+    loadUser,
+  }), [user, loading, isAuthenticated])
 
   return (
     <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )
+}
+
+AuthProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 }

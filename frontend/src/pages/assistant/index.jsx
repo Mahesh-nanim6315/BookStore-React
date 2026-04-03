@@ -6,21 +6,21 @@ import DebugPanel from '../../components/chat/DebugPanel'
 import { getStoredToken } from '../../utils/authStorage'
 
 const createSessionId = () => {
-  if (window.crypto?.randomUUID) {
-    return window.crypto.randomUUID()
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID()
   }
 
   return `session-${Date.now()}`
 }
 
 const getStoredSessionId = () => {
-  const existing = localStorage.getItem('assistant_session_id')
+  const existing = globalThis.localStorage.getItem('assistant_session_id')
   if (existing) {
     return existing
   }
 
   const created = createSessionId()
-  localStorage.setItem('assistant_session_id', created)
+  globalThis.localStorage.setItem('assistant_session_id', created)
   return created
 }
 

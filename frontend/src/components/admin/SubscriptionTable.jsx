@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import PropTypes from 'prop-types'
 import { formatSubscriptionDate, subscriptionStatusLabelMap } from './subscriptionUtils'
 
 const SubscriptionTable = ({
@@ -130,6 +131,32 @@ const SubscriptionTable = ({
       </table>
     </div>
   )
+}
+
+SubscriptionTable.propTypes = {
+  subscriptions: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      name: PropTypes.string,
+      email: PropTypes.string,
+      created_at: PropTypes.string,
+      plan: PropTypes.string,
+      billing_cycle: PropTypes.string,
+      subscription_state: PropTypes.string,
+      stripe_status: PropTypes.string,
+      plan_expires_at: PropTypes.string,
+      subscription_ends_at: PropTypes.string,
+      trial_ends_at: PropTypes.string,
+      stripe_subscription_id: PropTypes.string,
+      can_cancel: PropTypes.bool,
+      can_resume: PropTypes.bool,
+      can_delete: PropTypes.bool,
+    })
+  ).isRequired,
+  submissions: PropTypes.objectOf(PropTypes.string).isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onResume: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
 }
 
 export default SubscriptionTable

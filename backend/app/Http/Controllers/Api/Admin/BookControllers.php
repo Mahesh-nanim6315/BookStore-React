@@ -13,6 +13,12 @@ use Illuminate\Validation\ValidationException;
 
 class BookControllers extends Controller
 {
+    private const NULLABLE_NON_NEGATIVE_NUMBER = 'nullable|numeric|min:0';
+    private const NULLABLE_NON_NEGATIVE_INTEGER = 'nullable|integer|min:0';
+    private const NULLABLE_URL = 'nullable|url';
+    private const NULLABLE_BOOLEAN = 'nullable|boolean';
+    private const REQUIRED_STRING_MAX_255 = 'required|string|max:255';
+
     public function index(Request $request)
     {
         try {
@@ -98,27 +104,27 @@ class BookControllers extends Controller
     {
         try {
             $validated = $request->validate([
-                'name' => 'required|string|max:255',
+                'name' => self::REQUIRED_STRING_MAX_255,
                 'description' => 'required|string',
-                'language' => 'required|string|max:255',
+                'language' => self::REQUIRED_STRING_MAX_255,
                 'author_id' => 'required|exists:authors,id',
                 'category_id' => 'required|exists:categories,id',
                 'genre_id' => 'required|exists:genres,id',
                 'image' => 'required|url',
                 'price' => 'required|numeric|min:0',
-                'ebook_price' => 'nullable|numeric|min:0',
-                'ebook_pdf' => 'nullable|url',
-                'ebook_pages' => 'nullable|integer|min:0',
-                'audio_price' => 'nullable|numeric|min:0',
-                'audio_file' => 'nullable|url',
-                'audio_minutes' => 'nullable|integer|min:0',
-                'paperback_price' => 'nullable|numeric|min:0',
-                'paperback_pages' => 'nullable|integer|min:0',
-                'stock' => 'nullable|integer|min:0',
-                'is_premium' => 'nullable|boolean',
-                'has_ebook' => 'nullable|boolean',
-                'has_audio' => 'nullable|boolean',
-                'has_paperback' => 'nullable|boolean',
+                'ebook_price' => self::NULLABLE_NON_NEGATIVE_NUMBER,
+                'ebook_pdf' => self::NULLABLE_URL,
+                'ebook_pages' => self::NULLABLE_NON_NEGATIVE_INTEGER,
+                'audio_price' => self::NULLABLE_NON_NEGATIVE_NUMBER,
+                'audio_file' => self::NULLABLE_URL,
+                'audio_minutes' => self::NULLABLE_NON_NEGATIVE_INTEGER,
+                'paperback_price' => self::NULLABLE_NON_NEGATIVE_NUMBER,
+                'paperback_pages' => self::NULLABLE_NON_NEGATIVE_INTEGER,
+                'stock' => self::NULLABLE_NON_NEGATIVE_INTEGER,
+                'is_premium' => self::NULLABLE_BOOLEAN,
+                'has_ebook' => self::NULLABLE_BOOLEAN,
+                'has_audio' => self::NULLABLE_BOOLEAN,
+                'has_paperback' => self::NULLABLE_BOOLEAN,
             ]);
 
             $this->validateFormatRequirements($request);
@@ -187,27 +193,27 @@ class BookControllers extends Controller
     {
         try {
             $validated = $request->validate([
-                'name' => 'required|string|max:255',
+                'name' => self::REQUIRED_STRING_MAX_255,
                 'description' => 'required|string',
-                'language' => 'required|string|max:255',
+                'language' => self::REQUIRED_STRING_MAX_255,
                 'author_id' => 'required|exists:authors,id',
                 'category_id' => 'required|exists:categories,id',
                 'genre_id' => 'required|exists:genres,id',
                 'image' => 'required|url',
                 'price' => 'required|numeric|min:0',
-                'ebook_price' => 'nullable|numeric|min:0',
-                'ebook_pdf' => 'nullable|url',
-                'ebook_pages' => 'nullable|integer|min:0',
-                'audio_price' => 'nullable|numeric|min:0',
-                'audio_file' => 'nullable|url',
-                'audio_minutes' => 'nullable|integer|min:0',
-                'paperback_price' => 'nullable|numeric|min:0',
-                'paperback_pages' => 'nullable|integer|min:0',
-                'stock' => 'nullable|integer|min:0',
-                'is_premium' => 'nullable|boolean',
-                'has_ebook' => 'nullable|boolean',
-                'has_audio' => 'nullable|boolean',
-                'has_paperback' => 'nullable|boolean',
+                'ebook_price' => self::NULLABLE_NON_NEGATIVE_NUMBER,
+                'ebook_pdf' => self::NULLABLE_URL,
+                'ebook_pages' => self::NULLABLE_NON_NEGATIVE_INTEGER,
+                'audio_price' => self::NULLABLE_NON_NEGATIVE_NUMBER,
+                'audio_file' => self::NULLABLE_URL,
+                'audio_minutes' => self::NULLABLE_NON_NEGATIVE_INTEGER,
+                'paperback_price' => self::NULLABLE_NON_NEGATIVE_NUMBER,
+                'paperback_pages' => self::NULLABLE_NON_NEGATIVE_INTEGER,
+                'stock' => self::NULLABLE_NON_NEGATIVE_INTEGER,
+                'is_premium' => self::NULLABLE_BOOLEAN,
+                'has_ebook' => self::NULLABLE_BOOLEAN,
+                'has_audio' => self::NULLABLE_BOOLEAN,
+                'has_paperback' => self::NULLABLE_BOOLEAN,
             ]);
 
             $this->validateFormatRequirements($request);
@@ -275,53 +281,58 @@ class BookControllers extends Controller
     {
         $errors = [];
 
-        if (
-            ! $request->boolean('has_ebook')
-            && ! $request->boolean('has_audio')
-            && ! $request->boolean('has_paperback')
-        ) {
+        $formatRequirements = [
+            'ebook' => [
+                'price' => 'eBook price is required when eBook is enabled.',
+                'pdf' => 'eBook PDF URL is required when eBook is enabled.',
+                'pages' => 'eBook pages are required when eBook is enabled.',
+            ],
+            'audio' => [
+                'price' => 'Audio price is required when audio is enabled.',
+                'file' => 'Audio file URL is required when audio is enabled.',
+                'minutes' => 'Audio minutes are required when audio is enabled.',
+            ],
+            'paperback' => [
+                'price' => 'Paperback price is required when paperback is enabled.',
+                'pages' => 'Paperback pages are required when paperback is enabled.',
+                'stock' => 'Paperback stock is required when paperback is enabled.',
+            ],
+        ];
+
+        if (! $this->hasEnabledFormat($request, array_keys($formatRequirements))) {
             $errors['formats'] = ['Enable at least one format before saving a book.'];
         }
 
-        if ($request->boolean('has_ebook')) {
-            if ($this->isBlank($request->input('ebook_price'))) {
-                $errors['ebook_price'] = ['eBook price is required when eBook is enabled.'];
+        foreach ($formatRequirements as $format => $fields) {
+            if (! $request->boolean("has_{$format}")) {
+                continue;
             }
-            if ($this->isBlank($request->input('ebook_pdf'))) {
-                $errors['ebook_pdf'] = ['eBook PDF URL is required when eBook is enabled.'];
-            }
-            if ($this->isBlank($request->input('ebook_pages'))) {
-                $errors['ebook_pages'] = ['eBook pages are required when eBook is enabled.'];
-            }
-        }
 
-        if ($request->boolean('has_audio')) {
-            if ($this->isBlank($request->input('audio_price'))) {
-                $errors['audio_price'] = ['Audio price is required when audio is enabled.'];
-            }
-            if ($this->isBlank($request->input('audio_file'))) {
-                $errors['audio_file'] = ['Audio file URL is required when audio is enabled.'];
-            }
-            if ($this->isBlank($request->input('audio_minutes'))) {
-                $errors['audio_minutes'] = ['Audio minutes are required when audio is enabled.'];
-            }
-        }
+            foreach ($fields as $field => $message) {
+                $inputKey = $format === 'paperback' && $field === 'stock'
+                    ? 'stock'
+                    : "{$format}_{$field}";
 
-        if ($request->boolean('has_paperback')) {
-            if ($this->isBlank($request->input('paperback_price'))) {
-                $errors['paperback_price'] = ['Paperback price is required when paperback is enabled.'];
-            }
-            if ($this->isBlank($request->input('paperback_pages'))) {
-                $errors['paperback_pages'] = ['Paperback pages are required when paperback is enabled.'];
-            }
-            if ($this->isBlank($request->input('stock'))) {
-                $errors['stock'] = ['Paperback stock is required when paperback is enabled.'];
+                if ($this->isBlank($request->input($inputKey))) {
+                    $errors[$inputKey] = [$message];
+                }
             }
         }
 
         if ($errors !== []) {
             throw ValidationException::withMessages($errors);
         }
+    }
+
+    private function hasEnabledFormat(Request $request, array $formats): bool
+    {
+        foreach ($formats as $format) {
+            if ($request->boolean("has_{$format}")) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function isBlank(mixed $value): bool

@@ -151,7 +151,7 @@ const ProductDetails = () => {
     }
 
     const handleDeleteReview = async (reviewId) => {
-        if (window.confirm('Are you sure you want to delete this review?')) {
+        if (globalThis.confirm('Are you sure you want to delete this review?')) {
             try {
                 const response = await deleteReview(reviewId)
 
@@ -317,6 +317,12 @@ const ProductDetails = () => {
                                                 ? book.audio_file 
                                                 : `http://localhost:8000/storage/${book.audio_file}`} 
                                                 type="audio/mpeg" />
+                                            <track
+                                                kind="captions"
+                                                src="data:text/vtt;charset=utf-8,WEBVTT%0A%0A"
+                                                srcLang="en"
+                                                label="English captions"
+                                            />
                                         </audio>
                                     )}
                                 </div>
@@ -469,11 +475,16 @@ const ProductDetails = () => {
             )}
 
             {editingReviewId && (
-                <div className="review-modal-backdrop" onClick={handleEditReviewCancel}>
-                    <div
+                <div className="review-modal-backdrop">
+                    <button
+                        type="button"
+                        className="review-modal-backdrop-close"
+                        onClick={handleEditReviewCancel}
+                        aria-label="Close edit review modal"
+                    />
+                    <dialog
+                        open
                         className="review-modal"
-                        onClick={(e) => e.stopPropagation()}
-                        role="dialog"
                         aria-modal="true"
                         aria-labelledby="edit-review-title"
                     >
@@ -538,7 +549,7 @@ const ProductDetails = () => {
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </dialog>
                 </div>
             )}
         </div>

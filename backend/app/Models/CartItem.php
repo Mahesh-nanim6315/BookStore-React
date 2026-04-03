@@ -9,12 +9,10 @@ class CartItem extends Model
     protected $fillable = [
         'cart_id',
         'book_id',
-        'format',   
+        'format',
         'price',
         'quantity',
     ];
-
-
 
     public function cart()
     {
@@ -25,8 +23,6 @@ class CartItem extends Model
     {
         return $this->belongsTo(Book::class);
     }
-
-   
 
     public function subtotal()
     {

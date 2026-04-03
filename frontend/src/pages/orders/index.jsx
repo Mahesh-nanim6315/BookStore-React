@@ -8,7 +8,7 @@ const formatCurrency = (value) => `Rs. ${Number(value || 0).toLocaleString()}`
 
 const formatStatus = (value) => {
   if (!value) return 'Unknown'
-  return value.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
+  return value.replaceAll('_', ' ').replaceAll(/\b\w/g, (char) => char.toUpperCase())
 }
 
 const OrdersIndex = () => {

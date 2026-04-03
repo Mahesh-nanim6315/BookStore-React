@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import PropTypes from 'prop-types'
 import { useAuth } from '../../contexts/AuthContext'
 import { getAdminNotifications, markAdminNotificationRead } from '../../api/adminNotifications'
 
@@ -180,6 +181,13 @@ const AdminNavbar = ({ user, onToggleSidebar }) => {
       </div>
     </nav>
   )
+}
+
+AdminNavbar.propTypes = {
+  user: PropTypes.shape({
+    name: PropTypes.string,
+  }),
+  onToggleSidebar: PropTypes.func.isRequired,
 }
 
 export default AdminNavbar

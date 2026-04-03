@@ -112,7 +112,7 @@ const AdminDashboard = () => {
 
       <div className="chart-alerts">
         <div className="chart-box">
-          {stats.chartData && stats.chartData.months && stats.chartData.sales ? (
+          {stats.chartData?.months && stats.chartData?.sales ? (
             <SalesChart months={stats.chartData.months} sales={stats.chartData.sales} />
           ) : (
             <div style={{ padding: '20px', textAlign: 'center' }}>
@@ -125,8 +125,8 @@ const AdminDashboard = () => {
           <h3>⚠ Low Stock Alerts</h3>
           {stats.lowStockBooks && stats.lowStockBooks.length > 0 ? (
             <div className="alert-box">
-              {stats.lowStockBooks.map((book, index) => (
-                <div key={index} className="alert-item">
+              {stats.lowStockBooks.map((book) => (
+                <div key={book.id || book.name} className="alert-item">
                   📕 {book.name}
                   <span className="stock-count">Stock: {book.stock}</span>
                 </div>
@@ -154,8 +154,8 @@ const AdminDashboard = () => {
 
             <tbody>
               {stats.topSellingBooks && stats.topSellingBooks.length > 0 ? (
-                stats.topSellingBooks.map((item, index) => (
-                  <tr key={index}>
+                stats.topSellingBooks.map((item) => (
+                  <tr key={item.book?.id || `${item.book?.name || 'removed'}-${item.total_sold}`}>
                     <td data-label="Book">{item.book?.name || 'Book Removed'}</td>
                     <td data-label="Total Sold">
                       <span className="badge-sales">
@@ -194,8 +194,8 @@ const AdminDashboard = () => {
 
           <tbody>
             {stats.recentOrders && stats.recentOrders.length > 0 ? (
-              stats.recentOrders.map((order, index) => (
-                <tr key={index}>
+              stats.recentOrders.map((order) => (
+                <tr key={order.id}>
                   <td data-label="#ID">#{order.id}</td>
                   <td data-label="User">{order.user?.name || 'Guest'}</td>
                   <td data-label="Total">₹{order.total_amount}</td>

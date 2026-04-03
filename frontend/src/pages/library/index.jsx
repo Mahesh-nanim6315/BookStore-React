@@ -6,7 +6,7 @@ import { getImageUrl } from '../../utils/imageUtils'
 
 const formatType = (value) => {
   if (!value) return 'Unknown'
-  return value.replace(/\b\w/g, (char) => char.toUpperCase())
+  return value.replaceAll(/\b\w/g, (char) => char.toUpperCase())
 }
 
 const LibraryIndex = () => {

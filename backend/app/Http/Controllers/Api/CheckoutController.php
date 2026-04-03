@@ -18,14 +18,14 @@ use Illuminate\Validation\ValidationException;
 
 class CheckoutController extends Controller
 {
+    private const UNAUTHORIZED_ACCESS_MESSAGE = 'Unauthorized access';
+    private const MIN_TWO = 'min:2';
+    private const MAX_ONE_HUNDRED = 'max:100';
+    private const LETTERS_AND_PUNCTUATION_REGEX = 'regex:/^[\pL\s.\'-]+$/u';
+
     private function frontendPath(string $path): string
     {
         return '/' . ltrim($path, '/');
-    }
-
-    private function backendUrl(Request $request, string $path): string
-    {
-        return rtrim($request->getSchemeAndHttpHost(), '/') . '/' . ltrim($path, '/');
     }
 
     // Show checkout address form
@@ -177,27 +177,31 @@ class CheckoutController extends Controller
     public function paymentPage(Order $order)
     {
         try {
+            $statusCode = 200;
+
             if ($order->user_id !== Auth::id()) {
-                return response()->json([
+                $response = [
                     'success' => false,
                     'message' => 'Unauthorized access to this order'
-                ], 403);
-            }
-
-            if ($order->status !== 'pending') {
-                return response()->json([
+                ];
+                $statusCode = 403;
+            } elseif ($order->status !== 'pending') {
+                $response = [
                     'success' => false,
                     'message' => 'This order has already been processed.',
                     'redirect' => $this->frontendPath("/orders/{$order->id}")
-                ], 422);
+                ];
+                $statusCode = 422;
+            } else {
+                $response = [
+                    'success' => true,
+                    'data' => [
+                        'order' => $order
+                    ]
+                ];
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'order' => $order
-                ]
-            ]);
+            return response()->json($response, $statusCode);
             } catch (\Throwable $e) {
                 $this->logRequestErrorAuto($e);
 
@@ -212,60 +216,63 @@ class CheckoutController extends Controller
     {
         try {
             Log::info('Process payment called for order: ' . $order->id . ' with status: ' . $order->status);
+            $statusCode = 200;
 
             if ($order->user_id !== Auth::id()) {
-                return response()->json([
+                $response = [
                     'success' => false,
                     'message' => 'Unauthorized access to this order'
-                ], 403);
-            }
-
-            $request->validate([
-                'payment_method' => 'required|in:stripe,paypal,cod',
-            ]);
-
-            $method = $request->payment_method;
-
-            if ($order->status !== 'pending') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This order has already been processed.'
-                ], 422);
-            }
-
-            Log::info('Payment method: ' . $method);
-
-            $order->update([
-                'payment_method' => $method,
-            ]);
-
-            Log::info('Order updated with payment method: ' . $method);
-
-            $response = [
-                'success' => true,
-                'data' => [
-                    'order' => $order,
-                    'payment_method' => $method
-                ]
-            ];
-
-            if ($method === 'stripe') {
-                $response['data']['provider'] = 'stripe';
-            } elseif ($method === 'paypal') {
-                $response['data']['provider'] = 'paypal';
-            } elseif ($method === 'cod') {
-                $order->update([
-                    'payment_status' => 'pending',
-                    'status' => 'placed'
+                ];
+                $statusCode = 403;
+            } else {
+                $request->validate([
+                    'payment_method' => 'required|in:stripe,paypal,cod',
                 ]);
 
-                event(new OrderPlaced($order->fresh('user')));
-                $response['data']['redirect'] = $this->frontendPath('/checkout/success?order=' . $order->id);
+                $method = $request->payment_method;
+
+                if ($order->status !== 'pending') {
+                    $response = [
+                        'success' => false,
+                        'message' => 'This order has already been processed.'
+                    ];
+                    $statusCode = 422;
+                } else {
+                    Log::info('Payment method: ' . $method);
+
+                    $order->update([
+                        'payment_method' => $method,
+                    ]);
+
+                    Log::info('Order updated with payment method: ' . $method);
+
+                    $response = [
+                        'success' => true,
+                        'data' => [
+                            'order' => $order,
+                            'payment_method' => $method
+                        ]
+                    ];
+
+                    if ($method === 'stripe') {
+                        $response['data']['provider'] = 'stripe';
+                    } elseif ($method === 'paypal') {
+                        $response['data']['provider'] = 'paypal';
+                    } elseif ($method === 'cod') {
+                        $order->update([
+                            'payment_status' => 'pending',
+                            'status' => 'placed'
+                        ]);
+
+                        event(new OrderPlaced($order->fresh('user')));
+                        $response['data']['redirect'] = $this->frontendPath('/checkout/success?order=' . $order->id);
+                    }
+
+                    Log::info('Payment response: ' . json_encode($response));
+                }
             }
 
-            Log::info('Payment response: ' . json_encode($response));
-
-            return response()->json($response);
+            return response()->json($response, $statusCode);
             } catch (\Throwable $e) {
                 $this->logRequestErrorAuto($e);
 
@@ -322,27 +329,31 @@ class CheckoutController extends Controller
     public function addressBuyNow(Order $order)
     {
         try {
-            if ($order->user_id !== Auth::id()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized access'
-                ], 403);
-            }
+            $statusCode = 200;
 
-            if ($order->status !== 'pending') {
-                return response()->json([
+            if ($order->user_id !== Auth::id()) {
+                $response = [
+                    'success' => false,
+                    'message' => self::UNAUTHORIZED_ACCESS_MESSAGE
+                ];
+                $statusCode = 403;
+            } elseif ($order->status !== 'pending') {
+                $response = [
                     'success' => false,
                     'message' => 'Order cannot be modified',
                     'redirect' => $this->frontendPath("/orders/{$order->id}")
-                ], 422);
+                ];
+                $statusCode = 422;
+            } else {
+                $response = [
+                    'success' => true,
+                    'data' => [
+                        'order' => $order
+                    ]
+                ];
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'order' => $order
-                ]
-            ]);
+            return response()->json($response, $statusCode);
             } catch (\Throwable $e) {
                 $this->logRequestErrorAuto($e);
 
@@ -359,7 +370,7 @@ class CheckoutController extends Controller
             if ($order->user_id !== Auth::id()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized access'
+                    'message' => self::UNAUTHORIZED_ACCESS_MESSAGE
                 ], 403);
             }
 
@@ -405,7 +416,7 @@ class CheckoutController extends Controller
             if ($order->user_id !== Auth::id()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized access'
+                    'message' => self::UNAUTHORIZED_ACCESS_MESSAGE
                 ], 403);
             }
 
@@ -497,13 +508,13 @@ class CheckoutController extends Controller
         ]);
 
         return $request->validate([
-            'full_name' => ['required', 'string', 'min:2', 'max:255'],
+            'full_name' => ['required', 'string', self::MIN_TWO, 'max:255'],
             'phone' => ['required', 'string', 'regex:/^[6-9][0-9]{9}$/'],
             'address_line' => ['required', 'string', 'min:8', 'max:500'],
-            'city' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[\pL\s.\'-]+$/u'],
-            'state' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[\pL\s.\'-]+$/u'],
+            'city' => ['required', 'string', self::MIN_TWO, self::MAX_ONE_HUNDRED, self::LETTERS_AND_PUNCTUATION_REGEX],
+            'state' => ['required', 'string', self::MIN_TWO, self::MAX_ONE_HUNDRED, self::LETTERS_AND_PUNCTUATION_REGEX],
             'pincode' => ['required', 'string', 'regex:/^[1-9][0-9]{5}$/'],
-            'country' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[\pL\s.\'-]+$/u'],
+            'country' => ['required', 'string', self::MIN_TWO, self::MAX_ONE_HUNDRED, self::LETTERS_AND_PUNCTUATION_REGEX],
         ], [
             'phone.regex' => 'Phone number must be a valid 10-digit Indian mobile number.',
             'city.regex' => 'City may contain only letters, spaces, apostrophes, periods, and hyphens.',

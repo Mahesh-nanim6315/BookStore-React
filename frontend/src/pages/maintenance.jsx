@@ -114,11 +114,9 @@ const Maintenance = () => {
 
         {details.support_email ? (
           <p style={{ ...textStyle, marginTop: '14px', fontSize: '14px' }}>
-            Need help? Contact{' '}
-            <a href={`mailto:${details.support_email}`} style={{ color: '#1d4ed8', fontWeight: 600 }}>
+            Need help? Contact <a href={`mailto:${details.support_email}`} style={{ color: '#1d4ed8', fontWeight: 600 }}>
               {details.support_email}
-            </a>
-            .
+            </a>.
           </p>
         ) : null}
 

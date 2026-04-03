@@ -865,7 +865,7 @@ function requireApiToken(apiTokenOverride = null) {
 }
 
 function normalizeBaseUrl(value) {
-  return value.replace(/\/+$/, "");
+  return value.replaceAll(/\/+$/, "");
 }
 
 function parsePositiveInteger(value, fallback) {
@@ -936,9 +936,9 @@ async function resolveCategoryFilter(query) {
 
     const residualQuery = normalizedQuery
       .replace(phrase, " ")
-      .replace(/\b(book|books|title|titles|format|formats|cheapest|cheap|under|below|less|than|rupees|rs|inr|all|of|out)\b/g, " ")
-      .replace(/\d+(?:\.\d+)?/g, " ")
-      .replace(/\s+/g, " ")
+      .replaceAll(/\b(book|books|title|titles|format|formats|cheapest|cheap|under|below|less|than|rupees|rs|inr|all|of|out)\b/g, " ")
+      .replaceAll(/\d+(?:\.\d+)?/g, " ")
+      .replaceAll(/\s+/g, " ")
       .trim();
 
     return { category, residualQuery };

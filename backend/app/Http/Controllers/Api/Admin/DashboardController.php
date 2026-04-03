@@ -91,36 +91,39 @@ class DashboardController extends Controller
     {
         try {
             $user = Auth::user();
+            $statusCode = 200;
 
             if (! $user) {
-                return response()->json([
+                $response = [
                     'success' => false,
                     'message' => 'Unauthenticated',
-                ], 401);
-            }
-
-            if (! $user->hasPermission('access_dashboard')) {
-                return response()->json([
+                ];
+                $statusCode = 401;
+            } elseif (! $user->hasPermission('access_dashboard')) {
+                $response = [
                     'success' => false,
                     'message' => 'Unauthorized access',
-                ], 403);
+                ];
+                $statusCode = 403;
+            } else {
+                $dashboardType = strtolower((string) $user->role) === 'admin' ? 'admin' : 'dashboard';
+
+                $response = [
+                    'success' => true,
+                    'data' => [
+                        'dashboard_type' => $dashboardType,
+                        'user' => [
+                            'id' => $user->id,
+                            'name' => $user->name,
+                            'email' => $user->email,
+                            'role' => $user->role,
+                            'permissions' => $user->permissions(),
+                        ],
+                    ],
+                ];
             }
 
-            $dashboardType = strtolower((string) $user->role) === 'admin' ? 'admin' : 'dashboard';
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'dashboard_type' => $dashboardType,
-                    'user' => [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                        'email' => $user->email,
-                        'role' => $user->role,
-                        'permissions' => $user->permissions(),
-                    ],
-                ],
-            ]);
+            return response()->json($response, $statusCode);
             } catch (\Throwable $e) {
                 $this->logRequestErrorAuto($e);
 

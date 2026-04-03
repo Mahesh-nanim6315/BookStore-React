@@ -24,7 +24,7 @@ const addressValidationSchema = Yup.object({
     .required('Full name is required.'),
   phone: Yup.string()
     .trim()
-    .matches(/^[6-9][0-9]{9}$/, 'Enter a valid 10-digit Indian mobile number.')
+    .matches(/^[6-9]\d{9}$/, 'Enter a valid 10-digit Indian mobile number.')
     .required('Phone number is required.'),
   address_line: Yup.string()
     .trim()
@@ -41,7 +41,7 @@ const addressValidationSchema = Yup.object({
     .required('State is required.'),
   pincode: Yup.string()
     .trim()
-    .matches(/^[1-9][0-9]{5}$/, 'Enter a valid 6-digit Indian PIN code.')
+    .matches(/^[1-9]\d{5}$/, 'Enter a valid 6-digit Indian PIN code.')
     .required('Pincode is required.'),
   country: Yup.string()
     .trim()
@@ -92,6 +92,17 @@ const CheckoutAddress = () => {
   const paperbackCount = items.filter((item) => item.format === 'paperback').length
   const ebookCount = items.filter((item) => item.format === 'ebook').length
   const audioCount = items.filter((item) => item.format === 'audio').length
+  const getFormatLabel = (format) => {
+    if (format === 'paperback') {
+      return 'Package'
+    }
+
+    if (format === 'ebook') {
+      return 'eBook'
+    }
+
+    return 'Audio'
+  }
 
   return (
     <div className="page">
@@ -160,20 +171,21 @@ const CheckoutAddress = () => {
                     {status && <p className="wishlist-message wishlist-message--error">{status}</p>}
 
                     <div className="form-group">
-                      <label>Full Name *</label>
-                      <input type="text" name="full_name" value={values.full_name} onChange={handleChange} onBlur={handleBlur} />
+                      <label htmlFor="full_name">Full Name *</label>
+                      <input id="full_name" type="text" name="full_name" value={values.full_name} onChange={handleChange} onBlur={handleBlur} />
                       {touched.full_name && errors.full_name && <small className="error">{errors.full_name}</small>}
                     </div>
 
                     <div className="form-group">
-                      <label>Phone Number *</label>
-                      <input type="tel" name="phone" value={values.phone} onChange={handleChange} onBlur={handleBlur} />
+                      <label htmlFor="phone">Phone Number *</label>
+                      <input id="phone" type="tel" name="phone" value={values.phone} onChange={handleChange} onBlur={handleBlur} />
                       {touched.phone && errors.phone && <small className="error">{errors.phone}</small>}
                     </div>
 
                     <div className="form-group">
-                      <label>Full Address *</label>
+                      <label htmlFor="address_line">Full Address *</label>
                       <textarea
+                        id="address_line"
                         name="address_line"
                         placeholder="House/Flat no, Building, Street, Area..."
                         value={values.address_line}
@@ -185,26 +197,26 @@ const CheckoutAddress = () => {
 
                     <div className="form-row">
                       <div className="form-group">
-                        <label>City *</label>
-                        <input type="text" name="city" value={values.city} onChange={handleChange} onBlur={handleBlur} />
+                        <label htmlFor="city">City *</label>
+                        <input id="city" type="text" name="city" value={values.city} onChange={handleChange} onBlur={handleBlur} />
                         {touched.city && errors.city && <small className="error">{errors.city}</small>}
                       </div>
                       <div className="form-group">
-                        <label>State *</label>
-                        <input type="text" name="state" value={values.state} onChange={handleChange} onBlur={handleBlur} />
+                        <label htmlFor="state">State *</label>
+                        <input id="state" type="text" name="state" value={values.state} onChange={handleChange} onBlur={handleBlur} />
                         {touched.state && errors.state && <small className="error">{errors.state}</small>}
                       </div>
                     </div>
 
                     <div className="form-group">
-                      <label>Pincode *</label>
-                      <input type="text" name="pincode" value={values.pincode} onChange={handleChange} onBlur={handleBlur} />
+                      <label htmlFor="pincode">Pincode *</label>
+                      <input id="pincode" type="text" name="pincode" value={values.pincode} onChange={handleChange} onBlur={handleBlur} />
                       {touched.pincode && errors.pincode && <small className="error">{errors.pincode}</small>}
                     </div>
 
                     <div className="form-group">
-                      <label>Country *</label>
-                      <input type="text" name="country" value={values.country} onChange={handleChange} onBlur={handleBlur} />
+                      <label htmlFor="country">Country *</label>
+                      <input id="country" type="text" name="country" value={values.country} onChange={handleChange} onBlur={handleBlur} />
                       {touched.country && errors.country && <small className="error">{errors.country}</small>}
                     </div>
 
@@ -227,7 +239,7 @@ const CheckoutAddress = () => {
                     <strong>{item.book?.name || 'Book'}</strong>
                     <div className="item-details">
                       <span className="format-badge">
-                        <span className="format-icon">{item.format === 'paperback' ? 'Package' : item.format === 'ebook' ? 'eBook' : 'Audio'}</span>
+                        <span className="format-icon">{getFormatLabel(item.format)}</span>
                       </span>
                       <span className="quantity">Qty: {item.quantity}</span>
                       {item.format === 'paperback' && <span className="shipping-badge">Shipping</span>}

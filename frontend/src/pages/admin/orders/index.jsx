@@ -18,7 +18,7 @@ const AdminOrdersIndex = () => {
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0 })
 
   const statusFilter = searchParams.get('status') || 'all'
-  const currentPage = parseInt(searchParams.get('page')) || 1
+  const currentPage = Number.parseInt(searchParams.get('page'), 10) || 1
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -104,18 +104,16 @@ const AdminOrdersIndex = () => {
     try {
       const response = await exportAdminOrdersCsv()
 
-      if (!response.success || !response.data?.csv_content) {
-        return
+      if (response.success && response.data?.csv_content) {
+        const csvString = atob(response.data.csv_content)
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' })
+        const downloadUrl = globalThis.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = downloadUrl
+        link.download = response.data.filename || 'orders.csv'
+        link.click()
+        globalThis.URL.revokeObjectURL(downloadUrl)
       }
-
-      const csvString = atob(response.data.csv_content)
-      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' })
-      const downloadUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = downloadUrl
-      link.download = response.data.filename || 'orders.csv'
-      link.click()
-      window.URL.revokeObjectURL(downloadUrl)
     } catch (error) {
       console.error('Failed to export orders:', error)
     }
@@ -245,6 +243,7 @@ const AdminOrdersIndex = () => {
           </div>
           <div className="pagination-controls">
             <button
+              type="button"
               className="pagination-btn"
               onClick={() => handlePageChange(meta.current_page - 1)}
               disabled={meta.current_page === 1}
@@ -253,7 +252,7 @@ const AdminOrdersIndex = () => {
             </button>
             
             {/* Show page numbers */}
-            {[...Array(meta.last_page)].map((_, index) => {
+            {new Array(meta.last_page).map((_, index) => {
               const pageNumber = index + 1
               // Show max 5 page numbers with current page in middle
               if (
@@ -264,6 +263,7 @@ const AdminOrdersIndex = () => {
                 return (
                   <button
                     key={pageNumber}
+                    type="button"
                     className={`pagination-btn ${meta.current_page === pageNumber ? 'active' : ''}`}
                     onClick={() => handlePageChange(pageNumber)}
                   >
@@ -282,6 +282,7 @@ const AdminOrdersIndex = () => {
             })}
             
             <button
+              type="button"
               className="pagination-btn"
               onClick={() => handlePageChange(meta.current_page + 1)}
               disabled={meta.current_page === meta.last_page}

@@ -16,6 +16,9 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class OrderController extends Controller
 {
+    private const OPERATION_FAILED_MESSAGE = 'Operation failed';
+    private const UNAUTHORIZED_ACCESS_MESSAGE = 'Unauthorized access';
+
     private function frontendPath(string $path): string
     {
         return '/' . ltrim($path, '/');
@@ -132,7 +135,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Operation failed',
+                'message' => self::OPERATION_FAILED_MESSAGE,
             ], 500);
         }
     }
@@ -143,7 +146,7 @@ class OrderController extends Controller
             if ($order->user_id !== Auth::id()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized access'
+                    'message' => self::UNAUTHORIZED_ACCESS_MESSAGE
                 ], 403);
             }
 
@@ -160,7 +163,7 @@ class OrderController extends Controller
 
                 return response()->json([
                 'success' => false,
-                'message' => 'Operation failed',
+                'message' => self::OPERATION_FAILED_MESSAGE,
             ], 500);
         }
     }
@@ -184,7 +187,7 @@ class OrderController extends Controller
 
                 return response()->json([
                 'success' => false,
-                'message' => 'Operation failed',
+                'message' => self::OPERATION_FAILED_MESSAGE,
             ], 500);
         }
     }
@@ -195,7 +198,7 @@ class OrderController extends Controller
             if ($order->user_id !== Auth::id()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized access'
+                    'message' => self::UNAUTHORIZED_ACCESS_MESSAGE
                 ], 403);
             }
 
@@ -218,7 +221,7 @@ class OrderController extends Controller
 
                 return response()->json([
                 'success' => false,
-                'message' => 'Operation failed',
+                'message' => self::OPERATION_FAILED_MESSAGE,
             ], 500);
         }
     }
@@ -238,7 +241,7 @@ class OrderController extends Controller
 
                 return response()->json([
                 'success' => false,
-                'message' => 'Operation failed',
+                'message' => self::OPERATION_FAILED_MESSAGE,
             ], 500);
         }
     }
@@ -249,7 +252,7 @@ class OrderController extends Controller
             if ($order->user_id !== Auth::id()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized access'
+                    'message' => self::UNAUTHORIZED_ACCESS_MESSAGE
                 ], 403);
             }
 
@@ -266,7 +269,7 @@ class OrderController extends Controller
 
                 return response()->json([
                 'success' => false,
-                'message' => 'Operation failed',
+                'message' => self::OPERATION_FAILED_MESSAGE,
             ], 500);
         }
     }

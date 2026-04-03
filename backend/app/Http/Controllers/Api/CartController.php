@@ -235,80 +235,9 @@ class CartController extends Controller
             ]);
 
             $code = strtoupper($request->code);
+            [$response, $statusCode] = $this->buildCouponApplicationResponse($code);
 
-            if (!preg_match('/^(SAVE|FLAT)(\d+)$/', $code, $matches)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid coupon code. Try SAVE10, SAVE20, SAVE30, SAVE50, FLAT50, FLAT100, or FLAT200.'
-                ], 422);
-            }
-
-            $prefix = $matches[1]; // SAVE or FLAT
-            $value  = (int) $matches[2];
-
-            $rules = config("coupons.$prefix");
-
-            if (!$rules || !in_array($value, $rules['allowed_values'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'That coupon value is not supported.'
-                ], 422);
-            }
-
-            $cart = Cart::with('items')->where('user_id', Auth::id())->first();
-            $this->syncCartItemPrices($cart);
-            
-            if (!$cart) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cart is empty'
-                ], 422);
-            }
-            
-            $subtotal = $cart->items->sum(fn($i) => $i->price * $i->quantity);
-
-            if ($subtotal <= 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cart is empty'
-                ], 422);
-            }
-
-            if ($rules['type'] === 'percentage') {
-                $discount = ($subtotal * $value) / 100;
-
-                if (isset($rules['max_discount'])) {
-                    $discount = min($discount, $rules['max_discount']);
-                }
-            } else {
-                $discount = $value;
-            }
-
-            $tax = Setting::calculateTax($subtotal);
-            $taxRate = Setting::taxRate();
-            $total = max(0, $subtotal + $tax - round($discount));
-
-            $couponData = [
-                'code' => $code,
-                'type' => $rules['type'],
-                'value' => $value,
-                'discount' => round($discount),
-            ];
-
-            session(['coupon' => $couponData]);
-
-            return response()->json([
-                'success' => true,
-                'message' => "Coupon {$code} applied successfully",
-                'data' => [
-                    'coupon' => $couponData,
-                    'subtotal' => $subtotal,
-                    'tax' => $tax,
-                    'tax_rate' => $taxRate,
-                    'discount' => round($discount),
-                    'total' => $total
-                ]
-            ]);
+            return response()->json($response, $statusCode);
             } catch (\Throwable $e) {
                 $this->logRequestErrorAuto($e);
 
@@ -317,6 +246,100 @@ class CartController extends Controller
                 'message' => 'An error occurred while applying coupon.'
             ], 500);
         }
+    }
+
+    private function buildCouponApplicationResponse(string $code): array
+    {
+        $couponDefinition = $this->resolveCouponDefinition($code);
+        $response = [];
+        $statusCode = 200;
+
+        if ($couponDefinition === null) {
+            $response = [
+                'success' => false,
+                'message' => 'Invalid coupon code. Try SAVE10, SAVE20, SAVE30, SAVE50, FLAT50, FLAT100, or FLAT200.'
+            ];
+            $statusCode = 422;
+        } else {
+            [, $value, $rules] = $couponDefinition;
+
+            if (! $rules || ! in_array($value, $rules['allowed_values'])) {
+                $response = [
+                    'success' => false,
+                    'message' => 'That coupon value is not supported.'
+                ];
+                $statusCode = 422;
+            } else {
+                $cart = Cart::with('items')->where('user_id', Auth::id())->first();
+                $this->syncCartItemPrices($cart);
+
+                $subtotal = $cart ? $cart->items->sum(fn($i) => $i->price * $i->quantity) : 0;
+
+                if ($subtotal <= 0) {
+                    $response = [
+                        'success' => false,
+                        'message' => 'Cart is empty'
+                    ];
+                    $statusCode = 422;
+                } else {
+                    $roundedDiscount = round($this->calculateCouponDiscount($rules, $subtotal, $value));
+                    $tax = Setting::calculateTax($subtotal);
+                    $taxRate = Setting::taxRate();
+                    $total = max(0, $subtotal + $tax - $roundedDiscount);
+
+                    $couponData = [
+                        'code' => $code,
+                        'type' => $rules['type'],
+                        'value' => $value,
+                        'discount' => $roundedDiscount,
+                    ];
+
+                    session(['coupon' => $couponData]);
+
+                    $response = [
+                        'success' => true,
+                        'message' => "Coupon {$code} applied successfully",
+                        'data' => [
+                            'coupon' => $couponData,
+                            'subtotal' => $subtotal,
+                            'tax' => $tax,
+                            'tax_rate' => $taxRate,
+                            'discount' => $roundedDiscount,
+                            'total' => $total
+                        ]
+                    ];
+                }
+            }
+        }
+
+        return [$response, $statusCode];
+    }
+
+    private function resolveCouponDefinition(string $code): ?array
+    {
+        if (! preg_match('/^(SAVE|FLAT)(\d+)$/', $code, $matches)) {
+            return null;
+        }
+
+        $prefix = $matches[1];
+        $value = (int) $matches[2];
+
+        return [$prefix, $value, config("coupons.$prefix")];
+    }
+
+    private function calculateCouponDiscount(array $rules, float $subtotal, int $value): float
+    {
+        if ($rules['type'] !== 'percentage') {
+            return $value;
+        }
+
+        $discount = ($subtotal * $value) / 100;
+
+        if (isset($rules['max_discount'])) {
+            $discount = min($discount, $rules['max_discount']);
+        }
+
+        return $discount;
     }
 
     public function removeCoupon()

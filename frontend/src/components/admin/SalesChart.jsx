@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react'
+import PropTypes from 'prop-types'
 
 const SalesChart = ({ months, sales }) => {
   const chartRef = useRef(null)
@@ -7,7 +8,9 @@ const SalesChart = ({ months, sales }) => {
     if (!chartRef.current || !months.length || !sales.length) return
     const canvas = chartRef.current
 
-    if (!window.Chart) {
+    if (globalThis.Chart) {
+      createChart()
+    } else {
       const script = document.createElement('script')
       script.src = 'https://cdn.jsdelivr.net/npm/chart.js'
       script.async = true
@@ -15,19 +18,17 @@ const SalesChart = ({ months, sales }) => {
         createChart()
       }
       document.head.appendChild(script)
-    } else {
-      createChart()
     }
 
     function createChart() {
       const ctx = canvas.getContext('2d')
-      const isMobile = window.matchMedia('(max-width: 640px)').matches
+      const isMobile = globalThis.matchMedia('(max-width: 640px)').matches
 
       if (canvas.chart) {
         canvas.chart.destroy()
       }
 
-      canvas.chart = new window.Chart(ctx, {
+      canvas.chart = new globalThis.Chart(ctx, {
         type: 'bar',
         data: {
           labels: months,
@@ -90,6 +91,11 @@ const SalesChart = ({ months, sales }) => {
       <canvas ref={chartRef}></canvas>
     </div>
   )
+}
+
+SalesChart.propTypes = {
+  months: PropTypes.arrayOf(PropTypes.string).isRequired,
+  sales: PropTypes.arrayOf(PropTypes.number).isRequired,
 }
 
 export default SalesChart

@@ -7,8 +7,8 @@ use Illuminate\Support\Carbon;
 
 class UserLibrary extends Model
 {
-    protected $table = 'user_library'; 
-    
+    protected $table = 'user_library';
+
     protected $fillable = [
         'user_id',
         'book_id',

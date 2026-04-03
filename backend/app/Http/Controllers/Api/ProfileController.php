@@ -25,10 +25,21 @@ class ProfileController extends Controller
 
             $completion = 0;
 
-            if ($user->name) $completion += 25;
-            if ($user->email) $completion += 25;
-            if ($user->avatar) $completion += 25;
-            if ($user->cover) $completion += 25;
+            if ($user->name) {
+                $completion += 25;
+            }
+
+            if ($user->email) {
+                $completion += 25;
+            }
+
+            if ($user->avatar) {
+                $completion += 25;
+            }
+
+            if ($user->cover) {
+                $completion += 25;
+            }
 
             // Get recent purchased books
             $recentBooks = \App\Models\OrderItem::whereHas('order', function ($q) use ($user) {

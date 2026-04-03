@@ -24,64 +24,73 @@ class PaymentController extends Controller
                     'payment_method' => 'required|in:stripe,paypal,cod'
                 ]);
 
+                $response = null;
+                $statusCode = 200;
+
                 if ((int) $order->user_id !== (int) Auth::id()) {
-                    return response()->json([
+                    $response = [
                         'success' => false,
                         'message' => 'Unauthorized access to this order'
-                    ], 403);
-                }
-
-                if ($order->status !== 'pending') {
-                    return response()->json([
+                    ];
+                    $statusCode = 403;
+                } elseif ($order->status !== 'pending') {
+                    $response = [
                         'success' => false,
                         'message' => 'This order has already been processed.'
-                    ], 422);
+                    ];
+                    $statusCode = 422;
+                } else {
+                    // Save selected method
+                    $order->update([
+                        'payment_method' => $request->payment_method
+                    ]);
+
+                    switch ($request->payment_method) {
+                        case 'stripe':
+                            $response = [
+                                'success' => true,
+                                'data' => [
+                                    'checkout_url' => url('/api/v1/payments/stripe/checkout/' . $order->id)
+                                ]
+                            ];
+                            break;
+
+                        case 'paypal':
+                            $response = [
+                                'success' => true,
+                                'data' => [
+                                    'redirect' => url('/api/v1/payments/paypal/' . $order->id . '/pay')
+                                ]
+                            ];
+                            break;
+
+                        case 'cod':
+                            $order->update([
+                                'payment_status' => 'pending',
+                                'status' => 'placed'
+                            ]);
+
+                            $response = [
+                                'success' => true,
+                                'message' => 'Order placed successfully',
+                                'data' => [
+                                    'order' => $order,
+                                    'redirect' => $this->frontendPath("/orders/{$order->id}")
+                                ]
+                            ];
+                            break;
+
+                        default:
+                            $response = [
+                                'success' => false,
+                                'message' => 'Invalid payment method'
+                            ];
+                            $statusCode = 422;
+                            break;
+                    }
                 }
 
-                // Save selected method
-                $order->update([
-                    'payment_method' => $request->payment_method
-                ]);
-
-                switch ($request->payment_method) {
-
-                    case 'stripe':
-                        return response()->json([
-                            'success' => true,
-                            'data' => [
-                                'checkout_url' => url('/api/v1/payments/stripe/checkout/' . $order->id)
-                            ]
-                        ]);
-
-                    case 'paypal':
-                        return response()->json([
-                            'success' => true,
-                            'data' => [
-                                'redirect' => url('/api/v1/payments/paypal/' . $order->id . '/pay')
-                            ]
-                        ]);
-
-                    case 'cod':
-                        $order->update([
-                            'payment_status' => 'pending',
-                            'status' => 'placed'
-                        ]);
-
-                        return response()->json([
-                            'success' => true,
-                            'message' => 'Order placed successfully',
-                            'data' => [
-                                'order' => $order,
-                                'redirect' => $this->frontendPath("/orders/{$order->id}")
-                            ]
-                        ]);
-
-                    default:
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Invalid payment method'
-                        ], 422);
-                }
+                return response()->json($response, $statusCode);
             });
 
             $this->logRequestSuccess('process', [

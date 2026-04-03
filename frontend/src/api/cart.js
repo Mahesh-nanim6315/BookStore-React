@@ -3,7 +3,7 @@ import axiosClient from './axiosClient'
 export const CART_UPDATED_EVENT = 'cart:updated'
 
 export const notifyCartUpdated = () => {
-  window.dispatchEvent(new CustomEvent(CART_UPDATED_EVENT))
+  globalThis.dispatchEvent(new CustomEvent(CART_UPDATED_EVENT))
 }
 
 export const getCart = async () => {

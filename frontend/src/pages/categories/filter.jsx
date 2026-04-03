@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import PropTypes from 'prop-types'
 
 const CategoriesFilter = ({ categories = [] }) => {
   if (!categories || categories.length === 0) return null;
@@ -21,6 +22,16 @@ const CategoriesFilter = ({ categories = [] }) => {
       </div>
     </section>
   )
+}
+
+CategoriesFilter.propTypes = {
+  categories: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      slug: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+    })
+  ),
 }
 
 export default CategoriesFilter

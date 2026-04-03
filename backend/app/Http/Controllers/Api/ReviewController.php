@@ -11,6 +11,8 @@ use App\Models\Book;
 
 class ReviewController extends Controller
 {
+    private const UNAUTHORIZED_ACCESS_MESSAGE = 'Unauthorized access';
+
     public function store(Request $request, Book $book)
     {
         try {
@@ -69,7 +71,7 @@ class ReviewController extends Controller
             if ($review->user_id !== Auth::id()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized access'
+                    'message' => self::UNAUTHORIZED_ACCESS_MESSAGE
                 ], 403);
             }
 
@@ -95,7 +97,7 @@ class ReviewController extends Controller
             if ($review->user_id !== Auth::id()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized access'
+                    'message' => self::UNAUTHORIZED_ACCESS_MESSAGE
                 ], 403);
             }
 
@@ -134,7 +136,7 @@ class ReviewController extends Controller
             if ($review->user_id !== Auth::id()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized access'
+                    'message' => self::UNAUTHORIZED_ACCESS_MESSAGE
                 ], 403);
             }
 

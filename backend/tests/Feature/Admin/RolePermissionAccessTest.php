@@ -11,6 +11,8 @@ class RolePermissionAccessTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const ROLES_PERMISSIONS_PATH = '/admin/roles-permissions';
+
     public function test_staff_with_manage_roles_permissions_can_access_roles_permissions_page(): void
     {
         $staff = User::factory()->create(['role' => 'staff']);
@@ -20,7 +22,7 @@ class RolePermissionAccessTest extends TestCase
         ]);
 
         $this->actingAs($staff)
-            ->get('/admin/roles-permissions')
+            ->get(self::ROLES_PERMISSIONS_PATH)
             ->assertOk();
     }
 
@@ -33,7 +35,7 @@ class RolePermissionAccessTest extends TestCase
         ]);
 
         $this->actingAs($staff)
-            ->get('/admin/roles-permissions')
+            ->get(self::ROLES_PERMISSIONS_PATH)
             ->assertForbidden();
     }
 
@@ -81,7 +83,7 @@ class RolePermissionAccessTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         User::factory()->create(['role' => 'Manager']);
 
-        $response = $this->actingAs($admin)->put('/admin/roles-permissions', [
+        $response = $this->actingAs($admin)->put(self::ROLES_PERMISSIONS_PATH, [
             'permissions' => [
                 'manager' => ['manage_orders'],
             ],

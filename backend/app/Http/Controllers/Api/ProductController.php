@@ -126,7 +126,7 @@ class ProductController extends Controller
             $categories = Category::all();
             $authors = Author::all();
             $genres = Genre::all();
-            
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -149,7 +149,7 @@ class ProductController extends Controller
     {
         try {
             $categories = Category::whereIn('name', [
-                'Drama', 'Thriller', 'Social', 'Fantasy', 'Family', 
+                'Drama', 'Thriller', 'Social', 'Fantasy', 'Family',
                 'Romance', 'Humor', 'Horror', 'Historical'
             ])->get()->keyBy('name');
 
@@ -184,7 +184,7 @@ class ProductController extends Controller
             $horror = Book::where('category_id', $categories['Horror']->id ?? null)
                            ->where('has_audio', true)
                            ->latest()->take(10)->get();
-                           
+
             $historical = Book::where('category_id', $categories['Historical']->id ?? null)
                            ->where('has_audio', true)
                            ->latest()->take(10)->get();

@@ -154,36 +154,43 @@ class SubscriptionController extends Controller
     public function cancel(User $user)
     {
         try {
+            $response = null;
+            $statusCode = 200;
+
             if (! $user->subscribed('default')) {
-                return response()->json([
+                $response = [
                     'success' => false,
                     'message' => 'No active subscription found for this user.',
-                ], 422);
+                ];
+                $statusCode = 422;
+            } else {
+                $subscription = $user->subscription('default');
+
+                if ($subscription->onGracePeriod()) {
+                    $response = [
+                        'success' => false,
+                        'message' => 'Subscription is already set to cancel.',
+                    ];
+                    $statusCode = 422;
+                } else {
+                    $subscription->cancel();
+                    $freshSubscription = $subscription->fresh();
+
+                    $user->update([
+                        'plan_expires_at' => $freshSubscription->ends_at,
+                    ]);
+
+                    $response = [
+                        'success' => true,
+                        'message' => 'Subscription will be cancelled at the end of the billing period.',
+                        'data' => [
+                            'plan_expires_at' => $freshSubscription->ends_at,
+                        ],
+                    ];
+                }
             }
 
-            $subscription = $user->subscription('default');
-
-            if ($subscription->onGracePeriod()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Subscription is already set to cancel.',
-                ], 422);
-            }
-
-            $subscription->cancel();
-            $freshSubscription = $subscription->fresh();
-
-            $user->update([
-                'plan_expires_at' => $freshSubscription->ends_at,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Subscription will be cancelled at the end of the billing period.',
-                'data' => [
-                    'plan_expires_at' => $freshSubscription->ends_at,
-                ],
-            ]);
+            return response()->json($response, $statusCode);
             } catch (\Throwable $e) {
                 $this->logRequestErrorAuto($e);
 
@@ -198,34 +205,38 @@ class SubscriptionController extends Controller
     {
         try {
             $subscription = $user->subscription('default');
+            $response = null;
+            $statusCode = 200;
 
             if (! $subscription) {
-                return response()->json([
+                $response = [
                     'success' => false,
                     'message' => 'No subscription found for this user.',
-                ], 422);
-            }
-
-            if (! $subscription->onGracePeriod()) {
-                return response()->json([
+                ];
+                $statusCode = 422;
+            } elseif (! $subscription->onGracePeriod()) {
+                $response = [
                     'success' => false,
                     'message' => 'Subscription is already active.',
-                ], 422);
+                ];
+                $statusCode = 422;
+            } else {
+                $subscription->resume();
+
+                $user->update([
+                    'plan_expires_at' => $user->billing_cycle === 'yearly' ? now()->addYear() : now()->addMonth(),
+                ]);
+
+                $response = [
+                    'success' => true,
+                    'message' => 'Subscription resumed successfully.',
+                    'data' => [
+                        'plan_expires_at' => $user->plan_expires_at,
+                    ],
+                ];
             }
 
-            $subscription->resume();
-
-            $user->update([
-                'plan_expires_at' => $user->billing_cycle === 'yearly' ? now()->addYear() : now()->addMonth(),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Subscription resumed successfully.',
-                'data' => [
-                    'plan_expires_at' => $user->plan_expires_at,
-                ],
-            ]);
+            return response()->json($response, $statusCode);
             } catch (\Throwable $e) {
                 $this->logRequestErrorAuto($e);
 
@@ -242,42 +253,46 @@ class SubscriptionController extends Controller
             $localSubscriptionIds = DB::table('subscriptions')
                 ->where('user_id', $user->id)
                 ->pluck('id');
+            $statusCode = 200;
 
             if ($localSubscriptionIds->isEmpty() && ($user->plan === null || $user->plan === 'free')) {
-                return response()->json([
+                $response = [
                     'success' => false,
                     'message' => 'No subscription record found for this user.',
-                ], 422);
-            }
+                ];
+                $statusCode = 422;
+            } else {
+                $subscription = $user->subscription('default');
 
-            $subscription = $user->subscription('default');
-
-            if ($subscription) {
-                $subscription->cancelNow();
-            }
-
-            DB::transaction(function () use ($user, $localSubscriptionIds) {
-                if ($localSubscriptionIds->isNotEmpty()) {
-                    DB::table('subscription_items')
-                        ->whereIn('subscription_id', $localSubscriptionIds)
-                        ->delete();
-
-                    DB::table('subscriptions')
-                        ->whereIn('id', $localSubscriptionIds)
-                        ->delete();
+                if ($subscription) {
+                    $subscription->cancelNow();
                 }
 
-                $user->update([
-                    'plan' => 'free',
-                    'billing_cycle' => null,
-                    'plan_expires_at' => null,
-                ]);
-            });
+                DB::transaction(function () use ($user, $localSubscriptionIds) {
+                    if ($localSubscriptionIds->isNotEmpty()) {
+                        DB::table('subscription_items')
+                            ->whereIn('subscription_id', $localSubscriptionIds)
+                            ->delete();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Subscription deleted successfully.',
-            ]);
+                        DB::table('subscriptions')
+                            ->whereIn('id', $localSubscriptionIds)
+                            ->delete();
+                    }
+
+                    $user->update([
+                        'plan' => 'free',
+                        'billing_cycle' => null,
+                        'plan_expires_at' => null,
+                    ]);
+                });
+
+                $response = [
+                    'success' => true,
+                    'message' => 'Subscription deleted successfully.',
+                ];
+            }
+
+            return response()->json($response, $statusCode);
             } catch (\Throwable $e) {
                 $this->logRequestErrorAuto($e);
 

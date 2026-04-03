@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
+import PropTypes from 'prop-types'
 
 // Translation data
 const translations = {
@@ -115,23 +116,33 @@ export const LanguageProvider = ({ children }) => {
     return localStorage.getItem('language') || 'en'
   })
 
-  const t = (key) => {
+  const t = useCallback((key) => {
     return translations[language][key] || translations['en'][key] || key
-  }
+  }, [language])
 
-  const changeLanguage = (newLanguage) => {
+  const changeLanguage = useCallback((newLanguage) => {
     setLanguage(newLanguage)
     localStorage.setItem('language', newLanguage)
     document.documentElement.lang = newLanguage
-  }
+  }, [])
 
   useEffect(() => {
     document.documentElement.lang = language
   }, [language])
 
+  const value = useMemo(() => ({
+    language,
+    changeLanguage,
+    t,
+  }), [language, changeLanguage, t])
+
   return (
-    <LanguageContext.Provider value={{ language, changeLanguage, t }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   )
+}
+
+LanguageProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 }

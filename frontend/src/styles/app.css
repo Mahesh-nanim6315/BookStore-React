@@ -1828,7 +1828,18 @@ body,
     backdrop-filter: blur(4px);
 }
 
+.review-modal-backdrop-close {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    cursor: default;
+}
+
 .review-modal {
+    position: relative;
+    z-index: 1;
     width: min(100%, 640px);
     background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
     border: 1px solid rgba(37, 99, 235, 0.16);
@@ -5660,7 +5671,6 @@ hr {
     padding: 10px 25px;
     background: #ff4757;
     color: white;
-    border: none;
     border-radius: 25px;
     font-weight: 600;
     cursor: pointer;
@@ -5839,7 +5849,17 @@ hr {
     background: rgba(0, 0, 0, 0.5);
 }
 
+.modal-backdrop-button {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: transparent;
+    padding: 0;
+}
+
 .modal-content {
+    position: relative;
+    z-index: 1;
     background: #fff;
     width: 450px;
     margin: 8% auto;

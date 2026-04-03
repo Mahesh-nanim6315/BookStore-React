@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
 const statsConfig = [
   {
@@ -35,6 +36,15 @@ const SubscriptionStats = ({ summary }) => {
       ))}
     </div>
   )
+}
+
+SubscriptionStats.propTypes = {
+  summary: PropTypes.shape({
+    total: PropTypes.number,
+    paid: PropTypes.number,
+    active: PropTypes.number,
+    grace_period: PropTypes.number,
+  }).isRequired,
 }
 
 export default SubscriptionStats

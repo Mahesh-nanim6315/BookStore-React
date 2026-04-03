@@ -148,16 +148,17 @@ class LibraryController extends Controller
             }
         }
 
-        if ($book->has_ebook) {
-            return 'ebook';
+        $fallbackFormat = null;
+
+        foreach (['ebook', 'audio', 'paperback'] as $format) {
+            if ($this->bookSupportsFormat($book, $format)) {
+                $fallbackFormat = $format;
+                break;
+            }
         }
 
-        if ($book->has_audio) {
-            return 'audio';
-        }
-
-        if ($book->has_paperback) {
-            return 'paperback';
+        if ($fallbackFormat !== null) {
+            return $fallbackFormat;
         }
 
         throw ValidationException::withMessages([

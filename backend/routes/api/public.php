@@ -39,6 +39,7 @@ Route::get('/faq', [FaqController::class, 'index']);
 Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe']);
 Route::get('/plans', [SubscriptionController::class, 'index']);
 
+
 Route::get('/about', function () {
     return response()->json([
         'success' => true,

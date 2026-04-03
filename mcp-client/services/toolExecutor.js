@@ -280,12 +280,12 @@ function shouldUseDirectFallback(error) {
 function deriveSearchQuery(userMessage) {
   const text = String(userMessage ?? "")
     .toLowerCase()
-    .replace(/\b(find|search|show|list|recommend|suggest|need|want|get|me|a|an|the|book|books)\b/g, " ")
-    .replace(/\b(under|below|less than|max|maximum)\s+\d+(?:\.\d+)?\b/g, " ")
-    .replace(/\b(rs|inr|\$)\s*\d+(?:\.\d+)?\b/g, " ")
-    .replace(/\d+(?:\.\d+)?/g, " ")
-    .replace(/[^\w\s]/g, " ")
-    .replace(/\s+/g, " ")
+    .replaceAll(/\b(find|search|show|list|recommend|suggest|need|want|get|me|a|an|the|book|books)\b/g, " ")
+    .replaceAll(/\b(under|below|less than|max|maximum)\s+\d+(?:\.\d+)?\b/g, " ")
+    .replaceAll(/\b(rs|inr|\$)\s*\d+(?:\.\d+)?\b/g, " ")
+    .replaceAll(/\d+(?:\.\d+)?/g, " ")
+    .replaceAll(/[^\w\s]/g, " ")
+    .replaceAll(/\s+/g, " ")
     .trim();
 
   return text || "books";

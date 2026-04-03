@@ -20,20 +20,17 @@ const profileValidationSchema = Yup.object({
     .email('Enter a valid email address.')
     .max(255, 'Email may not be greater than 255 characters.')
     .required('Email is required.'),
-  current_password: Yup.string().when('password', {
-    is: (password) => !!password,
-    then: (schema) => schema.required('Current password is required to change your password.'),
-    otherwise: (schema) => schema,
-  }),
+  current_password: Yup.string().when('password', ([password], schema) =>
+    password ? schema.required('Current password is required to change your password.') : schema
+  ),
   password: optionalStrongPassword(),
-  password_confirmation: Yup.string().when('password', {
-    is: (password) => !!password,
-    then: (schema) =>
-      schema
-        .required('Please confirm your password.')
-        .oneOf([Yup.ref('password')], 'Passwords do not match.'),
-    otherwise: (schema) => schema,
-  }),
+  password_confirmation: Yup.string().when('password', ([password], schema) =>
+    password
+      ? schema
+          .required('Please confirm your password.')
+          .oneOf([Yup.ref('password')], 'Passwords do not match.')
+      : schema
+  ),
 })
 
 const formatPlanLabel = (plan, billingCycle) => {
@@ -361,13 +358,13 @@ const ProfileIndex = () => {
         </section>
 
         {isModalOpen && (
-          <div
-            id="editProfileModal"
-            className="modal"
-            onClick={(event) => {
-              if (event.target.id === 'editProfileModal') setIsModalOpen(false)
-            }}
-          >
+          <div id="editProfileModal" className="modal">
+            <button
+              type="button"
+              className="modal-backdrop-button"
+              onClick={() => setIsModalOpen(false)}
+              aria-label="Close edit profile modal"
+            />
             <div className="modal-content profile-modal">
               <div className="modal-header">
                 <h3>Edit Profile</h3>
@@ -393,8 +390,9 @@ const ProfileIndex = () => {
                     {status && <p className="wishlist-message wishlist-message--error">{status}</p>}
 
                     <div className="form-group">
-                      <label>Name</label>
+                      <label htmlFor="profile-name">Name</label>
                       <input
+                        id="profile-name"
                         type="text"
                         name="name"
                         value={values.name}
@@ -405,8 +403,9 @@ const ProfileIndex = () => {
                       {touched.name && errors.name && <small className="error">{errors.name}</small>}
                     </div>
                     <div className="form-group">
-                      <label>Email</label>
+                      <label htmlFor="profile-email">Email</label>
                       <input
+                        id="profile-email"
                         type="email"
                         name="email"
                         value={values.email}
@@ -420,8 +419,9 @@ const ProfileIndex = () => {
                     <h4>Change Password</h4>
                     <div className="profile-form-split">
                       <div className="form-group">
-                        <label>Current Password</label>
+                        <label htmlFor="profile-current-password">Current Password</label>
                         <input
+                          id="profile-current-password"
                           type="password"
                           name="current_password"
                           value={values.current_password}
@@ -433,8 +433,9 @@ const ProfileIndex = () => {
                         {touched.current_password && errors.current_password && <small className="error">{errors.current_password}</small>}
                       </div>
                       <div className="form-group">
-                        <label>New Password</label>
+                        <label htmlFor="profile-new-password">New Password</label>
                         <input
+                          id="profile-new-password"
                           type="password"
                           name="password"
                           value={values.password}
@@ -446,8 +447,9 @@ const ProfileIndex = () => {
                         {touched.password && errors.password && <small className="error">{errors.password}</small>}
                       </div>
                       <div className="form-group">
-                        <label>Confirm Password</label>
+                        <label htmlFor="profile-password-confirmation">Confirm Password</label>
                         <input
+                          id="profile-password-confirmation"
                           type="password"
                           name="password_confirmation"
                           value={values.password_confirmation}

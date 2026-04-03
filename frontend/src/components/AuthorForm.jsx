@@ -2,6 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { Formik } from 'formik'
 import * as Yup from 'yup'
+import PropTypes from 'prop-types'
 
 const validationSchema = Yup.object({
   name: Yup.string()
@@ -105,6 +106,20 @@ const AuthorForm = ({
       )}
     </Formik>
   )
+}
+
+AuthorForm.propTypes = {
+  initialValues: PropTypes.shape({
+    name: PropTypes.string,
+    image: PropTypes.string,
+    bio: PropTypes.string,
+  }).isRequired,
+
+  onSubmit: PropTypes.func.isRequired,
+  submitLabel: PropTypes.string.isRequired,
+  isSaving: PropTypes.bool.isRequired,
+
+  mode: PropTypes.oneOf(['create', 'edit']),
 }
 
 export default AuthorForm

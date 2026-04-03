@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
 const SubscriptionFilters = ({ filters, onChange, onSubmit, onReset }) => {
   return (
@@ -47,6 +48,18 @@ const SubscriptionFilters = ({ filters, onChange, onSubmit, onReset }) => {
       </div>
     </form>
   )
+}
+
+SubscriptionFilters.propTypes = {
+  filters: PropTypes.shape({
+    search: PropTypes.string.isRequired,
+    plan: PropTypes.string.isRequired,
+    billing_cycle: PropTypes.string.isRequired,
+    status: PropTypes.string.isRequired,
+  }).isRequired,
+  onChange: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func.isRequired,
+  onReset: PropTypes.func.isRequired,
 }
 
 export default SubscriptionFilters

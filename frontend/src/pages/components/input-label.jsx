@@ -3,11 +3,8 @@
 const ComponentsInputLabel = () => {
   return (
     <div className="page">
-{/*  */}
-
-<label >
-    
-</label>
+      <label htmlFor="sample-input">Sample Input</label>
+      <input id="sample-input" type="text" />
     </div>
   )
 }

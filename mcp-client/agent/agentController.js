@@ -504,12 +504,12 @@ function detectSearchIntent(message) {
 function deriveSearchQuery(message) {
   return String(message ?? "")
     .toLowerCase()
-    .replace(/\b(find|search|show|list|recommend|suggest|need|want|get|me|please|for|a|an|the|book|books|rupees|rs|inr)\b/g, " ")
-    .replace(/\b(under|below|less than|max|maximum)\s+\d+(?:\.\d+)?\b/g, " ")
-    .replace(/\b(rs|inr|rupees|\$)\s*\d+(?:\.\d+)?\b/g, " ")
-    .replace(/\b(all formats|all format|out of all formats|cheapest format|format|formats)\b/g, " ")
-    .replace(/[^\w\s-]/g, " ")
-    .replace(/\s+/g, " ")
+    .replaceAll(/\b(find|search|show|list|recommend|suggest|need|want|get|me|please|for|a|an|the|book|books|rupees|rs|inr)\b/g, " ")
+    .replaceAll(/\b(under|below|less than|max|maximum)\s+\d+(?:\.\d+)?\b/g, " ")
+    .replaceAll(/\b(rs|inr|rupees|\$)\s*\d+(?:\.\d+)?\b/g, " ")
+    .replaceAll(/\b(all formats|all format|out of all formats|cheapest format|format|formats)\b/g, " ")
+    .replaceAll(/[^\w\s-]/g, " ")
+    .replaceAll(/\s+/g, " ")
     .trim() || "books";
 }
 

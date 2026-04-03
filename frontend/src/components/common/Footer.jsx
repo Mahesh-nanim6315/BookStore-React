@@ -1,5 +1,7 @@
 ﻿import React from 'react'
 
+import { Link } from 'react-router-dom'
+
 const Footer = () => {
   return (
     <footer className="footer">
@@ -11,29 +13,35 @@ const Footer = () => {
             semantic search, and personalized reading experiences.
           </p>
           <div className="social-icons">
-            <a href="#"><i className="fab fa-github"></i></a>
-            <a href="#"><i className="fab fa-linkedin"></i></a>
-            <a href="#"><i className="fab fa-twitter"></i></a>
+            <button type="button" className="social-icon-button" aria-label="GitHub">
+              <i className="fab fa-github"></i>
+            </button>
+            <button type="button" className="social-icon-button" aria-label="LinkedIn">
+              <i className="fab fa-linkedin"></i>
+            </button>
+            <button type="button" className="social-icon-button" aria-label="Twitter">
+              <i className="fab fa-twitter"></i>
+            </button>
           </div>
         </div>
 
         <div className="footer-links">
           <h3>Quick Links</h3>
           <ul>
-            <li><a href="/">Home</a></li>
-            <li><a href="/books">Browse Books</a></li>
-            <li><a href="/categories">Categories</a></li>
-            <li><a href="/recommendations">AI Recommendations</a></li>
+            <li><Link to="/">Home</Link></li>
+            <li><Link to="/products">Browse Books</Link></li>
+            <li><Link to="/categories">Categories</Link></li>
+            <li><Link to="/assistant">AI Recommendations</Link></li>
           </ul>
         </div>
 
         <div className="footer-links">
           <h3>Top Categories</h3>
           <ul>
-            <li><a href="#">Programming</a></li>
-            <li><a href="#">AI & ML</a></li>
-            <li><a href="#">Self Development</a></li>
-            <li><a href="#">Business</a></li>
+            <li><Link to="/categories">Programming</Link></li>
+            <li><Link to="/categories">AI & ML</Link></li>
+            <li><Link to="/categories">Self Development</Link></li>
+            <li><Link to="/categories">Business</Link></li>
           </ul>
         </div>
 
@@ -50,9 +58,9 @@ const Footer = () => {
       <div className="footer-bottom">
         <p>© 2026 BookAI. All rights reserved.</p>
         <div className="legal-links">
-          <a href="#">Privacy Policy</a>
-          <a href="#">Terms</a>
-          <a href="#">Contact</a>
+          <button type="button" className="footer-link-button">Privacy Policy</button>
+          <button type="button" className="footer-link-button">Terms</button>
+          <button type="button" className="footer-link-button">Contact</button>
         </div>
       </div>
     </footer>

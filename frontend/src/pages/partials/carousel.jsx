@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import PropTypes from 'prop-types'
 import { getImageUrl } from '../../utils/imageUtils'
 
 const PartialsCarousel = ({ title, books = [], category, categorySlug }) => {
@@ -67,6 +68,22 @@ const PartialsCarousel = ({ title, books = [], category, categorySlug }) => {
       </div>
     </section>
   )
+}
+
+PartialsCarousel.propTypes = {
+  title: PropTypes.string.isRequired,
+  books: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      image: PropTypes.string,
+      name: PropTypes.string.isRequired,
+      is_premium: PropTypes.bool,
+    })
+  ),
+  category: PropTypes.shape({
+    slug: PropTypes.string,
+  }),
+  categorySlug: PropTypes.string,
 }
 
 export default PartialsCarousel

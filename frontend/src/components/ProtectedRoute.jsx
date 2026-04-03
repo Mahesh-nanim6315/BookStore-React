@@ -1,5 +1,6 @@
 import React from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
+import PropTypes from 'prop-types'
 import { useAuth } from '../contexts/AuthContext'
 import { hasPermission } from '../utils/permissions'
 import Loader from './common/Loader'
@@ -30,5 +31,13 @@ const ProtectedRoute = ({ children, adminOnly = false, requiredPermission = null
 
   return children
 }
+
+ProtectedRoute.propTypes = {
+  children: PropTypes.node.isRequired,
+  adminOnly: PropTypes.bool,
+  requiredPermission: PropTypes.string,
+  requiredRole: PropTypes.string,
+}
+
 
 export default ProtectedRoute

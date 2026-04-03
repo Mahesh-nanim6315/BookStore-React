@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -12,6 +11,8 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
+    private const STORAGE_PREFIX = 'storage/';
+
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, HasApiTokens, Notifiable, Billable;
 
@@ -198,35 +199,62 @@ public function getCoverUrlAttribute(): string
 
 private function resolveImageUrl(?string $path, string $fallback): string
 {
+    $resolvedPath = asset($fallback);
+
     if (! $path) {
-        return asset($fallback);
+        return $resolvedPath;
     }
 
-    if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
-        return $path;
+    if ($this->isExternalImageUrl($path)) {
+        $resolvedPath = $path;
+    } else {
+        $normalized = ltrim($path, '/');
+
+        $resolvedPath = $this->isUploadedImagePath($normalized)
+            ? $this->resolveUploadedImageUrl($normalized, $fallback)
+            : $this->resolveStoredImageUrl($normalized, $fallback);
     }
 
-    $normalized = ltrim($path, '/');
-    if (str_starts_with($normalized, 'uploads/')) {
-        if (file_exists(public_path($normalized))) {
-            return asset($normalized);
-        }
-        return asset($fallback);
-    }
+    return $resolvedPath;
+}
 
-    if (str_starts_with($normalized, 'storage/')) {
-        $normalized = substr($normalized, strlen('storage/'));
-    }
+private function isExternalImageUrl(string $path): bool
+{
+    return str_starts_with($path, 'http://') || str_starts_with($path, 'https://');
+}
 
-    $publicFile = public_path('storage/' . $normalized);
-    if (Storage::disk('public')->exists($normalized) && file_exists($publicFile)) {
-        return asset('storage/' . $normalized);
+private function isUploadedImagePath(string $path): bool
+{
+    return str_starts_with($path, 'uploads/');
+}
+
+private function resolveUploadedImageUrl(string $path, string $fallback): string
+{
+    if (file_exists(public_path($path))) {
+        return asset($path);
     }
 
     return asset($fallback);
 }
 
+private function resolveStoredImageUrl(string $path, string $fallback): string
+{
+    $normalized = $this->normalizeStoredImagePath($path);
+    $publicFile = public_path(self::STORAGE_PREFIX . $normalized);
 
+    if (Storage::disk('public')->exists($normalized) && file_exists($publicFile)) {
+        return asset(self::STORAGE_PREFIX . $normalized);
+    }
 
+    return asset($fallback);
+}
 
+private function normalizeStoredImagePath(string $path): string
+{
+    if (str_starts_with($path, self::STORAGE_PREFIX)) {
+        return substr($path, strlen(self::STORAGE_PREFIX));
+    }
+
+    return $path;
+}
 }

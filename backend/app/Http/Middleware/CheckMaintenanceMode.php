@@ -12,35 +12,56 @@ class CheckMaintenanceMode
 {
     public function handle(Request $request, Closure $next)
     {
-        $maintenance = Setting::get('maintenance_mode', 0);
-
-        if ((string) $maintenance !== '1') {
+        if (! $this->isMaintenanceEnabled()) {
             return $next($request);
         }
 
-        // Allow public maintenance metadata and the login endpoint so admins can still sign in.
-        if (
-            $request->is('api/v1/settings/public')
+        $user = $this->resolveAuthenticatedUser($request);
+
+        if ($this->canBypassMaintenance($request, $user)) {
+            return $next($request);
+        }
+
+        $this->invalidateUserSession($request, $user);
+
+        return $this->buildMaintenanceResponse($request);
+    }
+
+    private function isMaintenanceEnabled(): bool
+    {
+        return (string) Setting::get('maintenance_mode', 0) === '1';
+    }
+
+    private function canBypassMaintenance(Request $request, ?User $user): bool
+    {
+        return $this->isPublicMaintenanceRoute($request) || $this->isAdminUser($user);
+    }
+
+    private function isPublicMaintenanceRoute(Request $request): bool
+    {
+        return $request->is('api/v1/settings/public')
             || $request->is('v1/settings/public')
             || $request->is('api/v1/login')
             || $request->is('v1/login')
-            || $request->is('login')
-        ) {
-            return $next($request);
-        }
+            || $request->is('login');
+    }
 
-        $user = $request->user() ?: Auth::user() ?: $this->resolveUserFromBearerToken($request);
+    private function resolveAuthenticatedUser(Request $request): ?User
+    {
+        return $request->user() ?: Auth::user() ?: $this->resolveUserFromBearerToken($request);
+    }
 
-        if ($this->isAdminUser($user)) {
-            return $next($request);
-        }
-
+    private function invalidateUserSession(Request $request, ?User $user): void
+    {
         if ($user && $request->hasSession()) {
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
         }
+    }
 
+    private function buildMaintenanceResponse(Request $request)
+    {
         if ($request->expectsJson() || $request->is('api/*') || $request->is('v1/*')) {
             return response()->json([
                 'success' => false,

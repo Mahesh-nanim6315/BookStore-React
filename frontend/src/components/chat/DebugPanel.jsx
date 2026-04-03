@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
 const DebugPanel = ({ debug }) => {
   if (!debug?.length) {
@@ -27,6 +28,18 @@ const DebugPanel = ({ debug }) => {
       </div>
     </aside>
   )
+}
+
+DebugPanel.propTypes = {
+  debug: PropTypes.arrayOf(
+    PropTypes.shape({
+      tool: PropTypes.string,
+      type: PropTypes.string,
+      isError: PropTypes.bool,
+      input: PropTypes.any,
+      preview: PropTypes.any,
+    })
+  ).isRequired,
 }
 
 export default DebugPanel

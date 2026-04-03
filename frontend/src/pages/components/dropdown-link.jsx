@@ -3,7 +3,7 @@
 const ComponentsDropdownLink = () => {
   return (
     <div className="page">
-<a ></a>
+      <button type="button">Open dropdown</button>
     </div>
   )
 }

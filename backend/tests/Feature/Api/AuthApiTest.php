@@ -11,6 +11,14 @@ class AuthApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const LOGIN_ENDPOINT = '/api/v1/login';
+    private const PROFILE_UPDATE_ENDPOINT = '/api/v1/profile/update';
+    private const DEFAULT_STRONG_PASSWORD = 'StrongPass1!';
+    private const DEFAULT_USER_EMAIL = 'user@example.com';
+    private const UPDATED_USER_NAME = 'Updated User';
+    private const UPDATED_USER_EMAIL = 'Updated@Example.com';
+    private const NEW_STRONG_PASSWORD = 'NewStrong1!';
+
     public function test_registration_normalizes_email_and_rejects_weak_passwords(): void
     {
         $weakResponse = $this->postJson('/api/v1/register', [
@@ -27,8 +35,8 @@ class AuthApiTest extends TestCase
         $strongResponse = $this->postJson('/api/v1/register', [
             'name' => 'Test User',
             'email' => 'Test@Example.com',
-            'password' => 'StrongPass1!',
-            'password_confirmation' => 'StrongPass1!',
+            'password' => self::DEFAULT_STRONG_PASSWORD,
+            'password_confirmation' => self::DEFAULT_STRONG_PASSWORD,
         ]);
 
         $strongResponse
@@ -45,13 +53,13 @@ class AuthApiTest extends TestCase
     {
         $user = User::factory()->create([
             'email' => 'inactive@example.com',
-            'password' => 'StrongPass1!',
+            'password' => self::DEFAULT_STRONG_PASSWORD,
             'is_active' => false,
         ]);
 
-        $response = $this->postJson('/api/v1/login', [
+        $response = $this->postJson(self::LOGIN_ENDPOINT, [
             'email' => 'inactive@example.com',
-            'password' => 'StrongPass1!',
+            'password' => self::DEFAULT_STRONG_PASSWORD,
         ]);
 
         $response
@@ -64,19 +72,19 @@ class AuthApiTest extends TestCase
     public function test_login_is_rate_limited_after_repeated_failures(): void
     {
         User::factory()->create([
-            'email' => 'user@example.com',
-            'password' => 'StrongPass1!',
+            'email' => self::DEFAULT_USER_EMAIL,
+            'password' => self::DEFAULT_STRONG_PASSWORD,
         ]);
 
         for ($attempt = 0; $attempt < 5; $attempt++) {
-            $this->postJson('/api/v1/login', [
-                'email' => 'user@example.com',
+            $this->postJson(self::LOGIN_ENDPOINT, [
+                'email' => self::DEFAULT_USER_EMAIL,
                 'password' => 'WrongPass1!',
             ])->assertStatus(422);
         }
 
-        $response = $this->postJson('/api/v1/login', [
-            'email' => 'user@example.com',
+        $response = $this->postJson(self::LOGIN_ENDPOINT, [
+            'email' => self::DEFAULT_USER_EMAIL,
             'password' => 'WrongPass1!',
         ]);
 
@@ -90,26 +98,26 @@ class AuthApiTest extends TestCase
     public function test_profile_password_change_requires_current_password_and_strong_new_password(): void
     {
         $user = User::factory()->create([
-            'password' => 'StrongPass1!',
+            'password' => self::DEFAULT_STRONG_PASSWORD,
         ]);
 
         Sanctum::actingAs($user);
 
-        $missingCurrentPassword = $this->putJson('/api/v1/profile/update', [
-            'name' => 'Updated User',
-            'email' => 'Updated@Example.com',
-            'password' => 'NewStrong1!',
-            'password_confirmation' => 'NewStrong1!',
+        $missingCurrentPassword = $this->putJson(self::PROFILE_UPDATE_ENDPOINT, [
+            'name' => self::UPDATED_USER_NAME,
+            'email' => self::UPDATED_USER_EMAIL,
+            'password' => self::NEW_STRONG_PASSWORD,
+            'password_confirmation' => self::NEW_STRONG_PASSWORD,
         ]);
 
         $missingCurrentPassword
             ->assertStatus(422)
             ->assertJsonValidationErrors(['current_password']);
 
-        $weakPassword = $this->putJson('/api/v1/profile/update', [
-            'name' => 'Updated User',
-            'email' => 'Updated@Example.com',
-            'current_password' => 'StrongPass1!',
+        $weakPassword = $this->putJson(self::PROFILE_UPDATE_ENDPOINT, [
+            'name' => self::UPDATED_USER_NAME,
+            'email' => self::UPDATED_USER_EMAIL,
+            'current_password' => self::DEFAULT_STRONG_PASSWORD,
             'password' => 'weakpass',
             'password_confirmation' => 'weakpass',
         ]);
@@ -118,12 +126,12 @@ class AuthApiTest extends TestCase
             ->assertStatus(422)
             ->assertJsonValidationErrors(['password']);
 
-        $success = $this->putJson('/api/v1/profile/update', [
-            'name' => 'Updated User',
-            'email' => 'Updated@Example.com',
-            'current_password' => 'StrongPass1!',
-            'password' => 'NewStrong1!',
-            'password_confirmation' => 'NewStrong1!',
+        $success = $this->putJson(self::PROFILE_UPDATE_ENDPOINT, [
+            'name' => self::UPDATED_USER_NAME,
+            'email' => self::UPDATED_USER_EMAIL,
+            'current_password' => self::DEFAULT_STRONG_PASSWORD,
+            'password' => self::NEW_STRONG_PASSWORD,
+            'password_confirmation' => self::NEW_STRONG_PASSWORD,
         ]);
 
         $success
@@ -133,7 +141,7 @@ class AuthApiTest extends TestCase
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
             'email' => 'updated@example.com',
-            'name' => 'Updated User',
+            'name' => self::UPDATED_USER_NAME,
         ]);
     }
 }

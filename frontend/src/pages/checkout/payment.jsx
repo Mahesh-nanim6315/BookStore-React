@@ -72,7 +72,7 @@ const CheckoutPayment = () => {
       if (paymentResponse.success && paymentMethod === 'stripe') {
         const stripeResponse = await getStripeCheckout(nextOrderId)
         if (stripeResponse.success && stripeResponse.data?.checkout_url) {
-          window.location.href = stripeResponse.data.checkout_url
+          globalThis.location.href = stripeResponse.data.checkout_url
           return
         }
       }
@@ -80,13 +80,13 @@ const CheckoutPayment = () => {
       if (paymentResponse.success && paymentMethod === 'paypal') {
         const paypalResponse = await getPaypalPay(nextOrderId)
         if (paypalResponse.success && paypalResponse.data?.redirect_url) {
-          window.location.href = paypalResponse.data.redirect_url
+          globalThis.location.href = paypalResponse.data.redirect_url
           return
         }
       }
 
       if (paymentResponse.success && paymentResponse.data?.redirect) {
-        window.location.href = paymentResponse.data.redirect
+        globalThis.location.href = paymentResponse.data.redirect
         return
       }
 
