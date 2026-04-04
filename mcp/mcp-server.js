@@ -865,7 +865,7 @@ function requireApiToken(apiTokenOverride = null) {
 }
 
 function normalizeBaseUrl(value) {
-  return value.replaceAll(/\/+$/, "");
+  return String(value).replace(/\/+$/, "");
 }
 
 function parsePositiveInteger(value, fallback) {
@@ -998,3 +998,4 @@ function isEntrypoint() {
   const entry = process.argv[1];
   return typeof entry === "string" && import.meta.url === pathToFileURL(entry).href;
 }
+
