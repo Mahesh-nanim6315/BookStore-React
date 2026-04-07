@@ -4,7 +4,7 @@ body {
     color: var(--text-main);
     transition: 0.3s ease;
     margin: 0;
-    padding: 20px;
+    padding: 0;
 }
 
 /* Loader Styles */
@@ -49,6 +49,7 @@ body.admin-page footer {
 .dashboard {
     display: flex;
     flex-direction: column;
+    gap: 20px;
 }
 
 /* Dashboard Stats */
@@ -1458,11 +1459,13 @@ body.admin-page footer {
 
 /* Main Content */
 .main-content {
-    margin-left: 240px;
-    width: 100%;
+    margin-left: var(--admin-sidebar-width);
+    width: calc(100% - var(--admin-sidebar-width));
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    transition: margin-left 0.3s ease;
+    transition: margin-left 0.25s ease, width 0.25s ease;
+    min-width: 0;
 }
 
 .content {
@@ -1479,7 +1482,7 @@ body.admin-page footer {
     color: black;
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    transition: 0.3s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 /* Sidebar Base */
@@ -1501,9 +1504,15 @@ body.admin-page footer {
 .sidebar-header {
     display: flex;
     align-items: center;
-    padding: 15px;
     justify-content: space-between;
-    border-bottom: 1px solid #1f2937;
+    gap: 10px;
+    padding: 18px 16px;
+    border-bottom: 1px solid var(--admin-sidebar-border);
+    position: sticky;
+    top: 0;
+    background: rgba(11, 18, 32, 0.96);
+    backdrop-filter: blur(6px);
+    z-index: 4;
 }
 
 .sidebar .logo {
@@ -1585,7 +1594,8 @@ body.admin-page footer {
 
 /* When collapsed */
 .admin-wrapper.collapsed .main-content {
-    margin-left: 70px;
+    margin-left: var(--admin-sidebar-collapsed);
+    width: calc(100% - var(--admin-sidebar-collapsed));
 }
 
 /* Navbar shift when collapsed */
@@ -2219,7 +2229,11 @@ button[type="submit"]:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: var(--bg-topbar);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    min-height: 72px;
+    background: var(--bg-card);
     padding: 10px 20px;
     border-bottom: 1px solid var(--border-color);
 }
@@ -2315,23 +2329,30 @@ button[type="submit"]:hover {
 
 /* Username */
 .username {
+    font-size: 13px;
     font-weight: 600;
     color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Logout button */
 .logout-btn {
-    background: #e74c3c;
-    color: #fff;
+    background: #ef4444;
     border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
+    color: #ffffff;
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 10px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: background 0.2s ease;
 }
 
 .logout-btn:hover {
-    background: #c0392b;
+    background: #dc2626;
 }
 
 
@@ -2570,11 +2591,6 @@ button[type="submit"]:hover {
     color: #2c3e50;
 }
 
-.card {
-    border-radius: 8px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
 .card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -2624,6 +2640,14 @@ p {
     --text-main: #1f2937;
     --text-light: #ffffff;
     --border-color: #e5e7eb;
+    --admin-sidebar-width: 280px;
+    --admin-sidebar-collapsed: 84px;
+    --admin-sidebar-bg: #0b1220;
+    --admin-sidebar-border: #1e2a40;
+    --admin-sidebar-muted: #9fb0ce;
+    --admin-sidebar-text: #e8eefb;
+    --admin-sidebar-hover: #14213a;
+    --admin-sidebar-active: #1d4ed8;
 }
 
 /* ================= DARK THEME ================= */
@@ -2646,22 +2670,7 @@ p {
 }
 
 /* ================= SIDEBAR REFACTOR ================= */
-:root {
-    --admin-sidebar-width: 280px;
-    --admin-sidebar-collapsed: 84px;
-    --admin-sidebar-bg: #0b1220;
-    --admin-sidebar-border: #1e2a40;
-    --admin-sidebar-muted: #9fb0ce;
-    --admin-sidebar-text: #e8eefb;
-    --admin-sidebar-hover: #14213a;
-    --admin-sidebar-active: #1d4ed8;
-}
 
-body {
-    margin: 0;
-    padding: 0;
-    background: var(--bg-main);
-}
 
 .admin-wrapper {
     min-height: 100vh;
@@ -2681,36 +2690,9 @@ body {
     z-index: 60;
 }
 
-.main-content {
-    margin-left: var(--admin-sidebar-width);
-    width: calc(100% - var(--admin-sidebar-width));
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    transition: margin-left 0.25s ease, width 0.25s ease;
-}
 
 .admin-wrapper.collapsed .admin-sidebar {
     width: var(--admin-sidebar-collapsed);
-}
-
-.admin-wrapper.collapsed .main-content {
-    margin-left: var(--admin-sidebar-collapsed);
-    width: calc(100% - var(--admin-sidebar-collapsed));
-}
-
-.sidebar-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 18px 16px;
-    border-bottom: 1px solid var(--admin-sidebar-border);
-    position: sticky;
-    top: 0;
-    background: rgba(11, 18, 32, 0.96);
-    backdrop-filter: blur(6px);
-    z-index: 4;
 }
 
 .sidebar-brand {
@@ -2879,14 +2861,6 @@ body {
     transform: rotate(180deg);
 }
 
-.topbar {
-    position: sticky;
-    top: 0;
-    z-index: 40;
-    min-height: 72px;
-    background: var(--bg-card);
-}
-
 @media (max-width: 1024px) {
     .admin-sidebar {
         transform: translateX(-100%);
@@ -2950,12 +2924,6 @@ body {
     font-size: 13px;
     color: #6b7280;
     text-align: left;
-}
-
-.topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
 }
 
 .icon-btn {
@@ -3102,32 +3070,6 @@ body {
     color: #ffffff;
     background: linear-gradient(135deg, #2563eb, #1e40af);
     flex-shrink: 0;
-}
-
-.username {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-main);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.logout-btn {
-    background: #ef4444;
-    border: none;
-    color: #ffffff;
-    height: 38px;
-    padding: 0 14px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
-    transition: background 0.2s ease;
-}
-
-.logout-btn:hover {
-    background: #dc2626;
 }
 
 .dark-mode .main-content .topbar {
@@ -3433,14 +3375,10 @@ body {
 .card-section,
 .card-box,
 .admin-table-wrap,
-.dashboard-table-wrap,
-.main-content {
+.dashboard-table-wrap {
     min-width: 0;
 }
 
-.dashboard {
-    gap: 20px;
-}
 
 .dashboard-chart {
     position: relative;
