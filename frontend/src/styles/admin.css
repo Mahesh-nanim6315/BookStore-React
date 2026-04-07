@@ -133,7 +133,7 @@ body.admin-page footer {
 
 /* Card Sections */
 .card-section {
-    margin-bottom: 20px;
+    margin: 20px 0;
 }
 
 .section-title {
@@ -144,10 +144,11 @@ body.admin-page footer {
 }
 
 .card-box {
-    background: var(--bg-card);
+    background: #fff;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 /* Tables */
@@ -155,6 +156,8 @@ body.admin-page footer {
     border-collapse: collapse;
     width: 100%;
     background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .table-custom th {
@@ -163,18 +166,22 @@ body.admin-page footer {
     padding: 12px;
     text-align: left;
     font-weight: 600;
+    font-size: 14px;
+    border-bottom: 1px solid #eaeaea;
 }
 
 .table-custom td {
     padding: 12px;
-    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+    font-size: 14px;
+    border-bottom: 1px solid #eaeaea;
 }
 
 .badge-sales {
-    background: #28a745;
+    background: #10b981;
     color: white;
     padding: 4px 8px;
-    border-radius: 12px;
+    border-radius: 4px;
     font-weight: 600;
     font-size: 12px;
 }
@@ -3418,71 +3425,6 @@ body {
     }
 }
 
-/* Dashboard specific styles */
-.card-section {
-    margin: 20px 0;
-}
-
-.section-title {
-    margin-bottom: 15px;
-    color: var(--text-main);
-}
-
-.card-box {
-    background: #fff;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.table-custom {
-    width: 100%;
-    border-collapse: collapse;
-    background: #fff;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.table-custom thead {
-    background: #2c3e50;
-    color: #fff;
-}
-
-.table-custom th,
-.table-custom td {
-    padding: 12px;
-    text-align: left;
-    font-size: 14px;
-    border-bottom: 1px solid #eaeaea;
-}
-
-.table-custom tbody tr:hover {
-    background: #f9fcff;
-}
-
-.badge-sales {
-    background: #10b981;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.empty-data {
-    text-align: center;
-    color: #6b7280;
-    font-style: italic;
-}
-
-/* Chart responsive styles */
-.chart-box canvas {
-    width: 100% !important;
-    height: 100% !important;
-}
-
-/* ================= MOBILE RESPONSIVE STYLES ================= */
-
 /* Dashboard mobile responsive */
 @media (max-width: 1024px) {
     .stats {
@@ -3753,6 +3695,8 @@ body {
 }
 
 .chart-box canvas {
+    width: 100% !important;
+    height: 100% !important;
     display: block;
 }
 

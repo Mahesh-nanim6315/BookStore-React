@@ -135,12 +135,12 @@ const Products = () => {
     const uniquePages = [...new Set(pages)].sort((a, b) => a - b)
     const pageItems = []
 
-    uniquePages.forEach((page, index) => {
+    for (const [index, page] of uniquePages.entries()) {
       if (index > 0 && uniquePages[index - 1] !== page - 1) {
         pageItems.push(`ellipsis-${page}`)
       }
       pageItems.push(page)
-    })
+    }
 
     return (
       <div className="products-pagination">

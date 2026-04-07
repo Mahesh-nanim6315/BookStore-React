@@ -74,6 +74,15 @@ const SubscriptionsIndex = () => {
               : currentPlan === planKey && currentBillingCycle === billingCycle && !isOnGracePeriod
             const price = billingCycle === 'yearly' ? plan.yearly : plan.monthly
             const disabled = (!subscriptionsEnabled && planKey !== 'free') || submitting === planKey || isCurrentPlan
+            let subscribeButtonLabel = `Choose ${plan.name}`
+
+            if (submitting === planKey) {
+              subscribeButtonLabel = 'Please wait...'
+            } else if (isCurrentPlan) {
+              subscribeButtonLabel = 'Current Plan'
+            } else if (planKey === 'free') {
+              subscribeButtonLabel = 'Switch to Free'
+            }
 
             return (
               <div key={planKey} className={`plan-card ${isCurrentPlan ? 'current-plan' : ''}`}>
@@ -95,7 +104,7 @@ const SubscriptionsIndex = () => {
                   disabled={disabled}
                   onClick={() => handleCheckout(planKey)}
                 >
-                  {submitting === planKey ? 'Please wait...' : isCurrentPlan ? 'Current Plan' : planKey === 'free' ? 'Switch to Free' : `Choose ${plan.name}`}
+                  {subscribeButtonLabel}
                 </button>
               </div>
             )
@@ -120,13 +129,13 @@ const SubscriptionsIndex = () => {
               {user.plan_expires_at ? ` Access renews or expires on ${new Date(user.plan_expires_at).toLocaleDateString()}.` : ' You can manage changes below.'}
             </p>
             <div className="subscription-section__actions">
-              {!isOnGracePeriod ? (
-                <button type="button" className="upgrade-btn" onClick={handleCancel} disabled={submitting === 'cancel'}>
-                  {submitting === 'cancel' ? 'Cancelling...' : 'Cancel Subscription'}
-                </button>
-              ) : (
+              {isOnGracePeriod ? (
                 <button type="button" className="upgrade-btn" onClick={handleResume} disabled={submitting === 'resume'}>
                   {submitting === 'resume' ? 'Resuming...' : 'Resume Subscription'}
+                </button>
+              ) : (
+                <button type="button" className="upgrade-btn" onClick={handleCancel} disabled={submitting === 'cancel'}>
+                  {submitting === 'cancel' ? 'Cancelling...' : 'Cancel Subscription'}
                 </button>
               )}
             </div>

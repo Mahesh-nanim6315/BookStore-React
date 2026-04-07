@@ -19,15 +19,21 @@ const AdminOrdersIndex = () => {
 
   const statusFilter = searchParams.get('status') || 'all'
   const currentPage = Number.parseInt(searchParams.get('page'), 10) || 1
+  const buildOrderSearchParams = (page) => {
+    const params = { page: page.toString() }
+
+    if (statusFilter === 'all') {
+      return params
+    }
+
+    return { ...params, status: statusFilter }
+  }
 
   useEffect(() => {
     const loadOrders = async () => {
       try {
         setLoading(true)
-        const params = {
-          page: currentPage,
-          ...(statusFilter !== 'all' ? { status: statusFilter } : {})
-        }
+        const params = buildOrderSearchParams(currentPage)
         const response = await getAdminOrders(params)
 
         if (response.success) {
@@ -58,10 +64,7 @@ const AdminOrdersIndex = () => {
   }
 
   const handlePageChange = (page) => {
-    setSearchParams({ 
-      page: page.toString(),
-      ...(statusFilter !== 'all' ? { status: statusFilter } : {})
-    })
+    setSearchParams(buildOrderSearchParams(page))
   }
 
   const handleOrderStatusChange = async (orderId, status) => {

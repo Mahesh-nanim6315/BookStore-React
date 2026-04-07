@@ -40,7 +40,7 @@ const AdminUsersIndex = () => {
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this user?')) {
+    if (!globalThis.confirm('Delete this user?')) {
       return
     }
 

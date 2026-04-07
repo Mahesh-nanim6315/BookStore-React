@@ -12,19 +12,12 @@ use App\Listeners\SendPaymentSuccessEmail;
 |--------------------------------------------------------------------------
 */
 
-// Event::listen(
-//     OrderPlaced::class,
-//     SendOrderPlacedEmail::class
-// );
 
 Event::listen(
     OrderPlaced::class,
     \App\Listeners\SendOrderNotification::class
 );
 
-// Event::listen(
-//     PaymentSuccess::class,
-//     SendPaymentSuccessEmail::class
-// );
+
 
 
