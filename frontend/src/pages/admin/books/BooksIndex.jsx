@@ -282,7 +282,7 @@ const BooksIndex = () => {
               onClick={() => handlePageChange(meta.current_page - 1)}
               disabled={meta.current_page === 1}
             >
-              ← Previous
+              &lt; Previous
             </button>
 
             {new Array(meta.last_page).map((_, index) => {
@@ -321,7 +321,7 @@ const BooksIndex = () => {
               onClick={() => handlePageChange(meta.current_page + 1)}
               disabled={meta.current_page === meta.last_page}
             >
-              Next →
+              Next 
             </button>
           </div>
         </div>

@@ -1,6 +1,18 @@
 import axios from 'axios'
 import { clearAuthSession, getStoredToken } from '../utils/authStorage'
 
+const toError = (value) => {
+  if (value instanceof Error) {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    return new Error(value)
+  }
+
+  return new Error('Request failed')
+}
+
 const axiosClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   headers: {
@@ -20,7 +32,7 @@ axiosClient.interceptors.request.use(
     return config
   },
   (error) => {
-    return Promise.reject(error)
+    return Promise.reject(toError(error))
   },
 )
 
@@ -47,7 +59,7 @@ axiosClient.interceptors.response.use(
         globalThis.location.href = '/login'
       }
     }
-    return Promise.reject(error)
+    return Promise.reject(toError(error))
   },
 )
 

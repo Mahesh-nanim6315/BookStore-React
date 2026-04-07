@@ -251,7 +251,7 @@ const AdminOrdersIndex = () => {
               onClick={() => handlePageChange(meta.current_page - 1)}
               disabled={meta.current_page === 1}
             >
-              ← Previous
+               Previous
             </button>
             
             {/* Show page numbers */}
@@ -290,7 +290,7 @@ const AdminOrdersIndex = () => {
               onClick={() => handlePageChange(meta.current_page + 1)}
               disabled={meta.current_page === meta.last_page}
             >
-              Next →
+              Next 
             </button>
           </div>
         </div>

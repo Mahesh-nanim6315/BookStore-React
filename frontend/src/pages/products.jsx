@@ -310,7 +310,7 @@ const Products = () => {
                     onClick={() => handleWishlistToggle(book.id)}
                     aria-label={book.in_wishlist ? 'Remove from wishlist' : 'Add to wishlist'}
                   >
-                    <span aria-hidden="true">{book.in_wishlist ? '♥' : '♡'}</span>
+                    <span aria-hidden="true">{book.in_wishlist ? '\u2665' : '\u2661'}</span>
                   </button>
 
                   <Link to={`/products/${book.id}`} className="product-cover-link">
