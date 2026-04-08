@@ -1,6 +1,6 @@
 const authService = require("../services/authService");
 
-async function authMiddleware(req, _res, next) {
+async function optionalAuthMiddleware(req, _res, next) {
   try {
     if (req.user) {
       return next();
@@ -10,21 +10,17 @@ async function authMiddleware(req, _res, next) {
     const [scheme, token] = authorization.split(" ");
 
     if (String(scheme).toLowerCase() !== "bearer" || !token) {
-      throw new Error("Unauthenticated.");
+      return next();
     }
 
     const authenticated = await authService.authenticateAccessToken(token);
     req.user = authenticated.formattedUser;
     req.rawUser = authenticated.user;
     req.authTokenRecord = authenticated.tokenRecord;
-
     return next();
   } catch (_error) {
-    return next({
-      statusCode: 401,
-      message: "Unauthenticated.",
-    });
+    return next();
   }
 }
 
-module.exports = authMiddleware;
+module.exports = optionalAuthMiddleware;

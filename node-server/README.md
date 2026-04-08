@@ -120,6 +120,30 @@ node-server/
    ('Admin User', 'admin@bookstore.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
    ```
 
+## Knex Migrations (Laravel-Referenced Schema)
+
+This Node server now includes Knex migrations that mirror the existing Laravel backend table structures.
+
+1. Create the database from your MySQL client (example name from `.env`):
+   ```sql
+   CREATE DATABASE bookstore;
+   ```
+
+2. Run migrations:
+   ```bash
+   npm run migrate
+   ```
+
+3. Check migration status:
+   ```bash
+   npm run migrate:status
+   ```
+
+4. Rollback last batch if needed:
+   ```bash
+   npm run migrate:rollback
+   ```
+
 ## Running the Server
 
 1. **Development mode** (with auto-restart):
