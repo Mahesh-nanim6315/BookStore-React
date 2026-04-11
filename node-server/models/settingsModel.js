@@ -24,9 +24,27 @@ async function isMaintenanceModeEnabled() {
   return String(await getValue("maintenance_mode", "0")) === "1";
 }
 
+async function getTaxRate() {
+  const value = await getValue("tax_rate", "5");
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return 5;
+  }
+
+  return Math.max(0, numericValue);
+}
+
+async function calculateTax(subtotal) {
+  const taxRate = await getTaxRate();
+  return Math.round((Number(subtotal || 0) * taxRate) / 100);
+}
+
 module.exports = {
   getByKey,
   getValue,
   getMany,
   isMaintenanceModeEnabled,
+  getTaxRate,
+  calculateTax,
 };

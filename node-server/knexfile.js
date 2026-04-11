@@ -1,17 +1,29 @@
 require("dotenv").config();
 
+function getEnv(name, fallbackName, defaultValue) {
+  if (process.env[name] !== undefined) {
+    return process.env[name];
+  }
+
+  if (fallbackName && process.env[fallbackName] !== undefined) {
+    return process.env[fallbackName];
+  }
+
+  return defaultValue;
+}
+
 const shared = {
   client: "mysql2",
   connection: {
-    host: process.env.DB_HOST || "127.0.0.1",
-    port: Number(process.env.DB_PORT || 3306),
-    user: process.env.DB_USER || "root",
-    password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME || "bookstore",
+    host: getEnv("DB_HOST", null, "127.0.0.1"),
+    port: Number(getEnv("DB_PORT", null, 3306)),
+    user: getEnv("DB_USER", "DB_USERNAME", "root"),
+    password: getEnv("DB_PASSWORD", null, ""),
+    database: getEnv("DB_NAME", "DB_DATABASE", "agent"),
   },
   pool: {
     min: 2,
-    max: Number(process.env.DB_CONNECTION_LIMIT || 10),
+    max: Number(getEnv("DB_CONNECTION_LIMIT", null, 10)),
   },
   migrations: {
     directory: "./migrations",

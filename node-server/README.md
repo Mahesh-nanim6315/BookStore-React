@@ -56,93 +56,48 @@ node-server/
    
    Edit `.env` file with your configuration:
    ```env
-   PORT=3001
+   PORT=5000
    NODE_ENV=development
-   DB_HOST=localhost
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
    DB_USER=root
-   DB_PASSWORD=your_password
-   DB_NAME=bookstore
+   DB_PASSWORD=
+   DB_NAME=agent
    JWT_SECRET=your-super-secret-jwt-key
-   JWT_EXPIRE=7d
-   FRONTEND_URL=http://localhost:3000
+   JWT_EXPIRES_IN=7d
+   FRONTEND_URL=http://localhost:5173
    ```
 
-3. **Set up MySQL database**:
-   - Create a database named `bookstore`
-   - Run the following SQL queries to create tables:
+3. **Connect to the existing Laravel database**:
+   - Point the Node server to the same MySQL database used by Laravel.
+   - In this repo, the Laravel backend is configured for database `agent` in `backend/.env`.
+   - The safest migration path is: reuse the current schema first, then only add Node-side schema changes if truly needed.
 
-   ```sql
-   -- Users table
-   CREATE TABLE users (
-     id INT AUTO_INCREMENT PRIMARY KEY,
-     name VARCHAR(255) NOT NULL,
-     email VARCHAR(255) UNIQUE NOT NULL,
-     password VARCHAR(255) NOT NULL,
-     role ENUM('admin', 'user') DEFAULT 'user',
-     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-   );
+## Knex Migrations (Use With Care)
 
-   -- Categories table
-   CREATE TABLE categories (
-     id INT AUTO_INCREMENT PRIMARY KEY,
-     name VARCHAR(255) NOT NULL,
-     description TEXT,
-     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-   );
+This Node server includes Knex migrations that mirror the Laravel backend schema for reference and bootstrap purposes.
 
-   -- Books table
-   CREATE TABLE books (
-     id INT AUTO_INCREMENT PRIMARY KEY,
-     title VARCHAR(255) NOT NULL,
-     author VARCHAR(255) NOT NULL,
-     isbn VARCHAR(20) UNIQUE NOT NULL,
-     description TEXT,
-     price DECIMAL(10, 2) NOT NULL,
-     stock_quantity INT DEFAULT 0,
-     category_id INT,
-     cover_image VARCHAR(255),
-     created_by INT,
-     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-     FOREIGN KEY (category_id) REFERENCES categories(id),
-     FOREIGN KEY (created_by) REFERENCES users(id)
-   );
+If you are migrating from the existing Laravel backend, do not run these migrations against the live database by default. The tables already exist there, and replaying them from Node can cause conflicts.
 
-   -- Insert some sample data
-   INSERT INTO categories (name, description) VALUES 
-   ('Fiction', 'Fictional books and novels'),
-   ('Non-Fiction', 'Non-fictional books and biographies'),
-   ('Science', 'Science and technology books'),
-   ('History', 'Historical books and documentaries');
-
-   INSERT INTO users (name, email, password, role) VALUES 
-   ('Admin User', 'admin@bookstore.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
-   ```
-
-## Knex Migrations (Laravel-Referenced Schema)
-
-This Node server now includes Knex migrations that mirror the existing Laravel backend table structures.
-
-1. Create the database from your MySQL client (example name from `.env`):
-   ```sql
-   CREATE DATABASE bookstore;
-   ```
-
-2. Run migrations:
-   ```bash
-   npm run migrate
-   ```
-
-3. Check migration status:
+1. Check migration status:
    ```bash
    npm run migrate:status
    ```
 
-4. Rollback last batch if needed:
+2. Only run schema-changing Knex commands when you explicitly opt in:
    ```bash
-   npm run migrate:rollback
+   ALLOW_SCHEMA_CHANGES=true npm run migrate
    ```
+
+3. Rollback last batch if needed:
+   ```bash
+   ALLOW_SCHEMA_CHANGES=true npm run migrate:rollback
+   ```
+
+The normal path for this project is:
+- Keep Laravel and Node pointed at the same existing MySQL database.
+- Port Laravel endpoints to Node incrementally.
+- Avoid recreating tables unless you are working in a fresh database on purpose.
 
 ## Running the Server
 
