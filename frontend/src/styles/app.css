@@ -3366,12 +3366,15 @@ p a:hover,
     text-decoration: none;
     border-radius: 18px;
     overflow: hidden;
+    width: min(100%, 86%);
+    margin: 0 auto;
 }
 
 /* Product Image */
 .products-page .product img.book-image {
     width: 100%;
     aspect-ratio: 3 / 4;
+    max-height: 340px;
     object-fit: cover;
     object-position: center;
     border-radius: 18px;
@@ -3474,8 +3477,8 @@ p a:hover,
     font-size: 1.2rem;
     transition: transform 0.3s;
     position: absolute;
-    top: 24px;
-    right: 24px;
+    top: 18px;
+    right: 18px;
     z-index: 2;
     box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
 }
@@ -3721,6 +3724,10 @@ p a:hover,
         padding: 12px;
         border-radius: 20px;
         gap: 12px;
+    }
+
+    .product-cover-link {
+        width: 100%;
     }
 
     .products-page .product-header h3 {

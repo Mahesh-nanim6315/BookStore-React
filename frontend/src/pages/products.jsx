@@ -306,7 +306,7 @@ const Products = () => {
                 <article key={book.id} className="product">
                   <button
                     type="button"
-                    className="wishlist-btn"
+                    className="wishlist-btn wishlist-btn--corner"
                     onClick={() => handleWishlistToggle(book.id)}
                     aria-label={book.in_wishlist ? 'Remove from wishlist' : 'Add to wishlist'}
                   >
